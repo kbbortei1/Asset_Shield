@@ -49,29 +49,49 @@ curl -s -X POST http://localhost:8080/api/v1/auth/verify-otp \
   -d '{"phoneNumber":"+233244123456","code":"123456"}'
 ```
 
-## Storage (Day 2)
+## External providers
 
-Property photos, receipts and Ghana Cards go through a `StorageProvider`
-abstraction selected by `STORAGE_PROVIDER`:
+The backend is a **self-contained, containerized application**. The
+**database is PostgreSQL inside the Docker stack** and ships with the app — there
+is no external/managed database. The backend reaches exactly **three** external
+services, each with a zero-config dev fallback so the whole system runs and
+demos with **no accounts and no internet**:
 
-- **`local`** (default, offline demo) — objects live on the `storage-data`
-  volume; reads are short-lived token URLs (`/api/v1/public/files/{token}`,
-  15 min) streamed by property-service.
-- **`supabase`** (recommended cloud option, free tier) — Supabase Storage with
-  a PRIVATE bucket and signed URLs, plain REST (no SDK). Create a project at
-  supabase.com, add a private bucket (default name `assetshield`), then set
-  `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` (service_role key — server-only
-  secret, never ship it to a client).
-- **`firebase`** — Firebase Storage with private objects and V4 signed URLs.
-  NOTE: new Firebase projects require the Blaze (paid) plan for Storage. Drop
-  the service-account JSON at
-  `infra/firebase/firebase-service-account.json` (mounted read-only at
-  `/secrets/`) and set `FIREBASE_STORAGE_BUCKET`.
+| Concern | Production provider | Dev/demo fallback | Env switch | Env vars | How to prove |
+|---|---|---|---|---|---|
+| **File storage** (photos, receipts, Ghana cards, dossier PDFs) | **Supabase Storage** (S3-compatible, private bucket, presigned URLs) | `local` disk volume | `STORAGE_PROVIDER=supabase\|local` | `SUPABASE_S3_ENDPOINT`, `SUPABASE_S3_REGION`, `SUPABASE_S3_ACCESS_KEY_ID`, `SUPABASE_S3_SECRET_ACCESS_KEY`, `SUPABASE_STORAGE_BUCKET` | `StorageProviderContractTest` (guarded) / `infra/smoke/real-providers.sh` |
+| **Push** | **Firebase Cloud Messaging** (FCM only) | `log` | `FCM_MODE=firebase\|log` | `FIREBASE_SERVICE_ACCOUNT_PATH` | smoke script with a device token |
+| **Payments** | **Paystack** (MoMo/card) | `mock` (auto-settle ~2 s) | `PAYMENTS_MODE=paystack\|mock` | `PAYSTACK_SECRET_KEY` | smoke script (verify or tunnelled webhook) |
 
-All providers **fail fast** at startup when their configuration is missing.
+**Database is PostgreSQL inside the container stack; Supabase is storage-only;
+Firebase is FCM-only.** Full credential-by-credential setup is in
+[`PROVIDER_SETUP.md`](../PROVIDER_SETUP.md).
 
-The database always stores **object paths, never URLs** — signed URLs are
-minted at read time by the DTO mappers.
+Storage details:
+- **`local`** (default, offline demo) — objects on the `storage-data` volume;
+  reads are short-lived token URLs (`/api/v1/public/files/{token}`, 15 min)
+  streamed by property-service.
+- **`supabase`** — Supabase Storage is S3-compatible, accessed with the AWS S3
+  SDK v2 (path-style addressing). A single PRIVATE bucket; reads are 15-min
+  presigned GET URLs minted locally. Object keys: `assets/{propertyId}/{hash}.jpg`,
+  `receipts/{assetId}/{hash}.jpg`, `dossiers/{dossierId}.pdf`,
+  `ghana-cards/{userId}.jpg`.
+
+All providers **fail fast** at startup when selected-but-misconfigured (a clear
+exception naming the missing variable, never an NPE at first use). The database
+always stores **object paths, never URLs** — signed URLs are minted at read time
+by the DTO mappers.
+
+### Env-mode switch table
+
+| Mode var | Demo value | Live value |
+|---|---|---|
+| `STORAGE_PROVIDER` | `local` | `supabase` |
+| `FCM_MODE` | `log` | `firebase` |
+| `PAYMENTS_MODE` | `mock` | `paystack` |
+| `TIER_LOOKUP_MODE` | `stub` | `remote` |
+| `MARKETPLACE_EVENTS_MODE` | `log` | `remote` |
+| `NOTIFICATIONS_MODE` / `EVENTS_MODE` | `log` | `remote` |
 
 Since Day 5 property-service talks to the live marketplace:
 `TIER_LOOKUP_MODE=remote` (free-tier limits from marketplace's tier endpoint;
