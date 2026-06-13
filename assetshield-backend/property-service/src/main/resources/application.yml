@@ -1,0 +1,78 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: property-service
+  jpa:
+    hibernate:
+      ddl-auto: validate # Flyway owns the schema; Hibernate never creates it
+    open-in-view: false
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+# No defaults for secrets on purpose: startup fails fast when they are absent.
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  internal-api-key: ${INTERNAL_API_KEY}
+  auth-service-uri: ${AUTH_SERVICE_URI:http://auth-service:8081}
+  storage:
+    provider: ${STORAGE_PROVIDER:local}
+    local-root: ${STORAGE_LOCAL_ROOT:/data/storage}
+    firebase-service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH:}
+    firebase-bucket: ${FIREBASE_STORAGE_BUCKET:}
+    supabase-url: ${SUPABASE_URL:}
+    supabase-service-key: ${SUPABASE_SERVICE_KEY:}
+    supabase-bucket: ${SUPABASE_STORAGE_BUCKET:assetshield}
+    signed-url-ttl-minutes: 15
+  tier:
+    mode: ${TIER_LOOKUP_MODE:stub}
+    stub-tier: ${STUB_TIER:PRO}
+    marketplace-uri: ${MARKETPLACE_SERVICE_URL:http://marketplace-service:8084}
+  marketplace:
+    events-mode: ${MARKETPLACE_EVENTS_MODE:log}
+    uri: ${MARKETPLACE_SERVICE_URL:http://marketplace-service:8084}
+  notifications:
+    mode: ${NOTIFICATIONS_MODE:log}
+  limits:
+    free-max-properties: 1
+    free-max-assets-per-property: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX, UTC} %5p [%X{requestId:-}] %-40.40logger{39} : %m%n"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:postgresql://localhost:5433/property_db
+    username: property_svc
+    password: ${PROPERTY_DB_PASSWORD}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:postgresql://postgres:5432/property_db
+    username: property_svc
+    password: ${PROPERTY_DB_PASSWORD}
