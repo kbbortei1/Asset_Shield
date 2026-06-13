@@ -1,87 +1,118 @@
 package com.assetshield.damage.storage;
 
+import java.net.URI;
 import java.time.Duration;
-import java.util.Map;
-import org.springframework.http.MediaType;
-import org.springframework.web.client.RestClient;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 /**
- * Cloud storage on Supabase Storage (STORAGE_PROVIDER=supabase). Objects live
- * in a PRIVATE bucket; reads go through time-limited signed URLs minted with
- * the service-role key. Plain REST — no SDK. Fails fast at startup when the
- * project URL, service key or bucket is missing.
+ * Cloud storage on Supabase Storage (STORAGE_PROVIDER=supabase). Supabase
+ * Storage is S3-compatible, so this uses the AWS S3 SDK v2 against the
+ * project's S3 endpoint with path-style addressing (Supabase requires it).
+ * Objects live in a single PRIVATE bucket; reads go through presigned GET
+ * URLs minted locally (no extra round-trip). Fails fast at startup when any
+ * required env is missing.
+ *
+ * Mirrors the property/auth copies; damage-service adds {@link #load} because
+ * its dossier builder reads stored bytes back. The storage module is
+ * intentionally duplicated per service (independent poms).
  */
 public class SupabaseStorageProvider implements StorageProvider {
 
-    private final RestClient restClient;
-    private final String projectUrl;
+    private final S3Client s3;
+    private final S3Presigner presigner;
     private final String bucket;
 
-    public SupabaseStorageProvider(String projectUrl, String serviceKey, String bucket) {
-        if (projectUrl == null || projectUrl.isBlank()) {
-            throw new IllegalStateException("STORAGE_PROVIDER=supabase but SUPABASE_URL is empty");
-        }
-        if (serviceKey == null || serviceKey.isBlank()) {
-            throw new IllegalStateException("STORAGE_PROVIDER=supabase but SUPABASE_SERVICE_KEY is empty");
-        }
-        if (bucket == null || bucket.isBlank()) {
-            throw new IllegalStateException("STORAGE_PROVIDER=supabase but SUPABASE_STORAGE_BUCKET is empty");
-        }
-        this.projectUrl = projectUrl.replaceAll("/+$", "");
+    public SupabaseStorageProvider(String endpoint, String region, String accessKeyId,
+                                   String secretAccessKey, String bucket) {
+        require(endpoint, "SUPABASE_S3_ENDPOINT");
+        require(region, "SUPABASE_S3_REGION");
+        require(accessKeyId, "SUPABASE_S3_ACCESS_KEY_ID");
+        require(secretAccessKey, "SUPABASE_S3_SECRET_ACCESS_KEY");
+        require(bucket, "SUPABASE_STORAGE_BUCKET");
         this.bucket = bucket;
-        this.restClient = RestClient.builder()
-                .baseUrl(this.projectUrl + "/storage/v1")
-                .defaultHeader("Authorization", "Bearer " + serviceKey)
-                .defaultHeader("apikey", serviceKey)
+
+        URI endpointUri = URI.create(endpoint);
+        Region awsRegion = Region.of(region);
+        StaticCredentialsProvider credentials = StaticCredentialsProvider.create(
+                AwsBasicCredentials.create(accessKeyId, secretAccessKey));
+
+        // Supabase only accepts path-style requests (bucket in the path, not the
+        // host). The client exposes forcePathStyle directly; the presigner has
+        // no such setter, so it takes the equivalent via S3Configuration. Set
+        // path-style in exactly ONE place per builder — the SDK rejects both.
+        this.s3 = S3Client.builder()
+                .endpointOverride(endpointUri)
+                .region(awsRegion)
+                .credentialsProvider(credentials)
+                .forcePathStyle(true)
                 .build();
+        this.presigner = S3Presigner.builder()
+                .endpointOverride(endpointUri)
+                .region(awsRegion)
+                .credentialsProvider(credentials)
+                .serviceConfiguration(S3Configuration.builder()
+                        .pathStyleAccessEnabled(true)
+                        .build())
+                .build();
+    }
+
+    private static void require(String value, String name) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("STORAGE_PROVIDER=supabase but " + name + " is empty");
+        }
     }
 
     @Override
     public String store(byte[] bytes, String objectPath, String contentType) {
-        // x-upsert: re-storing the same path (same content hash) must not fail
-        restClient.post()
-                .uri("/object/" + bucket + "/" + objectPath)
-                .header("x-upsert", "true")
-                .contentType(MediaType.parseMediaType(contentType))
-                .body(bytes)
-                .retrieve()
-                .toBodilessEntity();
+        s3.putObject(PutObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(objectPath)
+                        .contentType(contentType)
+                        .build(),
+                RequestBody.fromBytes(bytes));
         return objectPath;
     }
 
     @Override
     public byte[] load(String objectPath) {
-        byte[] bytes = restClient.get()
-                .uri("/object/" + bucket + "/" + objectPath)
-                .retrieve()
-                .body(byte[].class);
-        if (bytes == null) {
-            throw new IllegalStateException("Object not found in bucket: " + objectPath);
+        try {
+            return s3.getObjectAsBytes(GetObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(objectPath)
+                    .build()).asByteArray();
+        } catch (NoSuchKeyException e) {
+            throw new IllegalStateException("Object not found in bucket: " + objectPath, e);
         }
-        return bytes;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public String signedUrl(String objectPath, Duration ttl) {
-        Map<String, Object> response = restClient.post()
-                .uri("/object/sign/" + bucket + "/" + objectPath)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("expiresIn", ttl.toSeconds()))
-                .retrieve()
-                .body(Map.class);
-        if (response == null || response.get("signedURL") == null) {
-            throw new IllegalStateException("Supabase did not return a signed URL for " + objectPath);
-        }
-        // Supabase returns a path relative to /storage/v1
-        return projectUrl + "/storage/v1" + response.get("signedURL");
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(ttl)
+                .getObjectRequest(GetObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(objectPath)
+                        .build())
+                .build();
+        return presigner.presignGetObject(presignRequest).url().toString();
     }
 
     @Override
     public void delete(String objectPath) {
-        restClient.delete()
-                .uri("/object/" + bucket + "/" + objectPath)
-                .retrieve()
-                .toBodilessEntity();
+        s3.deleteObject(DeleteObjectRequest.builder()
+                .bucket(bucket)
+                .key(objectPath)
+                .build());
     }
 }
