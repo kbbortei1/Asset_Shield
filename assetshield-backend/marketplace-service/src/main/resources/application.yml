@@ -19,6 +19,7 @@ app:
   damage-service-uri: ${DAMAGE_SERVICE_URL:http://damage-service:8083}
   auth-service-uri: ${AUTH_SERVICE_URL:http://auth-service:8081}
   property-service-uri: ${PROPERTY_SERVICE_URL:http://property-service:8082}
+  notification-service-uri: ${NOTIFICATION_SERVICE_URL:http://notification-service:8085}
   pricing:
     agent-sub-ghs: ${AGENT_SUB_GHS:100.00}
     pro-sub-ghs: ${PRO_SUB_GHS:15.00}

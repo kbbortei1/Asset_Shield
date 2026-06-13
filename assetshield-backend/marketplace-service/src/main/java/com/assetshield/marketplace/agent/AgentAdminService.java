@@ -73,7 +73,8 @@ public class AgentAdminService {
         agent.setRejectionReason(approve ? null : request.rejectionReason().trim());
         agentRepository.save(agent);
 
-        notificationClient.send(agent.getUserId(), "AGENT_VERIFICATION",
+        notificationClient.send(agent.getUserId(),
+                approve ? "AGENT_VERIFIED" : "AGENT_REJECTED",
                 approve ? "Your agent account is verified" : "Your agent application was rejected",
                 approve ? "You can now subscribe and browse marketplace leads."
                         : agent.getRejectionReason(),

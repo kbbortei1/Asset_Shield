@@ -70,12 +70,9 @@ public class SubscriptionSettlementService {
         }
         sub.setLastPaymentId(payment.getId());
         agentSubscriptionRepository.save(sub);
+        // activation is visible in the app immediately — no push type exists
+        // for it in the Day 6 vocabulary, so an INFO line is the record
         log.info("Agent subscription active: agent={} expiresAt={}", agentId, sub.getExpiresAt());
-
-        notificationClient.send(payment.getUserId(), "SUBSCRIPTION_ACTIVE",
-                "Your marketplace subscription is active",
-                "Active until " + sub.getExpiresAt() + ".",
-                Map.of("expiresAt", sub.getExpiresAt().toString()));
     }
 
     /** PRO_SUBSCRIPTION success: same extend-or-create rules on user_subscriptions. */
@@ -100,12 +97,9 @@ public class SubscriptionSettlementService {
         }
         sub.setLastPaymentId(payment.getId());
         userSubscriptionRepository.save(sub);
+        // activation is visible in the app immediately — no push type exists
+        // for it in the Day 6 vocabulary, so an INFO line is the record
         log.info("PRO subscription active: user={} expiresAt={}", userId, sub.getExpiresAt());
-
-        notificationClient.send(userId, "SUBSCRIPTION_ACTIVE",
-                "Your PRO subscription is active",
-                "Active until " + sub.getExpiresAt() + ".",
-                Map.of("expiresAt", sub.getExpiresAt().toString()));
     }
 
     /** Hourly: flip lapsed ACTIVE rows (both tables) to EXPIRED. */
@@ -117,7 +111,7 @@ public class SubscriptionSettlementService {
             sub.setStatus(SubscriptionStatus.EXPIRED);
             agentSubscriptionRepository.save(sub);
             agentRepository.findById(sub.getAgentId()).ifPresent(agent ->
-                    notificationClient.send(agent.getUserId(), "SUBSCRIPTION_EXPIRED",
+                    notificationClient.send(agent.getUserId(), "SUBSCRIPTION_EXPIRY",
                             "Your marketplace subscription expired",
                             "Renew to regain access to leads and shared dossiers.",
                             Map.of("subscriptionId", sub.getId().toString())));
@@ -126,7 +120,7 @@ public class SubscriptionSettlementService {
                 .findByStatusAndExpiresAtLessThanEqual(SubscriptionStatus.ACTIVE, now)) {
             sub.setStatus(SubscriptionStatus.EXPIRED);
             userSubscriptionRepository.save(sub);
-            notificationClient.send(sub.getUserId(), "SUBSCRIPTION_EXPIRED",
+            notificationClient.send(sub.getUserId(), "SUBSCRIPTION_EXPIRY",
                     "Your PRO subscription expired",
                     "Your account is back on the FREE tier.",
                     Map.of("subscriptionId", sub.getId().toString()));

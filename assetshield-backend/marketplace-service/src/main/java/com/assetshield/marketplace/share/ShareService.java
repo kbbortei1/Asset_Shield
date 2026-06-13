@@ -96,7 +96,7 @@ public class ShareService {
 
         DossierShare saved = share;
         agentRepository.findById(interest.getAgentId()).ifPresent(agent ->
-                notificationClient.send(agent.getUserId(), "DOSSIER_SHARED",
+                notificationClient.send(agent.getUserId(), "SHARE_CREATED",
                         "A dossier was shared with you",
                         "The owner shared a damage dossier with you for review.",
                         Map.of("dossierId", dossierId.toString(),

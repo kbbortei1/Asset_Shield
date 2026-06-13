@@ -140,7 +140,7 @@ public class InterestService {
         interestRepository.save(interest);
         long revokedShares = shareRepository.revokeByInterest(interest.getId(), Instant.now());
 
-        notifyAgent(interest, "CONNECTION_REVOKED", "A connection was revoked",
+        notifyAgent(interest, "INTEREST_REVOKED", "A connection was revoked",
                 "The owner revoked your connection and any shared dossiers.");
         return new RevokeInterestResponse(interest.getId(), interest.getStatus().name(), revokedShares);
     }

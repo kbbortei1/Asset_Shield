@@ -9,6 +9,7 @@ public record AppProperties(
         String damageServiceUri,
         String authServiceUri,
         String propertyServiceUri,
+        String notificationServiceUri,
         Payments payments,
         Pricing pricing,
         Notifications notifications) {

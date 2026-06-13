@@ -10,11 +10,13 @@ public class ClientConfig {
 
     @Bean
     public NotificationClient notificationClient(AppProperties properties) {
-        String mode = properties.notifications().mode();
-        if (!"log".equals(mode)) {
-            throw new IllegalStateException(
-                    "Unknown NOTIFICATIONS_MODE '" + mode + "' (only 'log' exists until Day 6)");
-        }
-        return new LogNotificationClient();
+        return switch (properties.notifications().mode()) {
+            case "log" -> new LogNotificationClient();
+            case "remote" -> new RemoteNotificationClient(properties.notificationServiceUri(),
+                    properties.internalApiKey());
+            default -> throw new IllegalStateException(
+                    "Unknown NOTIFICATIONS_MODE '" + properties.notifications().mode()
+                            + "' (expected log|remote)");
+        };
     }
 }
