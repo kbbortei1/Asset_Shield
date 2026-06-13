@@ -1,0 +1,67 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: marketplace-service
+  jpa:
+    hibernate:
+      ddl-auto: validate # Flyway owns the schema; Hibernate never creates it
+    open-in-view: false
+  flyway:
+    enabled: true
+
+# No defaults for secrets on purpose: startup fails fast when they are absent.
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  internal-api-key: ${INTERNAL_API_KEY}
+  damage-service-uri: ${DAMAGE_SERVICE_URL:http://damage-service:8083}
+  auth-service-uri: ${AUTH_SERVICE_URL:http://auth-service:8081}
+  property-service-uri: ${PROPERTY_SERVICE_URL:http://property-service:8082}
+  pricing:
+    agent-sub-ghs: ${AGENT_SUB_GHS:100.00}
+    pro-sub-ghs: ${PRO_SUB_GHS:15.00}
+  notifications:
+    mode: ${NOTIFICATIONS_MODE:log}
+  payments:
+    mode: ${PAYMENTS_MODE:mock}
+    paystack-secret-key: ${PAYSTACK_SECRET_KEY:}
+    paystack-base-url: ${PAYSTACK_BASE_URL:https://api.paystack.co}
+    # mock mode: auto-settle delay simulating instant MoMo confirmation; <0 disables
+    mock-auto-settle-ms: ${MOCK_AUTO_SETTLE_MS:2000}
+    reconcile-enabled: ${PAYMENTS_RECONCILE_ENABLED:true}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX, UTC} %5p [%X{requestId:-}] %-40.40logger{39} : %m%n"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:postgresql://localhost:5433/marketplace_db
+    username: marketplace_svc
+    password: ${MARKETPLACE_DB_PASSWORD}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:postgresql://postgres:5432/marketplace_db
+    username: marketplace_svc
+    password: ${MARKETPLACE_DB_PASSWORD}
