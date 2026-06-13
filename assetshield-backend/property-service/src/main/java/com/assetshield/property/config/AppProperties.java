@@ -18,9 +18,9 @@ public record AppProperties(
     public record Jwt(String secret) {
     }
 
-    public record Storage(String provider, String localRoot, String firebaseServiceAccountPath,
-                          String firebaseBucket, String supabaseUrl, String supabaseServiceKey,
-                          String supabaseBucket, long signedUrlTtlMinutes) {
+    public record Storage(String provider, String localRoot, String s3Endpoint, String s3Region,
+                          String s3AccessKeyId, String s3SecretAccessKey, String bucket,
+                          long signedUrlTtlMinutes) {
     }
 
     public record Tier(String mode, String stubTier, String marketplaceUri) {

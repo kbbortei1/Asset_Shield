@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Streams local-provider downloads while their token is live (permitAll —
  * possession of an unexpired token IS the authorization, mirroring how a
- * signed URL works). With the firebase provider no tokens are ever issued,
- * so every request here 404s.
+ * signed URL works). With the supabase provider no tokens are ever issued
+ * (reads use presigned S3 URLs), so every request here 404s.
  */
 @RestController
 @RequestMapping("/api/v1/public/files")

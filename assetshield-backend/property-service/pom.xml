@@ -21,7 +21,7 @@
     <java.version>25</java.version>
     <jjwt.version>0.13.0</jjwt.version>
     <springdoc.version>3.0.3</springdoc.version>
-    <firebase-admin.version>9.4.3</firebase-admin.version>
+    <awssdk.version>2.46.10</awssdk.version>
   </properties>
 
   <dependencies>
@@ -77,11 +77,11 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- Firebase Storage (STORAGE_PROVIDER=firebase) -->
+    <!-- Supabase Storage is S3-compatible (STORAGE_PROVIDER=supabase) -->
     <dependency>
-      <groupId>com.google.firebase</groupId>
-      <artifactId>firebase-admin</artifactId>
-      <version>${firebase-admin.version}</version>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3</artifactId>
+      <version>${awssdk.version}</version>
     </dependency>
 
     <!-- 5-minute caches: tier lookups, auth user name lookups -->

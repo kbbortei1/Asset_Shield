@@ -4,7 +4,7 @@ import com.assetshield.property.config.AppProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Selects the storage backend by env STORAGE_PROVIDER=supabase|firebase|local. */
+/** Selects the storage backend by env STORAGE_PROVIDER=supabase|local. */
 @Configuration
 public class StorageConfig {
 
@@ -13,13 +13,11 @@ public class StorageConfig {
         AppProperties.Storage storage = properties.storage();
         return switch (storage.provider()) {
             case "supabase" -> new SupabaseStorageProvider(
-                    storage.supabaseUrl(), storage.supabaseServiceKey(), storage.supabaseBucket());
-            case "firebase" -> new FirebaseStorageProvider(
-                    storage.firebaseServiceAccountPath(), storage.firebaseBucket());
+                    storage.s3Endpoint(), storage.s3Region(), storage.s3AccessKeyId(),
+                    storage.s3SecretAccessKey(), storage.bucket());
             case "local" -> new LocalDiskStorageProvider(storage.localRoot(), tokenStore);
             default -> throw new IllegalStateException(
-                    "Unknown STORAGE_PROVIDER '" + storage.provider()
-                            + "' (expected supabase|firebase|local)");
+                    "Unknown STORAGE_PROVIDER '" + storage.provider() + "' (expected supabase|local)");
         };
     }
 }

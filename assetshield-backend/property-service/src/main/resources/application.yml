@@ -24,11 +24,11 @@ app:
   storage:
     provider: ${STORAGE_PROVIDER:local}
     local-root: ${STORAGE_LOCAL_ROOT:/data/storage}
-    firebase-service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH:}
-    firebase-bucket: ${FIREBASE_STORAGE_BUCKET:}
-    supabase-url: ${SUPABASE_URL:}
-    supabase-service-key: ${SUPABASE_SERVICE_KEY:}
-    supabase-bucket: ${SUPABASE_STORAGE_BUCKET:assetshield}
+    s3-endpoint: ${SUPABASE_S3_ENDPOINT:}
+    s3-region: ${SUPABASE_S3_REGION:}
+    s3-access-key-id: ${SUPABASE_S3_ACCESS_KEY_ID:}
+    s3-secret-access-key: ${SUPABASE_S3_SECRET_ACCESS_KEY:}
+    bucket: ${SUPABASE_STORAGE_BUCKET:assetshield}
     signed-url-ttl-minutes: 15
   tier:
     mode: ${TIER_LOOKUP_MODE:stub}
