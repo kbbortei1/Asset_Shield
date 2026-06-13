@@ -1,0 +1,3 @@
+# Local tooling — never part of the project
+.claude/
+.vscode/

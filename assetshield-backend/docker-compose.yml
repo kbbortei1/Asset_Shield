@@ -1,0 +1,216 @@
+name: assetshield
+
+networks:
+  assetshield-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  storage-data: # local storage provider (STORAGE_PROVIDER=local) objects
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: assetshield-postgres
+    # No profile: postgres always starts regardless of --profile selection.
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}
+      PROPERTY_DB_PASSWORD: ${PROPERTY_DB_PASSWORD:?PROPERTY_DB_PASSWORD is required}
+      DAMAGE_DB_PASSWORD: ${DAMAGE_DB_PASSWORD:?DAMAGE_DB_PASSWORD is required}
+      MARKETPLACE_DB_PASSWORD: ${MARKETPLACE_DB_PASSWORD:?MARKETPLACE_DB_PASSWORD is required}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?NOTIFICATION_DB_PASSWORD is required}
+    ports:
+      - "5433:5432" # exposed for local tooling only (5433 on the host to avoid clashing with a locally installed PostgreSQL)
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks:
+      - assetshield-net
+
+  gateway:
+    build: ./gateway
+    container_name: assetshield-gateway
+    profiles: ["core"]
+    ports:
+      - "8080:8080" # the ONLY service published to the host
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      AUTH_SERVICE_URI: http://auth-service:8081
+      PROPERTY_SERVICE_URI: http://property-service:8082
+      DAMAGE_SERVICE_URI: http://damage-service:8083
+      MARKETPLACE_SERVICE_URI: http://marketplace-service:8084
+      JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      property-service:
+        condition: service_healthy
+      damage-service:
+        condition: service_healthy
+      marketplace-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - assetshield-net
+
+  auth-service:
+    build: ./auth-service
+    container_name: assetshield-auth
+    profiles: ["core"]
+    # No host port: reachable only via the gateway / internal network.
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      SUPERADMIN_PHONE: ${SUPERADMIN_PHONE}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD}
+      MARKETPLACE_SERVICE_URL: http://marketplace-service:8084
+      SMS_PROVIDER: ${SMS_PROVIDER:-mock}
+      OTP_DEV_CODE: ${OTP_DEV_CODE:-}
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/secrets/firebase-service-account.json}
+      FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-assetshield}
+      JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
+    volumes:
+      - storage-data:/data/storage
+      - ./infra/firebase:/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks:
+      - assetshield-net
+
+  damage-service:
+    build: ./damage-service
+    container_name: assetshield-damage
+    profiles: ["core"]
+    # No host port: reachable only via the gateway / internal network.
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DAMAGE_DB_PASSWORD: ${DAMAGE_DB_PASSWORD:?DAMAGE_DB_PASSWORD is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      PROPERTY_SERVICE_URL: http://property-service:8082
+      MARKETPLACE_SERVICE_URL: http://marketplace-service:8084
+      AUTH_SERVICE_URL: http://auth-service:8081
+      DOSSIER_FEE_GHS: ${DOSSIER_FEE_GHS:-50.00}
+      PAIRING_RADIUS_METERS: ${PAIRING_RADIUS_METERS:-25}
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/secrets/firebase-service-account.json}
+      FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-assetshield}
+      JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
+    volumes:
+      - storage-data:/data/storage
+      - ./infra/firebase:/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      property-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks:
+      - assetshield-net
+
+  marketplace-service:
+    build: ./marketplace-service
+    container_name: assetshield-marketplace
+    profiles: ["core"]
+    # No host port: reachable only via the gateway / internal network.
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      MARKETPLACE_DB_PASSWORD: ${MARKETPLACE_DB_PASSWORD:?MARKETPLACE_DB_PASSWORD is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      DAMAGE_SERVICE_URL: http://damage-service:8083
+      AUTH_SERVICE_URL: http://auth-service:8081
+      PROPERTY_SERVICE_URL: http://property-service:8082
+      PAYMENTS_MODE: ${PAYMENTS_MODE:-mock}
+      PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY:-}
+      AGENT_SUB_GHS: ${AGENT_SUB_GHS:-100.00}
+      PRO_SUB_GHS: ${PRO_SUB_GHS:-15.00}
+      NOTIFICATIONS_MODE: ${NOTIFICATIONS_MODE:-log}
+      JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8084/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks:
+      - assetshield-net
+
+  property-service:
+    build: ./property-service
+    container_name: assetshield-property
+    profiles: ["core"]
+    # No host port: reachable only via the gateway / internal network.
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      PROPERTY_DB_PASSWORD: ${PROPERTY_DB_PASSWORD:?PROPERTY_DB_PASSWORD is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      AUTH_SERVICE_URI: http://auth-service:8081
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/secrets/firebase-service-account.json}
+      FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-assetshield}
+      TIER_LOOKUP_MODE: ${TIER_LOOKUP_MODE:-remote}
+      STUB_TIER: ${STUB_TIER:-PRO}
+      MARKETPLACE_EVENTS_MODE: ${MARKETPLACE_EVENTS_MODE:-remote}
+      MARKETPLACE_SERVICE_URL: http://marketplace-service:8084
+      NOTIFICATIONS_MODE: ${NOTIFICATIONS_MODE:-log}
+      JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
+    volumes:
+      - storage-data:/data/storage
+      - ./infra/firebase:/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks:
+      - assetshield-net
