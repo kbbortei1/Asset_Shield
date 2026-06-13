@@ -24,7 +24,11 @@ public class PushConfig {
         };
     }
 
-    /** Reuses an already-initialized FirebaseApp (storage) when present. */
+    /**
+     * Initializes a FirebaseApp for FCM ONLY — no storage bucket is set
+     * (Firebase is FCM-only now; storage moved to Supabase). Reuses an
+     * existing app if one was already initialized.
+     */
     private static FirebaseApp firebaseApp(AppProperties properties) {
         if (!FirebaseApp.getApps().isEmpty()) {
             return FirebaseApp.getInstance();
