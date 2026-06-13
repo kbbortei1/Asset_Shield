@@ -9,6 +9,8 @@ import com.assetshield.property.web.dto.PropertyDtos.InternalAssetResponse;
 import com.assetshield.property.web.dto.PropertyDtos.InternalPropertyResponse;
 import com.assetshield.property.web.dto.PropertyDtos.LeadListItem;
 import com.assetshield.property.web.dto.PropertyDtos.LeadViewResponse;
+import com.assetshield.property.web.dto.PropertyDtos.StaleDocumentationItem;
+import com.assetshield.property.web.dto.PropertyDtos.TipsContextResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -71,5 +73,21 @@ public class InternalPropertyController {
             @RequestParam(defaultValue = "20") int size) {
         return ApiResponse.success(internalQueryService.leads(propertyType, locality, page, size),
                 "Leads fetched");
+    }
+
+    /** Day 6: rule-engine input for notification-service's tips engine. */
+    @GetMapping("/properties/{id}/tips-context")
+    public ApiResponse<TipsContextResponse> tipsContext(@PathVariable UUID id) {
+        return ApiResponse.success(internalQueryService.tipsContext(id), "Tips context fetched");
+    }
+
+    /** Day 6: redoc-reminder sweep feed. */
+    @GetMapping("/properties/stale-documentation")
+    public ApiResponse<PageEnvelope<StaleDocumentationItem>> staleDocumentation(
+            @RequestParam(defaultValue = "90") int days,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ApiResponse.success(internalQueryService.staleDocumentation(days, page, size),
+                "Stale documentation fetched");
     }
 }

@@ -57,4 +57,13 @@ public interface PropertyRepository extends JpaRepository<Property, UUID> {
             """)
     Page<Property> findLeadsByType(@Param("type") PropertyType type,
                                    @Param("locality") String locality, Pageable pageable);
+
+    /** Redoc sweep: documented at least once, but not within the window. */
+    @Query("""
+            select p from Property p
+            where p.deletedAt is null
+              and p.lastDocumentedAt is not null and p.lastDocumentedAt < :cutoff
+            order by p.lastDocumentedAt asc
+            """)
+    Page<Property> findStaleDocumentation(@Param("cutoff") Instant cutoff, Pageable pageable);
 }

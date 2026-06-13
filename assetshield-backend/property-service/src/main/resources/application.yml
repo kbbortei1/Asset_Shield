@@ -39,6 +39,9 @@ app:
     uri: ${MARKETPLACE_SERVICE_URL:http://marketplace-service:8084}
   notifications:
     mode: ${NOTIFICATIONS_MODE:log}
+  events:
+    mode: ${EVENTS_MODE:log}
+  notification-service-uri: ${NOTIFICATION_SERVICE_URL:http://notification-service:8085}
   limits:
     free-max-properties: 1
     free-max-assets-per-property: 30

@@ -11,6 +11,8 @@ public record AppProperties(
         Tier tier,
         Marketplace marketplace,
         Notifications notifications,
+        Events events,
+        String notificationServiceUri,
         Limits limits) {
 
     public record Jwt(String secret) {
@@ -28,6 +30,9 @@ public record AppProperties(
     }
 
     public record Notifications(String mode) {
+    }
+
+    public record Events(String mode) {
     }
 
     public record Limits(int freeMaxProperties, int freeMaxAssetsPerProperty) {

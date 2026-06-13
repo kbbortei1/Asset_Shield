@@ -21,6 +21,7 @@ class FreeTierGuardTest {
                 new AppProperties.Tier("stub", tier, "unused"),
                 new AppProperties.Marketplace("log", "unused"),
                 new AppProperties.Notifications("log"),
+                new AppProperties.Events("log"), "unused",
                 new AppProperties.Limits(1, 30));
         return new FreeTierGuard(new StubSubscriptionTierClient(tier), properties);
     }

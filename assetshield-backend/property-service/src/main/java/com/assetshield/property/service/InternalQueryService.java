@@ -16,10 +16,14 @@ import com.assetshield.property.web.dto.PropertyDtos.AccessResponse;
 import com.assetshield.property.web.dto.PropertyDtos.AssetNearItem;
 import com.assetshield.property.web.dto.PropertyDtos.InternalAssetResponse;
 import com.assetshield.property.web.dto.PropertyDtos.InternalPropertyResponse;
+import com.assetshield.property.web.dto.PropertyDtos.CategoryLine;
 import com.assetshield.property.web.dto.PropertyDtos.LeadListItem;
 import com.assetshield.property.web.dto.PropertyDtos.LeadViewResponse;
+import com.assetshield.property.web.dto.PropertyDtos.StaleDocumentationItem;
+import com.assetshield.property.web.dto.PropertyDtos.TipsContextResponse;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -144,6 +148,28 @@ public class InternalQueryService {
                 .orElse("Owner");
         return new LeadViewResponse(p.getId(), displayName, p.getName(), p.getType(),
                 p.getLocality(), p.isOpenToOffers());
+    }
+
+    /** Rule-engine input for Day 6's tips engine (reuses the dashboard GROUP BY). */
+    @Transactional(readOnly = true)
+    public TipsContextResponse tipsContext(UUID propertyId) {
+        Property p = propertyRepository.findByIdAndDeletedAtIsNull(propertyId)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Property not found"));
+        List<CategoryLine> byCategory = assetRepository.totalsByCategory(propertyId).stream()
+                .map(t -> new CategoryLine(t.getCategory(), t.getAssetCount(), t.getTotalValue()))
+                .toList();
+        return new TipsContextResponse(p.getId(), p.getOwnerUserId(), p.getType(),
+                p.getGpsLat(), p.getGpsLng(), byCategory);
+    }
+
+    /** Redoc sweep feed: documented once, stale for more than {@code days}. */
+    @Transactional(readOnly = true)
+    public PageEnvelope<StaleDocumentationItem> staleDocumentation(int days, int page, int size) {
+        Instant cutoff = Instant.now().minus(Duration.ofDays(Math.max(1, days)));
+        Pageable pageable = PageRequest.of(PageEnvelope.clampPage(page), PageEnvelope.clampSize(size));
+        return PageEnvelope.of(propertyRepository.findStaleDocumentation(cutoff, pageable)
+                .map(p -> new StaleDocumentationItem(p.getId(), p.getOwnerUserId(), p.getName(),
+                        p.getLastDocumentedAt())));
     }
 
     static String displayName(String fullName) {

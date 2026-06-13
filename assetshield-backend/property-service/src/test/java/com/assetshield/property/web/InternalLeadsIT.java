@@ -131,4 +131,41 @@ class InternalLeadsIT {
         mockMvc.perform(get("/internal/properties/leads"))
                 .andExpect(status().isUnauthorized());
     }
+
+    // ── Day 6 internal endpoints ─────────────────────────────────────────────
+
+    @Test
+    void tipsContextCarriesOwnerTypeGpsAndCategoryTotals() throws Exception {
+        Property property = propertyRepository.findAll().stream()
+                .filter(p -> "Osu Kiosk".equals(p.getName())).findFirst().orElseThrow();
+        mockMvc.perform(get("/internal/properties/{id}/tips-context", property.getId())
+                        .header("X-Internal-Api-Key", TestProps.INTERNAL_API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.propertyId").value(property.getId().toString()))
+                .andExpect(jsonPath("$.data.ownerUserId").value(ownerId.toString()))
+                .andExpect(jsonPath("$.data.propertyType").value("COMMERCIAL"))
+                .andExpect(jsonPath("$.data.gpsLat").isNotEmpty())
+                .andExpect(jsonPath("$.data.byCategory").isArray());
+    }
+
+    @Test
+    void staleDocumentationListsOnlyPropertiesPastTheCutoff() throws Exception {
+        Property stale = propertyRepository.findAll().stream()
+                .filter(p -> "Adabraka Lodge".equals(p.getName())).findFirst().orElseThrow();
+        stale.setLastDocumentedAt(Instant.now().minus(java.time.Duration.ofDays(100)));
+        propertyRepository.save(stale);
+        Property fresh = propertyRepository.findAll().stream()
+                .filter(p -> "Osu Kiosk".equals(p.getName())).findFirst().orElseThrow();
+        fresh.setLastDocumentedAt(Instant.now().minus(java.time.Duration.ofDays(5)));
+        propertyRepository.save(fresh);
+
+        mockMvc.perform(get("/internal/properties/stale-documentation")
+                        .param("days", "90")
+                        .header("X-Internal-Api-Key", TestProps.INTERNAL_API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.items[0].propertyId").value(stale.getId().toString()))
+                .andExpect(jsonPath("$.data.items[0].ownerUserId").value(ownerId.toString()))
+                .andExpect(jsonPath("$.data.items[0].lastDocumentedAt").isNotEmpty());
+    }
 }

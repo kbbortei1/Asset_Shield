@@ -170,4 +170,15 @@ public final class PropertyDtos {
     public record LeadListItem(UUID propertyId, String ownerDisplayName, String propertyName,
                                PropertyType propertyType, String locality) {
     }
+
+    /** Rule-engine input for notification-service's tips engine (Day 6). */
+    public record TipsContextResponse(UUID propertyId, UUID ownerUserId, PropertyType propertyType,
+                                      BigDecimal gpsLat, BigDecimal gpsLng,
+                                      List<CategoryLine> byCategory) {
+    }
+
+    /** Stale-documentation sweep item (Day 6 redoc reminders). */
+    public record StaleDocumentationItem(UUID propertyId, UUID ownerUserId, String name,
+                                         Instant lastDocumentedAt) {
+    }
 }
