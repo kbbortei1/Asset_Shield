@@ -1,0 +1,101 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # More specific than the auth /users/** route — must stay first.
+            - id: property-service-invitations
+              uri: ${PROPERTY_SERVICE_URI:http://property-service:8082}
+              predicates:
+                - Path=/api/v1/users/me/invitations
+
+            # More specific than the auth /users/** route — must stay first.
+            - id: damage-service-my-reports
+              uri: ${DAMAGE_SERVICE_URI:http://damage-service:8083}
+              predicates:
+                - Path=/api/v1/users/me/damage-reports,/api/v1/users/me/dossiers
+
+            # More specific than the auth /users/** route — must stay first.
+            - id: marketplace-service-users-me
+              uri: ${MARKETPLACE_SERVICE_URI:http://marketplace-service:8084}
+              predicates:
+                - Path=/api/v1/users/me/agent-interests,/api/v1/users/me/quotes,/api/v1/users/me/subscription
+
+            # More specific than any general /admin/** → auth route — must stay first.
+            - id: marketplace-service-admin-agents
+              uri: ${MARKETPLACE_SERVICE_URI:http://marketplace-service:8084}
+              predicates:
+                - Path=/api/v1/admin/agents/**
+
+            - id: auth-service
+              uri: ${AUTH_SERVICE_URI:http://auth-service:8081}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/admin/admins
+
+            # More specific than the property /properties/** route — must stay first.
+            - id: damage-service-property-reports
+              uri: ${DAMAGE_SERVICE_URI:http://damage-service:8083}
+              predicates:
+                - Path=/api/v1/properties/*/damage-reports/**
+
+            - id: damage-service
+              uri: ${DAMAGE_SERVICE_URI:http://damage-service:8083}
+              predicates:
+                - Path=/api/v1/damage-reports/**,/api/v1/public/damage-files/**
+
+            - id: property-service
+              uri: ${PROPERTY_SERVICE_URI:http://property-service:8082}
+              predicates:
+                - Path=/api/v1/properties/**,/api/v1/assets/**,/api/v1/invitations/**,/api/v1/public/files/**
+
+            # Marketplace's slice of /dossiers/{id}: consent shares, agent
+            # verify and quote — must stay before the damage /dossiers/** route.
+            - id: marketplace-service-dossier-actions
+              uri: ${MARKETPLACE_SERVICE_URI:http://marketplace-service:8084}
+              predicates:
+                - Path=/api/v1/dossiers/*/share-to-agent/**,/api/v1/dossiers/*/verify,/api/v1/dossiers/*/quote
+
+            - id: damage-service-dossiers
+              uri: ${DAMAGE_SERVICE_URI:http://damage-service:8083}
+              predicates:
+                - Path=/api/v1/dossiers/**
+
+            - id: marketplace-service
+              uri: ${MARKETPLACE_SERVICE_URI:http://marketplace-service:8084}
+              predicates:
+                - Path=/api/v1/payments/**
+
+            - id: marketplace-service-agents
+              uri: ${MARKETPLACE_SERVICE_URI:http://marketplace-service:8084}
+              predicates:
+                - Path=/api/v1/agents/**,/api/v1/leads/**,/api/v1/agent-interests/**,/api/v1/quotes/**,/api/v1/subscriptions/**
+
+            # ── notification-service (Day 6 — uncomment when it ships) ──
+            # - id: notification-service
+            #   uri: http://notification-service:8085
+            #   predicates:
+            #     - Path=/api/v1/tips/**
+
+# No default on purpose: the gateway must fail fast when JWT_SECRET is absent.
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  rate-limit:
+    capacity: 30
+    refill-per-minute: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX, UTC} %5p [gateway] %-40.40logger{39} : %m%n"
