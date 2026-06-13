@@ -11,9 +11,14 @@ public record AppProperties(
         String authServiceUri,
         java.math.BigDecimal dossierFeeGhs,
         double pairingRadiusMeters,
+        Notifications notifications,
+        String notificationServiceUri,
         Storage storage) {
 
     public record Jwt(String secret) {
+    }
+
+    public record Notifications(String mode) {
     }
 
     public record Storage(String provider, String localRoot, String firebaseServiceAccountPath,

@@ -25,6 +25,9 @@ app:
   auth-service-uri: ${AUTH_SERVICE_URL:http://auth-service:8081}
   dossier-fee-ghs: ${DOSSIER_FEE_GHS:50.00}
   pairing-radius-meters: ${PAIRING_RADIUS_METERS:25}
+  notifications:
+    mode: ${NOTIFICATIONS_MODE:log}
+  notification-service-uri: ${NOTIFICATION_SERVICE_URL:http://notification-service:8085}
   storage:
     provider: ${STORAGE_PROVIDER:local}
     local-root: ${STORAGE_LOCAL_ROOT:/data/storage}
