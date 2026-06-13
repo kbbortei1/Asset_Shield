@@ -27,6 +27,12 @@ spring:
               predicates:
                 - Path=/api/v1/users/me/agent-interests,/api/v1/users/me/quotes,/api/v1/users/me/subscription
 
+            # More specific than the auth /users/** route — must stay first.
+            - id: notification-service-users-me
+              uri: ${NOTIFICATION_SERVICE_URI:http://notification-service:8085}
+              predicates:
+                - Path=/api/v1/users/me/device-token,/api/v1/users/me/notification-preferences,/api/v1/users/me/notifications
+
             # More specific than any general /admin/** → auth route — must stay first.
             - id: marketplace-service-admin-agents
               uri: ${MARKETPLACE_SERVICE_URI:http://marketplace-service:8084}
@@ -48,6 +54,13 @@ spring:
               uri: ${DAMAGE_SERVICE_URI:http://damage-service:8083}
               predicates:
                 - Path=/api/v1/damage-reports/**,/api/v1/public/damage-files/**
+
+            # Tips slice of /properties/{id} — must stay before the property
+            # /properties/** route (and never shadows /properties/*/damage-reports).
+            - id: notification-service-property-tips
+              uri: ${NOTIFICATION_SERVICE_URI:http://notification-service:8085}
+              predicates:
+                - Path=/api/v1/properties/*/tips
 
             - id: property-service
               uri: ${PROPERTY_SERVICE_URI:http://property-service:8082}
@@ -76,11 +89,10 @@ spring:
               predicates:
                 - Path=/api/v1/agents/**,/api/v1/leads/**,/api/v1/agent-interests/**,/api/v1/quotes/**,/api/v1/subscriptions/**
 
-            # ── notification-service (Day 6 — uncomment when it ships) ──
-            # - id: notification-service
-            #   uri: http://notification-service:8085
-            #   predicates:
-            #     - Path=/api/v1/tips/**
+            - id: notification-service-tips
+              uri: ${NOTIFICATION_SERVICE_URI:http://notification-service:8085}
+              predicates:
+                - Path=/api/v1/tips/**
 
 # No default on purpose: the gateway must fail fast when JWT_SECRET is absent.
 app:
