@@ -47,6 +47,7 @@ services:
       PROPERTY_SERVICE_URI: http://property-service:8082
       DAMAGE_SERVICE_URI: http://damage-service:8083
       MARKETPLACE_SERVICE_URI: http://marketplace-service:8084
+      NOTIFICATION_SERVICE_URI: http://notification-service:8085
       JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
     depends_on:
       postgres:
@@ -58,6 +59,8 @@ services:
       damage-service:
         condition: service_healthy
       marketplace-service:
+        condition: service_healthy
+      notification-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
@@ -120,6 +123,8 @@ services:
       AUTH_SERVICE_URL: http://auth-service:8081
       DOSSIER_FEE_GHS: ${DOSSIER_FEE_GHS:-50.00}
       PAIRING_RADIUS_METERS: ${PAIRING_RADIUS_METERS:-25}
+      NOTIFICATIONS_MODE: ${NOTIFICATIONS_MODE:-remote}
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
       STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
       FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/secrets/firebase-service-account.json}
       FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET:-}
@@ -161,13 +166,49 @@ services:
       PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY:-}
       AGENT_SUB_GHS: ${AGENT_SUB_GHS:-100.00}
       PRO_SUB_GHS: ${PRO_SUB_GHS:-15.00}
-      NOTIFICATIONS_MODE: ${NOTIFICATIONS_MODE:-log}
+      NOTIFICATIONS_MODE: ${NOTIFICATIONS_MODE:-remote}
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
       JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8084/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks:
+      - assetshield-net
+
+  notification-service:
+    build: ./notification-service
+    container_name: assetshield-notification
+    profiles: ["core"]
+    # No host port: reachable only via the gateway / internal network.
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?NOTIFICATION_DB_PASSWORD is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      PROPERTY_SERVICE_URL: http://property-service:8082
+      FCM_MODE: ${FCM_MODE:-log}
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-/secrets/firebase-service-account.json}
+      TIPS_BATCH_SIZE: ${TIPS_BATCH_SIZE:-3}
+      TIPS_DEBOUNCE_MINUTES: ${TIPS_DEBOUNCE_MINUTES:-60}
+      SCHED_TIP_DELIVERY_CRON: ${SCHED_TIP_DELIVERY_CRON:-0 0 7 * * *}
+      SCHED_REDOC_CRON: ${SCHED_REDOC_CRON:-0 0 9 * * *}
+      REDOC_STALE_DAYS: ${REDOC_STALE_DAYS:-90}
+      JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
+    volumes:
+      - ./infra/firebase:/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      property-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8085/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -196,7 +237,9 @@ services:
       STUB_TIER: ${STUB_TIER:-PRO}
       MARKETPLACE_EVENTS_MODE: ${MARKETPLACE_EVENTS_MODE:-remote}
       MARKETPLACE_SERVICE_URL: http://marketplace-service:8084
-      NOTIFICATIONS_MODE: ${NOTIFICATIONS_MODE:-log}
+      NOTIFICATIONS_MODE: ${NOTIFICATIONS_MODE:-remote}
+      EVENTS_MODE: ${EVENTS_MODE:-remote}
+      NOTIFICATION_SERVICE_URL: http://notification-service:8085
       JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
     volumes:
       - storage-data:/data/storage

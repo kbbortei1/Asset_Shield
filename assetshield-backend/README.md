@@ -12,7 +12,7 @@ property owners (CodeQuest 2026, KNUST). Microservices behind an API Gateway.
 | property-service | 8082 (internal) | ✅ Day 2 | Properties, evidence assets (SHA-256 verified photos), receipts, household sharing, marketplace opt-in |
 | damage-service | 8083 (internal) | ✅ Days 3–4 | Damage reports, photo evidence, GPS before/after pairing, loss calculation, payment-gated PDF dossiers |
 | marketplace-service | 8084 (internal) | ✅ Days 4–5 | Paystack/MoMo payments + webhook settlement; verified agents, opt-in leads, consent-gated dossier shares, policy quotes, agent + PRO subscriptions |
-| notification-service | 8085 | Day 6 | FCM, AI safety tips |
+| notification-service | 8085 (internal) | ✅ Day 6 | FCM push dispatch, Ghana-specific AI safety tips, scheduled reminders, in-app notification history |
 | postgres | 5433 (published, dev only) | ✅ Day 1 | One database + one role per service |
 
 Only the **gateway** is reachable from the host. Services talk to each other on
@@ -76,8 +76,11 @@ minted at read time by the DTO mappers.
 Since Day 5 property-service talks to the live marketplace:
 `TIER_LOOKUP_MODE=remote` (free-tier limits from marketplace's tier endpoint;
 fails closed to FREE) and `MARKETPLACE_EVENTS_MODE=remote` (opt-in pushes).
-Set both back to `stub`/`log` to run property-service without marketplace.
-`NOTIFICATIONS_MODE=log` remains the only notification mode until Day 6.
+Since Day 6, `NOTIFICATIONS_MODE=remote` (property, damage, marketplace) and
+`EVENTS_MODE=remote` (property asset-captured events) send everything to
+notification-service. Every mode flips back to `stub`/`log` to run a partial
+stack — and every remote notify/event call is fire-and-forget: a dead
+notification-service never fails the business operation.
 
 ## Compose profiles
 
@@ -260,6 +263,38 @@ never see anything an owner did not explicitly expose.
   limits.
 - Swagger UI (internal network): `http://marketplace-service:8084/swagger-ui.html`.
 
+## Notifications & tips (Day 6)
+
+- **Dispatch pipeline** (`POST /internal/notifications/send`, the single
+  entry point all services call): write the history row first (PENDING),
+  then push via FCM to every active device of the user — no devices is a
+  successful history-only delivery (SENT). Runs async (pool of 2); callers
+  get 202 immediately. Dead tokens reported by FCM (UNREGISTERED /
+  INVALID_ARGUMENT) are auto-revoked.
+- **FCM** behind `FCM_MODE=firebase|log`. Firebase mode reuses the same
+  service-account JSON as Firebase storage; log mode powers the offline demo
+  and tests. History: `GET /users/me/notifications`.
+- **Device tokens:** `PUT/DELETE /users/me/device-token` — upsert with
+  cross-user re-registration (a token re-registered by a different account
+  moves to it), revocation on logout.
+- **Tips rule engine:** 50 seeded Ghana-specific templates (market-stall
+  fire prevention, Accra flood zones, Harmattan/rainy season, theft,
+  documentation habits) matched against the property's type, asset
+  categories/values (property internal `tips-context`), the current
+  Africa/Accra season (HARMATTAN Nov–Mar, RAINY Apr–Jul) and four seeded
+  Accra flood-zone boxes. Ordering: priority, then specificity, then random;
+  a template never repeats for the same user+property (`ux_tip_once`).
+  Triggers: asset uploads (debounced per property, default 60 min) and the
+  delivery scheduler.
+- **Feeds:** `GET /tips/feed` (mine), `GET /properties/{id}/tips` (any
+  household member), `PUT /tips/{id}/read` (idempotent).
+- **Schedulers** (Africa/Accra, env-overridable crons): tip delivery daily
+  07:00 — DAILY users every run, WEEKLY only Mondays, OFF accumulates
+  silently; one "You have N new safety tips" push per batch. Redoc reminder
+  daily 09:00 — properties stale for 90+ days (property internal
+  `stale-documentation`) get one REDOC_REMINDER per 90-day window.
+- Swagger UI (internal network): `http://notification-service:8085/swagger-ui.html`.
+
 ## Auth service highlights
 
 - **Access token:** HS256 JWT, 1 h TTL, claims `sub` (userId), `role`, `phone`.
@@ -287,8 +322,9 @@ assetshield-backend/
 ├── auth-service/             # complete auth domain (see above)
 ├── property-service/         # properties, assets, receipts, household sharing
 ├── damage-service/           # damage reports, photos, GPS pairing, dossier PDFs
-└── marketplace-service/      # payments, agents, leads, consent shares, quotes, subscriptions
+├── marketplace-service/      # payments, agents, leads, consent shares, quotes, subscriptions
+└── notification-service/     # FCM push, AI safety tips, schedulers, history
 ```
 
-Day 6 (notifications, AI tips) arrives with its own prompt; the gateway
-already carries a commented-out route block for it.
+Day 7 owns hardening, Postman collections, aggregated Swagger, load smoke
+and the frontend handoff document.
