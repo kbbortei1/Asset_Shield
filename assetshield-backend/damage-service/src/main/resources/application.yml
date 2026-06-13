@@ -1,0 +1,70 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: damage-service
+  jpa:
+    hibernate:
+      ddl-auto: validate # Flyway owns the schema; Hibernate never creates it
+    open-in-view: false
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+# No defaults for secrets on purpose: startup fails fast when they are absent.
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  internal-api-key: ${INTERNAL_API_KEY}
+  property-service-uri: ${PROPERTY_SERVICE_URL:http://property-service:8082}
+  marketplace-service-uri: ${MARKETPLACE_SERVICE_URL:http://marketplace-service:8084}
+  auth-service-uri: ${AUTH_SERVICE_URL:http://auth-service:8081}
+  dossier-fee-ghs: ${DOSSIER_FEE_GHS:50.00}
+  pairing-radius-meters: ${PAIRING_RADIUS_METERS:25}
+  storage:
+    provider: ${STORAGE_PROVIDER:local}
+    local-root: ${STORAGE_LOCAL_ROOT:/data/storage}
+    firebase-service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH:}
+    firebase-bucket: ${FIREBASE_STORAGE_BUCKET:}
+    supabase-url: ${SUPABASE_URL:}
+    supabase-service-key: ${SUPABASE_SERVICE_KEY:}
+    supabase-bucket: ${SUPABASE_STORAGE_BUCKET:assetshield}
+    signed-url-ttl-minutes: 15
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX, UTC} %5p [%X{requestId:-}] %-40.40logger{39} : %m%n"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:postgresql://localhost:5433/damage_db
+    username: damage_svc
+    password: ${DAMAGE_DB_PASSWORD}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:postgresql://postgres:5432/damage_db
+    username: damage_svc
+    password: ${DAMAGE_DB_PASSWORD}
