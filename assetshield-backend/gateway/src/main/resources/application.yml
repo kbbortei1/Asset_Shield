@@ -94,6 +94,40 @@ spring:
               predicates:
                 - Path=/api/v1/tips/**
 
+            # ── Aggregated API docs (dev only; gated by SWAGGER_ENABLED) ──────
+            # Each route proxies a service's /v3/api-docs so the gateway's
+            # swagger-ui can offer all five as a dropdown on one origin.
+            - id: api-docs-auth
+              uri: ${AUTH_SERVICE_URI:http://auth-service:8081}
+              predicates:
+                - Path=/api-docs/auth
+              filters:
+                - SetPath=/v3/api-docs
+            - id: api-docs-property
+              uri: ${PROPERTY_SERVICE_URI:http://property-service:8082}
+              predicates:
+                - Path=/api-docs/property
+              filters:
+                - SetPath=/v3/api-docs
+            - id: api-docs-damage
+              uri: ${DAMAGE_SERVICE_URI:http://damage-service:8083}
+              predicates:
+                - Path=/api-docs/damage
+              filters:
+                - SetPath=/v3/api-docs
+            - id: api-docs-marketplace
+              uri: ${MARKETPLACE_SERVICE_URI:http://marketplace-service:8084}
+              predicates:
+                - Path=/api-docs/marketplace
+              filters:
+                - SetPath=/v3/api-docs
+            - id: api-docs-notification
+              uri: ${NOTIFICATION_SERVICE_URI:http://notification-service:8085}
+              predicates:
+                - Path=/api-docs/notification
+              filters:
+                - SetPath=/v3/api-docs
+
 # No default on purpose: the gateway must fail fast when JWT_SECRET is absent.
 app:
   jwt:
@@ -101,6 +135,28 @@ app:
   rate-limit:
     capacity: 30
     refill-per-minute: 30
+  # Aggregated Swagger UI toggle. MUST be false in any public deployment —
+  # see README. The SwaggerGateFilter 404s all doc paths when false.
+  swagger-enabled: ${SWAGGER_ENABLED:true}
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
+    path: /swagger-ui.html
+    # The five downstream services, proxied via the api-docs-* routes above.
+    urls:
+      - name: auth-service
+        url: /api-docs/auth
+      - name: property-service
+        url: /api-docs/property
+      - name: damage-service
+        url: /api-docs/damage
+      - name: marketplace-service
+        url: /api-docs/marketplace
+      - name: notification-service
+        url: /api-docs/notification
 
 management:
   endpoints:

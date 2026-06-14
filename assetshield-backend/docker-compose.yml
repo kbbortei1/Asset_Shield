@@ -48,6 +48,8 @@ services:
       DAMAGE_SERVICE_URI: http://damage-service:8083
       MARKETPLACE_SERVICE_URI: http://marketplace-service:8084
       NOTIFICATION_SERVICE_URI: http://notification-service:8085
+      # Aggregated Swagger UI at the edge. MUST be false in any public deployment.
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
       JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
     depends_on:
       postgres:
@@ -164,6 +166,7 @@ services:
       PROPERTY_SERVICE_URL: http://property-service:8082
       PAYMENTS_MODE: ${PAYMENTS_MODE:-mock}
       PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY:-}
+      MOCK_AUTO_SETTLE_MS: ${MOCK_AUTO_SETTLE_MS:-2000}
       AGENT_SUB_GHS: ${AGENT_SUB_GHS:-100.00}
       PRO_SUB_GHS: ${PRO_SUB_GHS:-15.00}
       NOTIFICATIONS_MODE: ${NOTIFICATIONS_MODE:-remote}

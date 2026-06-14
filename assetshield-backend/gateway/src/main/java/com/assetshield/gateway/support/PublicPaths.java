@@ -37,7 +37,14 @@ public final class PublicPaths {
                 parser.parse("/api/v1/dossiers/shared/**"),
                 // Local storage provider downloads (token-gated per service)
                 parser.parse("/api/v1/public/files/**"),
-                parser.parse("/api/v1/public/damage-files/**"));
+                parser.parse("/api/v1/public/damage-files/**"),
+                // Aggregated Swagger UI + proxied docs (dev only; further gated
+                // by SWAGGER_ENABLED via SwaggerGateFilter).
+                parser.parse("/swagger-ui.html"),
+                parser.parse("/swagger-ui/**"),
+                parser.parse("/webjars/**"),
+                parser.parse("/v3/api-docs/**"),
+                parser.parse("/api-docs/**"));
     }
 
     private PublicPaths() {

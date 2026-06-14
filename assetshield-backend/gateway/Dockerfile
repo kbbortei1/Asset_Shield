@@ -2,7 +2,10 @@
 FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /workspace
 COPY pom.xml .
-RUN mvn -q -B dependency:go-offline
+# go-offline is a best-effort layer-cache warm-up; it can fail to pre-resolve
+# certain optional/transitive artifacts (a known Maven quirk) — don't let that
+# abort the build. The non-offline `package` below fetches anything missing.
+RUN mvn -q -B dependency:go-offline || true
 COPY src ./src
 RUN mvn -q -B package -DskipTests
 

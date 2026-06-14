@@ -21,6 +21,7 @@
     <java.version>25</java.version>
     <spring-cloud.version>2025.1.1</spring-cloud.version>
     <jjwt.version>0.13.0</jjwt.version>
+    <springdoc.version>3.0.3</springdoc.version>
   </properties>
 
   <dependencyManagement>
@@ -43,6 +44,14 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!-- Aggregated Swagger UI at the edge (dev-only, gated by SWAGGER_ENABLED).
+         The webflux flavour matches Spring Cloud Gateway's reactive stack. -->
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+      <version>${springdoc.version}</version>
     </dependency>
 
     <dependency>
