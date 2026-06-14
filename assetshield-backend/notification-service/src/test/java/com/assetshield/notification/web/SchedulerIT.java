@@ -13,7 +13,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.assetshield.notification.TestProps;
 import com.assetshield.notification.TestTokens;
 import com.assetshield.notification.domain.NotificationType;
-import com.assetshield.notification.domain.Tip;
 import com.assetshield.notification.repo.AppNotificationRepository;
 import com.assetshield.notification.repo.TipRepository;
 import com.assetshield.notification.service.SchedulerService;

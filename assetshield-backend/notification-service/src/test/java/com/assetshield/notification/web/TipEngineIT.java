@@ -3,7 +3,6 @@ package com.assetshield.notification.web;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.assetshield.notification.client.PropertyClient;
 import com.assetshield.notification.domain.Tip;
 import com.assetshield.notification.domain.TipTemplate;
 import com.assetshield.notification.repo.TipRepository;
