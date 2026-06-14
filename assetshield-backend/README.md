@@ -3,6 +3,41 @@
 Pre-loss property evidence and damage documentation platform for Ghanaian
 property owners (CodeQuest 2026, KNUST). Microservices behind an API Gateway.
 
+**New here?** Frontend devs start at [`FRONTEND_HANDOFF.md`](FRONTEND_HANDOFF.md);
+graders start at [`REQUIREMENTS_COVERAGE.md`](REQUIREMENTS_COVERAGE.md). Live API
+docs: `http://localhost:8080/swagger-ui.html`.
+
+## Architecture
+
+```
+                         ┌─────────────────────────────────────────────┐
+   React Native /        │            assetshield-net (bridge)          │
+   Expo client           │                                              │
+        │                │   ┌──────────┐   ┌──────────────┐            │
+        │  HTTPS :8080    │   │  auth    │   │  property    │            │
+        ▼                │   │  :8081   │   │  :8082       │            │
+  ┌───────────┐  JWT     │   └────┬─────┘   └────┬─────────┘            │
+  │  gateway  │──edge────│        │              │   ┌──────────────┐   │
+  │  :8080    │  validate│   ┌────┴─────┐   ┌────┴───│  damage      │   │
+  │ (sole     │  X-User-*│   │ marketplace│  │       │  :8083       │   │
+  │  ingress) │──route──▶│   │  :8084   │◀──┘       └────┬─────────┘   │
+  └───────────┘          │   └────┬─────┘   ┌──────────────┐           │
+   rate-limit            │        │         │ notification │           │
+   request-id            │        └─────────│  :8085       │           │
+   swagger (dev)         │   X-Internal-Api-Key (/internal/**)         │
+                         │        ┌──────────────────────┐             │
+                         │        │  postgres :5432       │            │
+                         │        │  5 DBs · 1 role each   │            │
+                         │        └──────────────────────┘             │
+                         │   Externals (prod): Supabase(storage) ·      │
+                         │   Paystack(pay) · Firebase(FCM)              │
+                         └─────────────────────────────────────────────┘
+```
+
+Only the **gateway (:8080)** is published to the host; services are reachable only
+on the internal network and re-validate the JWT themselves (defense in depth).
+`/internal/**` is API-key-guarded and has **no gateway route** (404 from the edge).
+
 ## Architecture & port map
 
 | Service | Port | Status | Purpose |
@@ -141,6 +176,41 @@ mvn -f marketplace-service/pom.xml package # integration tests need Docker (Test
 (Testcontainers postgres:15, real Flyway migration) and full MockMvc endpoint
 flows. The gateway suite covers route forwarding, edge JWT rejection and the
 429 rate limit.
+
+## API docs — aggregated Swagger at the edge
+
+With the stack up: **`http://localhost:8080/swagger-ui.html`** serves a five-service
+dropdown (auth, property, damage, marketplace, notification). The gateway proxies
+each service's `/v3/api-docs` via `/api-docs/{service}`. This is a **dev convenience,
+gated by `SWAGGER_ENABLED`** (default `true` in compose) — set `SWAGGER_ENABLED=false`
+in any public deployment and the gateway 404s every doc path. For programmatic use,
+import the Postman collection in [`e2e/postman/`](e2e/postman/).
+
+## End-to-end tooling, load & demo
+
+All under [`e2e/`](e2e/) and [`demo/`](demo/); the runners use Docker images
+(`postman/newman`, `grafana/k6`) so no local Node/k6 is needed.
+
+```bash
+# 0. stack up (self-contained demo profile)
+docker compose --profile core up --build
+
+# 1. CodeQuest demo data (full story via the public API → real hashes/PDFs)
+./demo/seed-demo.sh                      # prints a credential card + share link
+
+# 2. security audit suite (newman, through the gateway; exits non-zero on failure)
+./e2e/security/run.sh                    # mock mode (all groups)
+PAYMENTS_MODE=paystack ./e2e/security/run.sh   # real-provider mode (payment-gated groups self-skip)
+
+# 3. load smoke (k6)
+./e2e/load/run.sh smoke                  # NFR03 p95<500ms, <1% errors
+./e2e/load/run.sh spike                  # 0→200 VU burst (observational)
+./e2e/load/run.sh dossier-timing         # FR11 dossier READY ≤20s
+```
+
+Windows: each has a `.ps1` twin. Details: [`e2e/security/README.md`](e2e/security/README.md),
+[`e2e/load/RESULTS.md`](e2e/load/RESULTS.md). Dependency-update roadmap:
+[`e2e/DEPENDENCY_REPORT.md`](e2e/DEPENDENCY_REPORT.md).
 
 ## Conventions (all services)
 
@@ -343,8 +413,19 @@ assetshield-backend/
 ├── property-service/         # properties, assets, receipts, household sharing
 ├── damage-service/           # damage reports, photos, GPS pairing, dossier PDFs
 ├── marketplace-service/      # payments, agents, leads, consent shares, quotes, subscriptions
-└── notification-service/     # FCM push, AI safety tips, schedulers, history
+├── notification-service/     # FCM push, AI safety tips, schedulers, history
+├── demo/                     # seed-demo.sh — CodeQuest demo data via the public API
+├── e2e/
+│   ├── fixtures/             # deterministic JPEGs (+ GenFixtures.java) with known sha256
+│   ├── security/             # newman security audit suite (self-seeding)
+│   ├── postman/              # frontend reference collection (78 endpoints)
+│   ├── load/                 # k6 smoke / spike / dossier-timing
+│   └── DEPENDENCY_REPORT.md  # versions:display-dependency-updates (roadmap)
+├── FRONTEND_HANDOFF.md       # the frontend team's integration guide
+└── REQUIREMENTS_COVERAGE.md  # FR/NFR → implementation → proof → demo-day visibility
 ```
 
-Day 7 owns hardening, Postman collections, aggregated Swagger, load smoke
-and the frontend handoff document.
+Day 7 added hardening, the security audit + Postman + k6 suites under `e2e/`,
+aggregated Swagger, the demo seed, and the frontend handoff + requirements-coverage
+documents. See [`FRONTEND_HANDOFF.md`](FRONTEND_HANDOFF.md) and
+[`REQUIREMENTS_COVERAGE.md`](REQUIREMENTS_COVERAGE.md).
