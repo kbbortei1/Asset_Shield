@@ -1,0 +1,2731 @@
+{
+  "info": {
+    "name": "AssetShield GH · Security Audit Suite",
+    "description": "Self-seeding, idempotent P0 security invariants asserted THROUGH the gateway. Exits non-zero on any failure. See e2e/security/README.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('ts')) {",
+          "  var ts = String(Date.now()).slice(-8);",
+          "  pm.collectionVariables.set('ts', ts);",
+          "  pm.collectionVariables.set('ownerPhone',  '+2331'+ts);",
+          "  pm.collectionVariables.set('memberPhone', '+2332'+ts);",
+          "  pm.collectionVariables.set('agentPhone',  '+2333'+ts);",
+          "  pm.collectionVariables.set('agent2Phone', '+2334'+ts);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "{{gatewayUrl}}/api/v1"
+    },
+    {
+      "key": "pw",
+      "value": "Suite#2026"
+    }
+  ],
+  "item": [
+    {
+      "name": "0 · Setup (self-seeding)",
+      "description": "Registers fresh users (timestamp-unique phones) and walks them to the required states.",
+      "item": [
+        {
+          "name": "Owner · register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phoneNumber\":\"{{ownerPhone}}\",\"password\":\"{{pw}}\",\"fullName\":\"Suite Owner\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('owner registered (201)', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('ownerUserId', pm.response.json().data.userId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · verify-otp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phoneNumber\":\"{{ownerPhone}}\",\"code\":\"{{otp}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('owner verified (200)', () => pm.response.to.have.status(200));",
+                  "var d = pm.response.json().data;",
+                  "pm.collectionVariables.set('ownerAccess', d.accessToken);",
+                  "pm.collectionVariables.set('ownerRefresh', d.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Member · register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phoneNumber\":\"{{memberPhone}}\",\"password\":\"{{pw}}\",\"fullName\":\"Suite Member\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Member · verify-otp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phoneNumber\":\"{{memberPhone}}\",\"code\":\"{{otp}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('memberAccess', pm.response.json().data.accessToken);",
+                  "pm.collectionVariables.set('memberUserId', pm.response.json().data.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent · register-agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register-agent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register-agent"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phoneNumber\":\"{{agentPhone}}\",\"password\":\"{{pw}}\",\"fullName\":\"Suite Agent\",\"insurerName\":\"Suite Assurance\",\"nicLicenceNo\":\"NIC-{{ts}}-1\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent · verify-otp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phoneNumber\":\"{{agentPhone}}\",\"code\":\"{{otp}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('agentAccess', pm.response.json().data.accessToken);",
+                  "pm.collectionVariables.set('agentUserId', pm.response.json().data.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent2 · register-agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register-agent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register-agent"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phoneNumber\":\"{{agent2Phone}}\",\"password\":\"{{pw}}\",\"fullName\":\"Suite Agent Two\",\"insurerName\":\"Second Assurance\",\"nicLicenceNo\":\"NIC-{{ts}}-2\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent2 · verify-otp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phoneNumber\":\"{{agent2Phone}}\",\"code\":\"{{otp}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('agent2Access', pm.response.json().data.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Superadmin · login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phoneNumber\":\"{{adminPhone}}\",\"password\":\"{{adminPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('admin login 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('adminAccess', pm.response.json().data.accessToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · create property (opted-in target)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Suite Shop\",\"type\":\"COMMERCIAL\",\"gpsLat\":5.546111,\"gpsLng\":-0.211667,\"locality\":\"Kantamanto\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('propertyId', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · create property (NEVER opted-in, for privacy 404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Private Villa\",\"type\":\"RESIDENTIAL\",\"gpsLat\":5.6,\"gpsLng\":-0.2,\"locality\":\"Cantonments\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('privatePropertyId', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · upload asset (real hash)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/assets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "assets"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "fixtures/asset-1.jpg"
+                },
+                {
+                  "key": "metadata",
+                  "type": "text",
+                  "value": "{\"sha256Hash\":\"{{hashAsset1}}\",\"gpsLat\":5.546111,\"gpsLng\":-0.211667,\"capturedAt\":\"2026-06-01T09:00:00Z\",\"description\":\"Suite asset\",\"estimatedValue\":1500.00,\"category\":\"ELECTRONICS\"}",
+                  "contentType": "application/json"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('asset captured 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('assetId', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · opt property in to offers",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/offers-optin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "offers-optin"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"openToOffers\":true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · create damage report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/damage-reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "damage-reports"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"disasterType\":\"FIRE\",\"description\":\"Suite fire\",\"occurredAt\":\"2026-06-10T02:30:00Z\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('reportId', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · upload damage photo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/damage-reports/{{reportId}}/photos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "damage-reports",
+                "{{reportId}}",
+                "photos"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "fixtures/damage-1.jpg"
+                },
+                {
+                  "key": "metadata",
+                  "type": "text",
+                  "value": "{\"sha256Hash\":\"{{hashDamage1}}\",\"gpsLat\":5.546112,\"gpsLng\":-0.211668,\"capturedAt\":\"2026-06-10T07:00:00Z\",\"description\":\"Burnt stock\"}",
+                  "contentType": "application/json"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('photoId', pm.response.json().data.photo.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · pair photo to asset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/damage-reports/{{reportId}}/pairs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "damage-reports",
+                "{{reportId}}",
+                "pairs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"damagePhotoId\":\"{{photoId}}\",\"assetId\":\"{{assetId}}\",\"pairingMethod\":\"GPS_AUTO\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('paired 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · complete report",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/damage-reports/{{reportId}}/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "damage-reports",
+                "{{reportId}}",
+                "complete"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · generate dossier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/damage-reports/{{reportId}}/generate-dossier",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "damage-reports",
+                "{{reportId}}",
+                "generate-dossier"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('dossier requested 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('dossierId', pm.response.json().data.dossierId);",
+                  "pm.collectionVariables.set('pollTries', 0);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · poll dossier until READY",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var st = pm.response.json().data.status;",
+                  "var tries = Number(pm.collectionVariables.get('pollTries') || 0) + 1;",
+                  "pm.collectionVariables.set('pollTries', tries);",
+                  "if (st === 'READY') {",
+                  "  pm.collectionVariables.set('dossierReady', 'true');",
+                  "  pm.test('dossier READY', () => pm.expect(true).to.be.true);",
+                  "} else if (st === 'FAILED') {",
+                  "  pm.collectionVariables.set('dossierReady', 'false');",
+                  "  pm.test('dossier did not FAIL', () => pm.expect.fail('dossier FAILED'));",
+                  "} else if (tries < 18) {",
+                  "  postman.setNextRequest(pm.info.requestName); // re-poll (paced by --delay-request)",
+                  "} else {",
+                  "  // No auto-settle (e.g. PAYMENTS_MODE=paystack): leave flag false; gated groups skip.",
+                  "  pm.collectionVariables.set('dossierReady', 'false');",
+                  "  console.log('Dossier not READY after ' + tries + ' tries — payment-gated groups will skip.');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin · find pending agent record",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/agents?status=PENDING_VERIFICATION&size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "agents"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING_VERIFICATION"
+                },
+                {
+                  "key": "size",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "var items = pm.response.json().data.items;",
+                  "var ph = pm.collectionVariables.get('agentPhone');",
+                  "var rec = items.find(a => a.phoneNumber === ph);",
+                  "pm.expect(rec, 'pending agent record present').to.be.ok;",
+                  "pm.collectionVariables.set('agentRecordId', rec.agentId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin · verify (approve) agent",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccess}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/agents/{{agentRecordId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "agents",
+                "{{agentRecordId}}",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"approve\":true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent · subscribe (mock)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agents/me/subscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agents",
+                "me",
+                "subscription"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('subscribe initiated', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+                  "pm.collectionVariables.set('subTries', 0);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent · poll subscription until ACTIVE",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agents/me/subscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agents",
+                "me",
+                "subscription"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var st = pm.response.json().data.status;",
+                  "var tries = Number(pm.collectionVariables.get('subTries') || 0) + 1;",
+                  "pm.collectionVariables.set('subTries', tries);",
+                  "if (st === 'ACTIVE') {",
+                  "  pm.collectionVariables.set('subActive', 'true');",
+                  "  pm.test('subscription ACTIVE', () => pm.expect(true).to.be.true);",
+                  "} else if (tries < 18) {",
+                  "  postman.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.set('subActive', 'false');",
+                  "  console.log('Subscription not ACTIVE (no auto-settle?) — consent groups will skip.');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent · express interest",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{propertyId}}/express-interest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{propertyId}}",
+                "express-interest"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('subActive')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('interest recorded 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('interestId', pm.response.json().data.interestId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · accept interest",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agent-interests/{{interestId}}/respond",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agent-interests",
+                "{{interestId}}",
+                "respond"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"accept\":true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('subActive')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · share dossier to agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/share-to-agent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "share-to-agent"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"agentInterestId\":\"{{interestId}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('dossierReady')!=='true' || pm.collectionVariables.get('subActive')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('shared', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner · rotate share token (capture)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/rotate-share-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "rotate-share-token"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('dossierReady')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('shareToken', pm.response.json().data.shareToken);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1 · Lead projection leak",
+      "description": "",
+      "item": [
+        {
+          "name": "Agent leads expose exactly 5 keys, no PII",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agents/me/leads?size=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agents",
+                "me",
+                "leads"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('subActive')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "var body = pm.response.text();",
+                  "['gpsLat','gpsLng','phoneNumber','estimatedValue','sha256Hash','ownerId','ownerUserId']",
+                  "  .forEach(s => pm.test('no \"'+s+'\" anywhere in body', () => pm.expect(body).to.not.include(s)));",
+                  "var items = pm.response.json().data.items;",
+                  "var allowed = ['propertyId','ownerDisplayName','propertyName','propertyType','locality'].sort().join(',');",
+                  "items.forEach((it, i) => pm.test('item '+i+' key set is exactly the 5-field projection',",
+                  "  () => pm.expect(Object.keys(it).sort().join(',')).to.eql(allowed)));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2 · Privacy 404 equivalence",
+      "description": "",
+      "item": [
+        {
+          "name": "Express-interest on non-opted-in property → 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{privatePropertyId}}/express-interest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{privatePropertyId}}",
+                "express-interest"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('subActive')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.collectionVariables.set('body404_real', JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Express-interest on random UUID → 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leads/00000000-0000-0000-0000-000000000000/express-interest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "00000000-0000-0000-0000-000000000000",
+                "express-interest"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('subActive')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "var a = JSON.parse(pm.collectionVariables.get('body404_real'));",
+                  "var b = pm.response.json();",
+                  "pm.test('identical errorCode (no existence leak)',",
+                  "  () => pm.expect(b.data.errorCode).to.eql(a.data.errorCode));",
+                  "pm.test('identical message shape',",
+                  "  () => pm.expect(b.message).to.eql(a.message));",
+                  "pm.test('same key set', () => pm.expect(Object.keys(b.data).sort()).to.eql(Object.keys(a.data).sort()));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 · Revocation enforcement",
+      "description": "",
+      "item": [
+        {
+          "name": "Agent verifies dossier BEFORE revocation → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "verify"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('dossierReady')!=='true' || pm.collectionVariables.get('subActive')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('verify works pre-revoke (200)', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner revokes the connection (cascades shares)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agent-interests/{{interestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agent-interests",
+                "{{interestId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('subActive')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('revoked (200)', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent verify AFTER revocation → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "verify"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('dossierReady')!=='true' || pm.collectionVariables.get('subActive')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('API sealed (404)', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agent quote AFTER revocation → 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentAccess}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/quote",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "quote"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"coverageAmount\":1000.00,\"premium\":50.00,\"termMonths\":12}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('dossierReady')!=='true' || pm.collectionVariables.get('subActive')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('quote sealed (404)', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4 · Role boundary sweep",
+      "description": "",
+      "item": [
+        {
+          "name": "OWNER token → /admin/admins (auth-svc) must NOT 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/admins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "admins"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phoneNumber\":\"+233209999999\",\"password\":\"Whatever#1\",\"fullName\":\"X\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403/404 not 200', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OWNER token → /admin/agents (marketplace) must NOT 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/agents?size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "agents"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403/404 not 200', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OWNER token → agent home /agents/me/leads must NOT 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agents/me/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agents",
+                "me",
+                "leads"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403/404 not 200', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "AGENT token → respond to interest they don't own → 404",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agentAccess}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agent-interests/11111111-1111-1111-1111-111111111111/respond",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agent-interests",
+                "11111111-1111-1111-1111-111111111111",
+                "respond"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"accept\":true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403/404 not 200', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Expired access token → 401 from gateway",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{expiredToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('TOKEN_EXPIRED', () => pm.expect(pm.response.json().data.errorCode).to.eql('TOKEN_EXPIRED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Garbage Bearer → 401 from gateway",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer not-a-jwt"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 · Hash integrity",
+      "description": "",
+      "item": [
+        {
+          "name": "Count assets before bad upload",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/assets?size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "assets"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('assetsBefore', pm.response.json().data.totalElements);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload with mismatched sha256 → 400 HASH_MISMATCH",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/assets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "assets"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "fixtures/asset-2.jpg"
+                },
+                {
+                  "key": "metadata",
+                  "type": "text",
+                  "value": "{\"sha256Hash\":\"{{wrongHash}}\",\"gpsLat\":5.5,\"gpsLng\":-0.2,\"capturedAt\":\"2026-06-01T09:00:00Z\",\"description\":\"bad\",\"estimatedValue\":10.0,\"category\":\"ELECTRONICS\"}",
+                  "contentType": "application/json"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('HASH_MISMATCH', () => pm.expect(pm.response.json().data.errorCode).to.eql('HASH_MISMATCH'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Count assets after → unchanged (no row created)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/assets?size=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "assets"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('asset count unchanged', () =>",
+                  "  pm.expect(pm.response.json().data.totalElements).to.eql(Number(pm.collectionVariables.get('assetsBefore'))));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6 · Webhook forgery",
+      "description": "",
+      "item": [
+        {
+          "name": "Webhook with wrong signature → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-paystack-signature",
+                "value": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "webhook"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"event\":\"charge.success\",\"data\":{\"reference\":\"forged-ref-1\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Webhook with no signature → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "webhook"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"event\":\"charge.success\",\"data\":{\"reference\":\"forged-ref-2\"}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "// The forged calls are rejected at signature verification, before any payment",
+                  "// lookup — so no payment can settle as a result. (See suite README.)"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7 · Internal API exposure",
+      "description": "",
+      "item": [
+        {
+          "name": "GET /internal/users/{id} via gateway → 404 (no route)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/internal/users/{{ownerUserId}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "internal",
+                "users",
+                "{{ownerUserId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 (route does not exist at edge)', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /internal/notifications/send via gateway → 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/internal/notifications/send",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "internal",
+                "notifications",
+                "send"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"userId\":\"{{ownerUserId}}\",\"type\":\"TIP\",\"title\":\"x\",\"body\":\"y\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /internal/dossiers/{id}/meta via gateway → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/internal/dossiers/{{dossierId}}/meta",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "internal",
+                "dossiers",
+                "{{dossierId}}",
+                "meta"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8 · IDOR sweep",
+      "description": "",
+      "item": [
+        {
+          "name": "Outsider → owner's property detail → 403/404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agent2Access}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{privatePropertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{privatePropertyId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Outsider → owner's asset → 403/404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agent2Access}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/assets/{{assetId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "assets",
+                "{{assetId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Outsider → owner's damage report → 403/404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agent2Access}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/damage-reports/{{reportId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "damage-reports",
+                "{{reportId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Outsider → owner's dossier status → 403/404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agent2Access}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403/404', () => pm.expect(pm.response.code).to.be.oneOf([403,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Outsider → owner's dossier download → 403/404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{agent2Access}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "download"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403/404', () => pm.expect(pm.response.code).to.be.oneOf([402,403,404]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9 · Auth hygiene",
+      "description": "",
+      "item": [
+        {
+          "name": "Refresh once (rotation) → new refresh",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"refreshToken\":\"{{ownerRefresh}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('rotatedRefresh', pm.response.json().data.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reuse the OLD (rotated) refresh → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"refreshToken\":\"{{ownerRefresh}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('reused refresh rejected (401)', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "After reuse, the replacement is ALSO dead (family revoked) → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"refreshToken\":\"{{rotatedRefresh}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('family revoked (401)', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login wrong password → 401 (capture body)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phoneNumber\":\"{{ownerPhone}}\",\"password\":\"WrongPass#9\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.collectionVariables.set('wrongPwBody', JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login unknown phone → identical 401 body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"phoneNumber\":\"+233200000404\",\"password\":\"WrongPass#9\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "var a = JSON.parse(pm.collectionVariables.get('wrongPwBody'));",
+                  "var b = pm.response.json();",
+                  "pm.test('no user-enumeration: identical errorCode', () => pm.expect(b.data.errorCode).to.eql(a.data.errorCode));",
+                  "pm.test('no user-enumeration: identical message', () => pm.expect(b.message).to.eql(a.message));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10 · Share-token behavior",
+      "description": "",
+      "item": [
+        {
+          "name": "Public shared dossier works logged out → 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/shared/{{shareToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "shared",
+                "{{shareToken}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('dossierReady')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('public share readable (200)', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('oldShareToken', pm.collectionVariables.get('shareToken'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Owner rotates share token again",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ownerAccess}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/rotate-share-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "rotate-share-token"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('dossierReady')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('shareToken', pm.response.json().data.shareToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OLD share token after rotation → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/shared/{{oldShareToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "shared",
+                "{{oldShareToken}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('dossierReady')!=='true'){ pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('leaked link dead (404)', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

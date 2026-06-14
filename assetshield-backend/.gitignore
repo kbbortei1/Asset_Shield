@@ -16,3 +16,6 @@ target/
 # Logs
 logs/
 *.log
+
+# Load-test seed (contains tokens)
+e2e/load/.seed.env

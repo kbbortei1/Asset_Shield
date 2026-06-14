@@ -1,0 +1,2593 @@
+{
+  "info": {
+    "name": "AssetShield GH · API",
+    "description": "Frontend reference collection for AssetShield GH. Base URL points at the gateway; collection-level auth sends Bearer {{accessToken}} (public endpoints override to none). Run Auth → Login (or Register → Verify OTP) first to capture tokens, then click through Properties → Damage → Marketplace → Notifications. See FRONTEND_HANDOFF.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "{{gatewayUrl}}/api/v1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth & Profile",
+      "description": "",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Public. Starts registration and sends an OTP. Errors: PHONE_EXISTS(409), VALIDATION(400).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+233201112233\",\n  \"password\": \"Passw0rd#1\",\n  \"fullName\": \"Akosua Owusu\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Register agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register-agent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register-agent"
+              ]
+            },
+            "description": "Public. Creates an AGENT (starts PENDING verification). Errors: PHONE_EXISTS(409).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+233201112244\",\n  \"password\": \"Passw0rd#1\",\n  \"fullName\": \"Kojo Asante\",\n  \"insurerName\": \"Hollard Ghana\",\n  \"nicLicenceNo\": \"NIC-12345\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "description": "Public. Dev OTP is OTP_DEV_CODE (123456). Returns tokens. Errors: OTP_INVALID(400), OTP_EXPIRED(400).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+233201112233\",\n  \"code\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var d = pm.response.json().data;",
+                  "if (d && d.accessToken) {",
+                  "  pm.environment.set('accessToken', d.accessToken);",
+                  "  pm.environment.set('refreshToken', d.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resend OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/resend-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "resend-otp"
+              ]
+            },
+            "description": "Public. Rate-limited at the gateway.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+233201112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Public. Returns access(1h)+refresh(14d). Wrong creds → 401 (identical body for unknown phone).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+233201112233\",\n  \"password\": \"Passw0rd#1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var d = pm.response.json().data;",
+                  "if (d && d.accessToken) {",
+                  "  pm.environment.set('accessToken', d.accessToken);",
+                  "  pm.environment.set('refreshToken', d.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Public. Rotates the refresh token. Reuse of a rotated token → 401 REFRESH_REUSED (whole family revoked).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var d = pm.response.json().data;",
+                  "if (d && d.refreshToken) {",
+                  "  pm.environment.set('accessToken', d.accessToken);",
+                  "  pm.environment.set('refreshToken', d.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "User. Revokes the refresh family.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get my profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "description": "User."
+          }
+        },
+        {
+          "name": "Update my profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "description": "User.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Akosua O. Owusu\",\n  \"language\": \"en\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Upload Ghana Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/ghana-card",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "ghana-card"
+              ]
+            },
+            "description": "User. multipart image/jpeg|png. Used for KYC.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete my account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "description": "User. Act-843 erasure request (soft-delete + purge schedule)."
+          }
+        },
+        {
+          "name": "Create admin (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/admins",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "admins"
+              ]
+            },
+            "description": "ADMIN only. OWNER/AGENT → 403.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+233200000111\",\n  \"password\": \"Admin#2026\",\n  \"fullName\": \"New Admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Properties, Assets & Household",
+      "description": "",
+      "item": [
+        {
+          "name": "Create property",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties"
+              ]
+            },
+            "description": "Owner. type ∈ RESIDENTIAL|COMMERCIAL|RENTAL. FREE tier: max 1 property → FREE_TIER_LIMIT(403).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ama's Fabrics\",\n  \"type\": \"COMMERCIAL\",\n  \"gpsLat\": 5.546111,\n  \"gpsLng\": -0.211667,\n  \"locality\": \"Kantamanto\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var d=pm.response.json().data; if(d&&d.id) pm.environment.set('propertyId', d.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List my properties",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "User. Owned + member properties."
+          }
+        },
+        {
+          "name": "Property detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}"
+              ]
+            },
+            "description": "Owner/member. Per-category dashboard."
+          }
+        },
+        {
+          "name": "Update property",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}"
+              ]
+            },
+            "description": "Owner only.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ama's Fabrics \\u2014 Kantamanto\",\n  \"locality\": \"Kantamanto\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete property",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}"
+              ]
+            },
+            "description": "Owner only. Soft-deletes assets+receipts."
+          }
+        },
+        {
+          "name": "Toggle marketplace opt-in",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/offers-optin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "offers-optin"
+              ]
+            },
+            "description": "Owner. Makes the property a marketplace lead.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"openToOffers\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Upload evidence asset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/assets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "assets"
+              ]
+            },
+            "description": "Owner/export-member. multipart file + metadata JSON. sha256 MUST match the bytes → else 400 HASH_MISMATCH. Duplicate hash → 409 DUPLICATE_ASSET_HASH. See FRONTEND_HANDOFF photo recipe.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "metadata",
+                  "type": "text",
+                  "value": "{\"sha256Hash\": \"<64-hex of the exact bytes>\", \"gpsLat\": 5.546111, \"gpsLng\": -0.211667, \"capturedAt\": \"2026-06-01T09:00:00Z\", \"description\": \"Sewing machine\", \"estimatedValue\": 1500.0, \"category\": \"ELECTRONICS\"}",
+                  "contentType": "application/json"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var d=pm.response.json().data; if(d&&d.id) pm.environment.set('assetId', d.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List property assets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/assets?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "assets"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "User. Optional &category=ELECTRONICS."
+          }
+        },
+        {
+          "name": "Invite household member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/invite",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "invite"
+              ]
+            },
+            "description": "Owner only.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inviteePhone\": \"+233202223344\",\n  \"canExport\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List members",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/members",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "members"
+              ]
+            },
+            "description": "Owner only."
+          }
+        },
+        {
+          "name": "Remove member",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/members/{{memberUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "members",
+                "{{memberUserId}}"
+              ]
+            },
+            "description": "Owner only."
+          }
+        },
+        {
+          "name": "Asset detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/assets/{{assetId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "assets",
+                "{{assetId}}"
+              ]
+            },
+            "description": "Owner/member."
+          }
+        },
+        {
+          "name": "Update asset",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/assets/{{assetId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "assets",
+                "{{assetId}}"
+              ]
+            },
+            "description": "Owner/export-member.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Brother industrial sewing machine\",\n  \"estimatedValue\": 1800.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete asset",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/assets/{{assetId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "assets",
+                "{{assetId}}"
+              ]
+            },
+            "description": "Owner/export-member."
+          }
+        },
+        {
+          "name": "Upload asset receipt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/assets/{{assetId}}/receipts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "assets",
+                "{{assetId}}",
+                "receipts"
+              ]
+            },
+            "description": "Owner/export-member. multipart image/pdf.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My invitations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/invitations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "invitations"
+              ]
+            },
+            "description": "User. Pending household invitations."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var its=(pm.response.json().data||{}).items||[]; if(its[0]) pm.environment.set('invitationId', its[0].invitationId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Respond to invitation",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invitations/{{invitationId}}/respond",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "invitations",
+                "{{invitationId}}",
+                "respond"
+              ]
+            },
+            "description": "Invitee.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accept\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Public file (token)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/public/files/{{fileToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "files",
+                "{{fileToken}}"
+              ]
+            },
+            "description": "Public, token-gated download (local storage provider). Signed URLs expire ~15 min.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Damage Reports & Dossiers",
+      "description": "",
+      "item": [
+        {
+          "name": "Create damage report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/damage-reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "damage-reports"
+              ]
+            },
+            "description": "Owner/export-member. disasterType ∈ FIRE|FLOOD|THEFT|STORM|OTHER. occurredAt not in future.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"disasterType\": \"FIRE\",\n  \"description\": \"Kantamanto night fire\",\n  \"occurredAt\": \"2026-06-10T02:30:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var d=pm.response.json().data; if(d&&d.id) pm.environment.set('reportId', d.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List property reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/damage-reports?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "damage-reports"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "User."
+          }
+        },
+        {
+          "name": "My damage reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/damage-reports?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "damage-reports"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "User."
+          }
+        },
+        {
+          "name": "Report detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/damage-reports/{{reportId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "damage-reports",
+                "{{reportId}}"
+              ]
+            },
+            "description": "User. Photos + pairs (frozen before-blocks)."
+          }
+        },
+        {
+          "name": "Upload damage photo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/damage-reports/{{reportId}}/photos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "damage-reports",
+                "{{reportId}}",
+                "photos"
+              ]
+            },
+            "description": "Owner/export-member. Returns GPS pairing suggestions. sha256 verified → 400 HASH_MISMATCH.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "metadata",
+                  "type": "text",
+                  "value": "{\"sha256Hash\": \"<64-hex>\", \"gpsLat\": 5.546112, \"gpsLng\": -0.211668, \"capturedAt\": \"2026-06-10T07:00:00Z\", \"description\": \"Burnt stock\"}",
+                  "contentType": "application/json"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var d=pm.response.json().data; if(d&&d.id) pm.environment.set('photoId', d.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pairing suggestions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/damage-reports/{{reportId}}/photos/{{photoId}}/pairing-suggestions?radiusM=25",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "damage-reports",
+                "{{reportId}}",
+                "photos",
+                "{{photoId}}",
+                "pairing-suggestions"
+              ],
+              "query": [
+                {
+                  "key": "radiusM",
+                  "value": "25"
+                }
+              ]
+            },
+            "description": "User."
+          }
+        },
+        {
+          "name": "Pair photo to asset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/damage-reports/{{reportId}}/pairs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "damage-reports",
+                "{{reportId}}",
+                "pairs"
+              ]
+            },
+            "description": "Owner/export-member. pairingMethod ∈ GPS_AUTO|MANUAL. Freezes the asset snapshot.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"damagePhotoId\": \"{{photoId}}\",\n  \"assetId\": \"{{assetId}}\",\n  \"pairingMethod\": \"GPS_AUTO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Remove pair",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/damage-reports/{{reportId}}/pairs/{{pairId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "damage-reports",
+                "{{reportId}}",
+                "pairs",
+                "{{pairId}}"
+              ]
+            },
+            "description": "Owner/export-member."
+          }
+        },
+        {
+          "name": "Complete report",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/damage-reports/{{reportId}}/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "damage-reports",
+                "{{reportId}}",
+                "complete"
+              ]
+            },
+            "description": "Owner/export-member. Freezes everything + computes total loss. IMMUTABLE afterwards."
+          }
+        },
+        {
+          "name": "Generate dossier (pay)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/damage-reports/{{reportId}}/generate-dossier",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "damage-reports",
+                "{{reportId}}",
+                "generate-dossier"
+              ]
+            },
+            "description": "Owner. Starts the fee checkout. PENDING_PAYMENT→GENERATING→READY. mock auto-settles ~2s."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var d=pm.response.json().data; if(d&&d.dossierId){pm.environment.set('dossierId',d.dossierId); if(d.payment&&d.payment.reference) pm.environment.set('paymentReference', d.payment.reference);}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dossier status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "status"
+              ]
+            },
+            "description": "Owner. Poll after paying."
+          }
+        },
+        {
+          "name": "Dossier download URL",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "download"
+              ]
+            },
+            "description": "Owner. READY only (402 before payment). Signed URL expires ~15 min."
+          }
+        },
+        {
+          "name": "Public shared dossier",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/shared/{{shareToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "shared",
+                "{{shareToken}}"
+              ]
+            },
+            "description": "Public. READY dossiers only. 404 after the owner rotates the token.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Rotate share token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/rotate-share-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "rotate-share-token"
+              ]
+            },
+            "description": "Owner. Kills any leaked public link."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var d=pm.response.json().data; if(d&&d.shareToken) pm.environment.set('shareToken', d.shareToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Retry generation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/retry-generation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "retry-generation"
+              ]
+            },
+            "description": "Owner. FAILED + paid only."
+          }
+        },
+        {
+          "name": "My dossiers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/dossiers?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "dossiers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "User."
+          }
+        },
+        {
+          "name": "Public damage file (token)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/public/damage-files/{{fileToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "damage-files",
+                "{{fileToken}}"
+              ]
+            },
+            "description": "Public, token-gated damage photo download.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Marketplace, Consent & Payments",
+      "description": "",
+      "item": [
+        {
+          "name": "Buy PRO subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/pro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "subscriptions",
+                "pro"
+              ]
+            },
+            "description": "Owner. Starts PRO checkout (unlocks >1 property)."
+          }
+        },
+        {
+          "name": "My subscription (owner)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/subscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "subscription"
+              ]
+            },
+            "description": "Owner."
+          }
+        },
+        {
+          "name": "List agents (ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/agents?status=PENDING_VERIFICATION&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "agents"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING_VERIFICATION"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "ADMIN. status ∈ PENDING_VERIFICATION|VERIFIED|REJECTED."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var its=(pm.response.json().data||{}).items||[]; if(its[0]) pm.environment.set('agentRecordId', its[0].agentId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify agent (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/agents/{{agentRecordId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "agents",
+                "{{agentRecordId}}",
+                "verify"
+              ]
+            },
+            "description": "ADMIN. approve=false needs rejectionReason.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approve\": true,\n  \"rejectionReason\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Agent home",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agents/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agents",
+                "me"
+              ]
+            },
+            "description": "Agent."
+          }
+        },
+        {
+          "name": "Agent subscription status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agents/me/subscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agents",
+                "me",
+                "subscription"
+              ]
+            },
+            "description": "Agent."
+          }
+        },
+        {
+          "name": "Agent subscribe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agents/me/subscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agents",
+                "me",
+                "subscription"
+              ]
+            },
+            "description": "Agent (verified). Starts the agent subscription checkout. mock auto-settles → ACTIVE."
+          }
+        },
+        {
+          "name": "Agent leads",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agents/me/leads?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agents",
+                "me",
+                "leads"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Agent (verified+subscribed). 5-field projection only — no PII."
+          }
+        },
+        {
+          "name": "Agent interests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agents/me/interests?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agents",
+                "me",
+                "interests"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Agent."
+          }
+        },
+        {
+          "name": "Agent shared dossiers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agents/me/shared-dossiers?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agents",
+                "me",
+                "shared-dossiers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Agent."
+          }
+        },
+        {
+          "name": "Express interest",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{propertyId}}/express-interest",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{propertyId}}",
+                "express-interest"
+              ]
+            },
+            "description": "Agent (verified+subscribed). 404 unless the property is opted in (no existence leak)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var d=pm.response.json().data; if(d&&d.interestId) pm.environment.set('interestId', d.interestId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My agent-interests (owner)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/agent-interests?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "agent-interests"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Owner. Agents who expressed interest."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var its=(pm.response.json().data||{}).items||[]; if(its[0]) pm.environment.set('interestId', its[0].interestId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Respond to interest",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agent-interests/{{interestId}}/respond",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agent-interests",
+                "{{interestId}}",
+                "respond"
+              ]
+            },
+            "description": "Owner. Accepting opens the consent channel.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accept\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Revoke interest/connection",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/agent-interests/{{interestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "agent-interests",
+                "{{interestId}}"
+              ]
+            },
+            "description": "Owner. Cascade-revokes shares; agent API access sealed immediately."
+          }
+        },
+        {
+          "name": "Share dossier to agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/share-to-agent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "share-to-agent"
+              ]
+            },
+            "description": "Owner. Consent-gated share of a READY dossier to an accepted agent.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agentInterestId\": \"{{interestId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Revoke dossier share",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/share-to-agent/{{agentRecordId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "share-to-agent",
+                "{{agentRecordId}}"
+              ]
+            },
+            "description": "Owner."
+          }
+        },
+        {
+          "name": "Verify dossier integrity (agent)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "verify"
+              ]
+            },
+            "description": "Agent (shared). Recomputes the manifest hash to prove tamper-evidence."
+          }
+        },
+        {
+          "name": "Send quote (agent)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dossiers/{{dossierId}}/quote",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dossiers",
+                "{{dossierId}}",
+                "quote"
+              ]
+            },
+            "description": "Agent (shared). termMonths 1–60.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"coverageAmount\": 40000.0,\n  \"premium\": 120.0,\n  \"termMonths\": 12\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "My quotes (owner)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/quotes?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "quotes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Owner."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var its=(pm.response.json().data||{}).items||[]; if(its[0]) pm.environment.set('quoteId', its[0].quoteId||its[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Respond to quote",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quotes/{{quoteId}}/respond",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quotes",
+                "{{quoteId}}",
+                "respond"
+              ]
+            },
+            "description": "Owner.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accept\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Verify payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentReference}}/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "{{paymentReference}}",
+                "verify"
+              ]
+            },
+            "description": "Payer. Call after returning from the Paystack checkout."
+          }
+        },
+        {
+          "name": "Payment details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentReference}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "{{paymentReference}}"
+              ]
+            },
+            "description": "Payer."
+          }
+        },
+        {
+          "name": "Paystack webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "webhook"
+              ]
+            },
+            "description": "Public. HMAC-SHA512 over raw bytes via x-paystack-signature. Bad/no signature → 401.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"charge.success\",\n  \"data\": {\n    \"reference\": \"ref\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications & Tips",
+      "description": "",
+      "item": [
+        {
+          "name": "Register device token",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/device-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "device-token"
+              ]
+            },
+            "description": "User. Call on login and on FCM token refresh. platform ∈ ANDROID|IOS.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fcmToken\": \"<fcm-device-token>\",\n  \"platform\": \"ANDROID\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete device token",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/device-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "device-token"
+              ]
+            },
+            "description": "User. Call on logout.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fcmToken\": \"<fcm-device-token>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get notification prefs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/notification-preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "notification-preferences"
+              ]
+            },
+            "description": "User."
+          }
+        },
+        {
+          "name": "Update notification prefs",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/notification-preferences",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "notification-preferences"
+              ]
+            },
+            "description": "User. tipsFrequency ∈ DAILY|WEEKLY|OFF.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipsFrequency\": \"DAILY\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Notification history",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/notifications?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "User."
+          }
+        },
+        {
+          "name": "Tips feed",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tips/feed?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tips",
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "User. Ghana-specific safety tips (English)."
+          }
+        },
+        {
+          "name": "Tips for a property",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/properties/{{propertyId}}/tips?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "properties",
+                "{{propertyId}}",
+                "tips"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Owner/member."
+          }
+        },
+        {
+          "name": "Mark tip read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tips/{{tipId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tips",
+                "{{tipId}}",
+                "read"
+              ]
+            },
+            "description": "User."
+          }
+        }
+      ]
+    }
+  ]
+}
