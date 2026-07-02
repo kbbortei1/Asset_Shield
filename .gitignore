@@ -1,3 +1,6 @@
 # Local tooling — never part of the project
 .claude/
 .vscode/
+
+# contains the Stitch API key — never commit
+.mcp.json
