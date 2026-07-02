@@ -25,3 +25,6 @@ docker run --rm -i `
   -e PROPERTY_ID="$($seed.PROPERTY_ID)" `
   -e ASSET_IDS="$($seed.ASSET_IDS)" `
   grafana/k6 run "/scripts/$Script.js"
+
+
+  
