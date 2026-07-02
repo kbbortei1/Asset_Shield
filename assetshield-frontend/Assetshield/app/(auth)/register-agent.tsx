@@ -1,0 +1,79 @@
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { View } from 'react-native';
+import { isApiError } from '@/lib/api';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { Button, Card, Header, Input, Screen, Text } from '@/components/ui';
+import { colors, spacing } from '@/theme';
+
+/** Stitch: "Agent Registration & Verification". Agents start PENDING_VERIFICATION. */
+export default function RegisterAgent() {
+  const { registerAgent } = useAuth();
+  const [form, setForm] = useState({
+    fullName: '',
+    phoneNumber: '+233',
+    password: '',
+    insurerName: '',
+    nicLicenceNo: '',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const submit = async () => {
+    setErrors({});
+    setFormError(null);
+    setLoading(true);
+    try {
+      await registerAgent(form);
+      router.push(`/(auth)/otp?phone=${encodeURIComponent(form.phoneNumber)}` as never);
+    } catch (e) {
+      if (isApiError(e)) {
+        if (e.code === 'PHONE_EXISTS') setFormError('This number already has an account. Please log in.');
+        else if (e.code === 'LICENCE_EXISTS') setErrors({ nicLicenceNo: 'This licence number is already registered.' });
+        else if (e.fieldErrors) setErrors(e.fieldErrors);
+        else setFormError(e.message);
+      } else {
+        setFormError('Something went wrong. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Screen>
+      <Header />
+      <View style={{ gap: spacing.sm }}>
+        <Text variant="headlineLgMobile">Agent registration</Text>
+        <Text variant="bodyMd" color={colors.textMuted}>
+          After you verify your phone, an admin reviews your licence before you can access leads.
+        </Text>
+      </View>
+
+      <View style={{ gap: spacing.lg, marginTop: spacing.sm }}>
+        <Input label="Full name" value={form.fullName} onChangeText={set('fullName')} autoCapitalize="words" error={errors.fullName} />
+        <Input label="Phone number" value={form.phoneNumber} onChangeText={set('phoneNumber')} keyboardType="phone-pad" error={errors.phoneNumber} />
+        <Input label="Password" value={form.password} onChangeText={set('password')} secureTextEntry error={errors.password} />
+        <Input label="Insurer" value={form.insurerName} onChangeText={set('insurerName')} placeholder="e.g. Hollard Ghana" error={errors.insurerName} />
+        <Input label="NIC licence number" value={form.nicLicenceNo} onChangeText={set('nicLicenceNo')} placeholder="NIC-12345" autoCapitalize="characters" error={errors.nicLicenceNo} />
+        {formError ? (
+          <Text variant="labelMd" color={colors.error}>
+            {formError}
+          </Text>
+        ) : null}
+        <Card style={{ backgroundColor: colors.tealTint }}>
+          <Text variant="labelMd" color={colors.primary}>
+            Your account stays in review until an admin verifies your NIC licence. You'll be notified when approved.
+          </Text>
+        </Card>
+      </View>
+
+      <View style={{ gap: spacing.md, marginTop: spacing.md }}>
+        <Button title="Send code" loading={loading} onPress={submit} />
+      </View>
+    </Screen>
+  );
+}
