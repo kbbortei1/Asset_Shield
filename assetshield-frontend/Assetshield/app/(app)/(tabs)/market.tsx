@@ -88,7 +88,7 @@ function ConnectionCard({
           <View style={{ flex: 1 }}>
             <Text variant="headlineSm">{interest.agentName ?? 'Insurance agent'}</Text>
             <Text variant="labelMd" color={colors.textMuted}>
-              {interest.insurerName ?? '—'} · {interest.propertyName ?? 'Property'}
+              {interest.insurerName ?? '-'} · {interest.propertyName ?? 'Property'}
             </Text>
           </View>
           <StatusBadge status={accepted ? 'secured' : pending ? 'needsUpdate' : 'damaged'} label={interest.status} />
@@ -213,7 +213,7 @@ function AdminAgents() {
               <View style={{ flex: 1 }}>
                 <Text variant="headlineSm">{a.fullName ?? 'Agent'}</Text>
                 <Text variant="labelMd" color={colors.textMuted}>
-                  {a.insurerName ?? '—'} · {a.nicLicenceNo ?? 'No licence #'}
+                  {a.insurerName ?? '-'} · {a.nicLicenceNo ?? 'No licence #'}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />

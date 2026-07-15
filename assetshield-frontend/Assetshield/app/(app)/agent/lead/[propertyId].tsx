@@ -46,15 +46,15 @@ export default function LeadDetail() {
               </Text>
             </View>
           </View>
-          <Field label="Owner" value={lead?.ownerDisplayName ?? '—'} />
-          <Field label="Type" value={lead?.propertyType ?? '—'} />
-          <Field label="Locality" value={lead?.locality ?? '—'} />
+          <Field label="Owner" value={lead?.ownerDisplayName ?? '-'} />
+          <Field label="Type" value={lead?.propertyType ?? '-'} />
+          <Field label="Locality" value={lead?.locality ?? '-'} />
         </View>
       </Card>
 
       <Card style={{ backgroundColor: colors.tealTint }}>
         <Text variant="labelMd" color={colors.primary}>
-          For privacy, leads show only these details. Express interest — if the owner accepts, they can share a verified dossier with you.
+          For privacy, leads show only these details. Express interest, and if the owner accepts, they can share a verified dossier with you.
         </Text>
       </Card>
 

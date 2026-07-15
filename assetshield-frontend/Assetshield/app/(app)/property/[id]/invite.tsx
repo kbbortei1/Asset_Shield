@@ -75,7 +75,7 @@ export default function HouseholdInvite() {
                   {m.fullName}
                 </Text>
                 <Text variant="labelMd" color={colors.textMuted}>
-                  {m.phoneNumber ?? '—'} {m.canExport ? '· can export' : ''}
+                  {m.phoneNumber ?? '-'} {m.canExport ? '· can export' : ''}
                 </Text>
               </View>
               <Button

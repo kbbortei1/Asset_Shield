@@ -21,7 +21,7 @@ const SLIDES: Slide[] = [
     key: 'store',
     brand: true,
     title: 'Your digital safety deposit box',
-    body: 'Document what you own — photos, receipts and values — in one secure place, right from your phone.',
+    body: 'Document what you own: photos, receipts and values, all in one secure place on your phone.',
   },
   {
     key: 'prove',

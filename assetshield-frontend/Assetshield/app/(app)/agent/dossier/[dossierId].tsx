@@ -30,7 +30,7 @@ export default function SharedDossierViewer() {
             <Text variant="labelMd" color={colors.white}>
               {ok
                 ? 'The recomputed manifest hash matches the original.'
-                : `${v.mismatches?.length ?? 0} mismatch(es) found — treat with caution.`}
+                : `${v.mismatches?.length ?? 0} mismatch(es) found. Treat with caution.`}
             </Text>
           </View>
         </View>
@@ -38,10 +38,10 @@ export default function SharedDossierViewer() {
 
       <Card>
         <View style={{ gap: spacing.sm }}>
-          <Row label="Photos" value={String(v.photoCount ?? '—')} />
-          <Row label="Manifest hash" value={v.manifestHash ? `${v.manifestHash.slice(0, 10)}…` : '—'} />
-          <Row label="Recomputed" value={v.recomputedHash ? `${v.recomputedHash.slice(0, 10)}…` : '—'} />
-          <Row label="Verified" value={v.verifiedAt ? new Date(v.verifiedAt).toLocaleString() : '—'} />
+          <Row label="Photos" value={String(v.photoCount ?? '-')} />
+          <Row label="Manifest hash" value={v.manifestHash ? `${v.manifestHash.slice(0, 10)}…` : '-'} />
+          <Row label="Recomputed" value={v.recomputedHash ? `${v.recomputedHash.slice(0, 10)}…` : '-'} />
+          <Row label="Verified" value={v.verifiedAt ? new Date(v.verifiedAt).toLocaleString() : '-'} />
         </View>
       </Card>
     </Screen>

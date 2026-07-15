@@ -61,7 +61,7 @@ export default function ShareDossier() {
                   {i.agentName ?? 'Agent'}
                 </Text>
                 <Text variant="labelMd" color={colors.textMuted}>
-                  {i.insurerName ?? '—'} · {i.propertyName ?? ''}
+                  {i.insurerName ?? '-'} · {i.propertyName ?? ''}
                 </Text>
               </View>
               {shared[i.interestId] ? (

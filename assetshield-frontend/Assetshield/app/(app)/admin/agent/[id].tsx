@@ -54,11 +54,11 @@ export default function AgentReview() {
             <View style={{ flex: 1 }}>
               <Text variant="headlineSm">{agent.fullName ?? 'Agent'}</Text>
               <Text variant="labelMd" color={colors.textMuted}>
-                {agent.insurerName ?? '—'}
+                {agent.insurerName ?? '-'}
               </Text>
             </View>
           </View>
-          <Row label="NIC licence" value={agent.nicLicenceNo ?? '—'} />
+          <Row label="NIC licence" value={agent.nicLicenceNo ?? '-'} />
           <Row label="Status" value={agent.verificationStatus ?? agent.status ?? 'PENDING_VERIFICATION'} />
         </View>
       </Card>

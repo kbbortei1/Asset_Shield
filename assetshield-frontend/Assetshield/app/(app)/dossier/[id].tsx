@@ -117,7 +117,7 @@ export default function DossierScreen() {
         <View style={{ gap: spacing.md }}>
           <Card style={{ backgroundColor: colors.error }}>
             <Text variant="bodyMd" color={colors.white}>
-              Generation failed. You can retry — you won't be charged again.
+              Generation failed. You can retry without being charged again.
             </Text>
           </Card>
           <Button title="Retry generation" loading={retry.isPending} onPress={() => retry.mutate()} />

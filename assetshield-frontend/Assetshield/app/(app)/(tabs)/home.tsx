@@ -141,7 +141,7 @@ function AgentHome() {
             Subscription
           </Text>
           <Text variant="headlineSm" color={colors.primary}>
-            {agent.subscription?.status === 'ACTIVE' ? 'Active' : 'Inactive — subscribe to access leads'}
+            {agent.subscription?.status === 'ACTIVE' ? 'Active' : 'Inactive. Subscribe to access leads.'}
           </Text>
         </Card>
       )}

@@ -22,7 +22,7 @@ export function OfflineBanner({ visible, pending = 0 }: { visible: boolean; pend
     >
       <Ionicons name="cloud-offline-outline" size={16} color={colors.onPrimary} />
       <Text variant="labelMd" color={colors.onPrimary} style={{ flex: 1 }}>
-        Offline{pending > 0 ? ` — ${pending} change${pending === 1 ? '' : 's'} will sync` : ' — changes will sync'} when back online.
+        Offline.{pending > 0 ? ` ${pending} change${pending === 1 ? '' : 's'} will sync` : ' Changes will sync'} when back online.
       </Text>
     </View>
   );
