@@ -19,3 +19,6 @@ logs/
 
 # Load-test seed (contains tokens)
 e2e/load/.seed.env
+
+# Database dumps written by the postgres-backup sidecar
+backups/
