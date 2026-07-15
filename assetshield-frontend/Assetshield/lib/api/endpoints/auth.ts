@@ -15,4 +15,9 @@ export const authApi = {
   resendOtp: (phoneNumber: string) => api.post<void>('/auth/resend-otp', { phoneNumber }, { auth: false }),
   login: (body: LoginRequest) => api.post<AuthResult>('/auth/login', body, { auth: false }),
   logout: (refreshToken: string) => api.post<void>('/auth/logout', { refreshToken }),
+  /** Sends a reset code via SMS. Always succeeds (no phone enumeration). */
+  forgotPassword: (phoneNumber: string) =>
+    api.post<void>('/auth/forgot-password', { phoneNumber }, { auth: false }),
+  resetPassword: (body: { phoneNumber: string; code: string; newPassword: string }) =>
+    api.post<void>('/auth/reset-password', body, { auth: false }),
 };
