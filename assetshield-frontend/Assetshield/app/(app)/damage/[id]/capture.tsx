@@ -5,10 +5,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { damageApi, DamagePhoto, isApiError, PairingSuggestion } from '@/lib/api';
-import { CapturedImage, PermissionError, pickImage } from '@/lib/media/capture';
+import { CapturedImage, getLocationFix, LocationFix, PermissionError, pickImage } from '@/lib/media/capture';
 import { uploadDamagePhoto } from '@/lib/media/uploads';
 import { useOffline } from '@/lib/offline/OfflineProvider';
-import { Button, Card, EmptyState, Header, Input, RemoteImage, Screen, Text } from '@/components/ui';
+import { Button, Card, EmptyState, Header, Input, LocationConfirm, RemoteImage, Screen, Text } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 type Phase = 'capture' | 'pairing';
@@ -27,11 +27,20 @@ export default function CaptureDamage() {
   const [photo, setPhoto] = useState<DamagePhoto | null>(null);
   const [suggestions, setSuggestions] = useState<PairingSuggestion[]>([]);
   const [pairingId, setPairingId] = useState<string | null>(null);
+  const [fix, setFix] = useState<LocationFix | undefined>(undefined);
+
+  const refreshFix = () => {
+    setFix(undefined);
+    getLocationFix().then(setFix);
+  };
 
   const choose = async (source: 'camera' | 'library') => {
     try {
       const img = await pickImage(source);
-      if (img) setImage(img);
+      if (img) {
+        setImage(img);
+        refreshFix(); // pairing suggestions depend on this fix - let the user see it
+      }
     } catch (e) {
       if (e instanceof PermissionError) Alert.alert('Permission needed', `Allow ${e.kind} access to capture damage.`);
     }
@@ -41,7 +50,10 @@ export default function CaptureDamage() {
     if (!image) return;
     setLoading(true);
     try {
-      const outcome = await uploadDamagePhoto(reportId, image, { description });
+      const outcome = await uploadDamagePhoto(reportId, image, {
+        description,
+        coords: fix ? { gpsLat: fix.gpsLat, gpsLng: fix.gpsLng } : undefined,
+      });
       await refreshPending();
       qc.invalidateQueries({ queryKey: ['report', reportId] });
 
@@ -127,6 +139,7 @@ export default function CaptureDamage() {
           <CaptureTile icon="images" label="From gallery" onPress={() => choose('library')} />
         </View>
       )}
+      {image ? <LocationConfirm fix={fix} onRefresh={refreshFix} /> : null}
       <Input label="Description (optional)" value={description} onChangeText={setDescription} placeholder="e.g. Burnt stock" />
     </Screen>
   );

@@ -32,9 +32,16 @@ async function isOnline(): Promise<boolean> {
 export async function uploadAssetPhoto(
   propertyId: string,
   image: CapturedImage,
-  fields: { description: string; estimatedValue?: number; category?: AssetCategory; useGps?: boolean },
+  fields: {
+    description: string;
+    estimatedValue?: number;
+    category?: AssetCategory;
+    useGps?: boolean;
+    /** the fix the user CONFIRMED on screen — upload exactly what was shown */
+    coords?: { gpsLat?: number; gpsLng?: number };
+  },
 ): Promise<UploadOutcome<Asset>> {
-  const coords = fields.useGps === false ? {} : await getCurrentCoords();
+  const coords = fields.useGps === false ? {} : (fields.coords ?? (await getCurrentCoords()));
   const sha256Hash = await sha256OfFile(image.uri); // hash LAST
   const metadata: AssetMetadata = {
     sha256Hash,
@@ -84,9 +91,14 @@ export async function uploadAssetPhoto(
 export async function uploadDamagePhoto(
   reportId: string,
   image: CapturedImage,
-  fields: { description?: string; useGps?: boolean },
+  fields: {
+    description?: string;
+    useGps?: boolean;
+    /** the fix the user CONFIRMED on screen — upload exactly what was shown */
+    coords?: { gpsLat?: number; gpsLng?: number };
+  },
 ): Promise<UploadOutcome<DamagePhotoUploadResult>> {
-  const coords = fields.useGps === false ? {} : await getCurrentCoords();
+  const coords = fields.useGps === false ? {} : (fields.coords ?? (await getCurrentCoords()));
   const sha256Hash = await sha256OfFile(image.uri);
   const metadata: DamagePhotoMetadata = {
     sha256Hash,

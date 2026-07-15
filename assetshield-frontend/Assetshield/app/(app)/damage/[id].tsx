@@ -115,17 +115,25 @@ export default function DamageReportDetail() {
         />
       ) : (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
-          {photos.map((ph) => (
-            <Card key={ph.id} padded={false} style={{ width: '47%', overflow: 'hidden' }}>
-              <RemoteImage uri={ph.photoUrl} height={120} zoomable />
-              <View style={{ padding: spacing.md, gap: spacing.xs }}>
-                <VerifiedBadge hash={ph.sha256Hash} />
-                <Text variant="labelMd" color={ph.paired ? colors.success : colors.textMuted}>
-                  {ph.paired ? 'Paired' : 'Unpaired'}
-                </Text>
-              </View>
-            </Card>
-          ))}
+          {photos.map((ph) => {
+            const canPair = !isCompleted && !ph.paired;
+            return (
+              <Card
+                key={ph.id}
+                padded={false}
+                style={{ width: '47%', overflow: 'hidden' }}
+                onPress={canPair ? () => router.push(`/(app)/damage/${reportId}/pair?photoId=${ph.id}` as never) : undefined}
+              >
+                <RemoteImage uri={ph.photoUrl} height={120} zoomable={!canPair} />
+                <View style={{ padding: spacing.md, gap: spacing.xs }}>
+                  <VerifiedBadge hash={ph.sha256Hash} />
+                  <Text variant="labelMd" color={ph.paired ? colors.success : colors.cta}>
+                    {ph.paired ? 'Paired' : isCompleted ? 'Unpaired' : 'Unpaired · Tap to pair'}
+                  </Text>
+                </View>
+              </Card>
+            );
+          })}
         </View>
       )}
     </Screen>

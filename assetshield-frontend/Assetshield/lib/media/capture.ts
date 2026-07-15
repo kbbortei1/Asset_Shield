@@ -51,6 +51,50 @@ export async function getCurrentCoords(): Promise<{ gpsLat?: number; gpsLng?: nu
   }
 }
 
+export type LocationFix = {
+  gpsLat?: number;
+  gpsLng?: number;
+  /** metres, when the platform reports it */
+  accuracy?: number;
+  /** human-readable place, e.g. "Adabraka, Accra" (reverse-geocoded, offline-safe) */
+  label?: string;
+};
+
+/**
+ * A confirmable location fix: coordinates plus a reverse-geocoded label so the
+ * user can SEE where the evidence will be geo-tagged before uploading. Uses
+ * expo-location's built-in reverse geocoding (no API key; works in Expo Go).
+ * Every field is best-effort — an empty fix means "no geo-tag".
+ */
+export async function getLocationFix(): Promise<LocationFix> {
+  try {
+    const perm = await Location.requestForegroundPermissionsAsync();
+    if (!perm.granted) return {};
+    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    const fix: LocationFix = {
+      gpsLat: pos.coords.latitude,
+      gpsLng: pos.coords.longitude,
+      accuracy: pos.coords.accuracy ?? undefined,
+    };
+    try {
+      const places = await Location.reverseGeocodeAsync({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+      });
+      const p = places[0];
+      if (p) {
+        const parts = [p.district ?? p.subregion ?? p.street, p.city ?? p.region].filter(Boolean);
+        fix.label = parts.length ? parts.join(', ') : undefined;
+      }
+    } catch {
+      // label is a nicety; coords alone are still a valid fix
+    }
+    return fix;
+  } catch {
+    return {};
+  }
+}
+
 /** Build the multipart body for an asset upload: `file` + `metadata` JSON parts. */
 export function buildAssetForm(image: CapturedImage, metadata: AssetMetadata): FormData {
   const form = new FormData();
