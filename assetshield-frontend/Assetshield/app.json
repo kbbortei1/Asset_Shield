@@ -59,7 +59,8 @@
           "locationAlwaysAndWhenInUsePermission": "AssetShield tags evidence with your location so photos can be paired automatically."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
