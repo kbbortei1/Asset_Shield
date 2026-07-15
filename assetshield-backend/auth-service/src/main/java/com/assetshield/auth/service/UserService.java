@@ -17,7 +17,6 @@ import com.assetshield.auth.web.dto.AuthDtos.PurgeResponse;
 import com.assetshield.auth.web.dto.AuthDtos.UpdateProfileRequest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
@@ -30,7 +29,6 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class UserService {
 
-    private static final Duration PURGE_GRACE = Duration.ofDays(30);
     private static final Set<String> ALLOWED_IMAGE_TYPES =
             Set.of(MediaType.IMAGE_JPEG_VALUE, MediaType.IMAGE_PNG_VALUE);
 
@@ -64,14 +62,34 @@ public class UserService {
         return toProfile(userRepository.save(user));
     }
 
+    /**
+     * Deactivates the account immediately: soft-deletes the row (all lookups
+     * filter deleted_at IS NULL, and the partial unique index ux_users_phone
+     * frees the phone number for re-registration), scrubs PII, deletes the
+     * stored Ghana Card image and revokes every session. The row itself is kept
+     * for referential/audit integrity. Data held by other services (properties,
+     * reports) is orphaned by userId and needs a cross-service purge later.
+     */
     @Transactional
     public PurgeResponse requestPurge(UUID userId) {
         User user = requireUser(userId);
         Instant now = Instant.now();
+        if (user.getGhanaCardUrl() != null) {
+            try {
+                storageProvider.delete(user.getGhanaCardUrl());
+            } catch (RuntimeException e) {
+                // best-effort: an orphaned image must not block account deletion
+            }
+            user.setGhanaCardUrl(null);
+        }
         user.setPurgeRequestedAt(now);
+        user.setDeletedAt(now);
+        user.setStatus(UserStatus.SUSPENDED);
+        user.setFullName("Deleted account");
+        user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
         userRepository.save(user);
         refreshTokenService.revokeAllForUser(userId);
-        return new PurgeResponse(true, now.plus(PURGE_GRACE));
+        return new PurgeResponse(true, now);
     }
 
     /** Stores the Ghana Card image at ghana-cards/{userId} and flags the profile. */
