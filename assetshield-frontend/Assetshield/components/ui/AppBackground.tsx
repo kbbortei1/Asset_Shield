@@ -1,3 +1,4 @@
+import { useIsFocused } from '@react-navigation/native';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useTheme } from '@/lib/theme/ThemeProvider';
@@ -26,11 +27,15 @@ export function AppBackground() {
 
   const [index, setIndex] = useState(0);
   const opacity = useRef(new Animated.Value(0)).current;
+  // Every Screen mounts its own backdrop; only the focused one should tick,
+  // otherwise each screen in a deep stack keeps its own rotation timer alive.
+  const focused = useIsFocused();
 
   useEffect(() => {
+    if (!focused) return;
     const t = setInterval(() => setIndex((i) => (i + 1) % IMAGES.length), ROTATE_MS);
     return () => clearInterval(t);
-  }, []);
+  }, [focused]);
 
   useEffect(() => {
     opacity.setValue(0);

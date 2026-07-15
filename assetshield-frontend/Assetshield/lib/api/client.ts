@@ -77,7 +77,7 @@ async function request<T>(path: string, opts: RequestOptions = {}, retry = true)
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   if (signal) {
     if (signal.aborted) controller.abort();
-    else signal.addEventListener('abort', () => controller.abort());
+    else signal.addEventListener('abort', () => controller.abort(), { once: true });
   }
 
   let res: Response;
