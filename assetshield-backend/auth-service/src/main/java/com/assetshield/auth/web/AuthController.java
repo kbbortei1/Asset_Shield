@@ -3,6 +3,8 @@ package com.assetshield.auth.web;
 import com.assetshield.auth.common.ApiResponse;
 import com.assetshield.auth.service.AuthService;
 import com.assetshield.auth.web.dto.AuthDtos.AuthTokensResponse;
+import com.assetshield.auth.web.dto.AuthDtos.ForgotPasswordRequest;
+import com.assetshield.auth.web.dto.AuthDtos.ForgotPasswordResponse;
 import com.assetshield.auth.web.dto.AuthDtos.LoginRequest;
 import com.assetshield.auth.web.dto.AuthDtos.LogoutRequest;
 import com.assetshield.auth.web.dto.AuthDtos.LogoutResponse;
@@ -13,6 +15,7 @@ import com.assetshield.auth.web.dto.AuthDtos.RegisterRequest;
 import com.assetshield.auth.web.dto.AuthDtos.RegisterResponse;
 import com.assetshield.auth.web.dto.AuthDtos.ResendOtpRequest;
 import com.assetshield.auth.web.dto.AuthDtos.ResendOtpResponse;
+import com.assetshield.auth.web.dto.AuthDtos.ResetPasswordRequest;
 import com.assetshield.auth.web.dto.AuthDtos.VerifyOtpRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -68,6 +71,20 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<AuthTokensResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.success(authService.login(request), "Logged in");
+    }
+
+    @Operation(summary = "Request a password-reset code (no phone enumeration)")
+    @PostMapping("/forgot-password")
+    public ApiResponse<ForgotPasswordResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return ApiResponse.success(authService.forgotPassword(request),
+                "If this number has an account, a reset code has been sent");
+    }
+
+    @Operation(summary = "Reset the password with the SMS code; revokes all sessions")
+    @PostMapping("/reset-password")
+    public ApiResponse<LogoutResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ApiResponse.success(new LogoutResponse(true), "Password updated; please log in");
     }
 
     @Operation(summary = "Rotate a refresh token (reuse burns the family)")

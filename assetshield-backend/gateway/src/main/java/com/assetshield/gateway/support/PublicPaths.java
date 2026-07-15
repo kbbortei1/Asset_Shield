@@ -19,6 +19,8 @@ public final class PublicPaths {
             "/api/v1/auth/login",
             "/api/v1/auth/verify-otp",
             "/api/v1/auth/resend-otp",
+            "/api/v1/auth/forgot-password",
+            "/api/v1/auth/reset-password",
             "/api/v1/auth/refresh");
 
     private static final List<PathPattern> PATTERNS;
@@ -31,6 +33,8 @@ public final class PublicPaths {
                 parser.parse("/api/v1/auth/login"),
                 parser.parse("/api/v1/auth/verify-otp"),
                 parser.parse("/api/v1/auth/resend-otp"),
+                parser.parse("/api/v1/auth/forgot-password"),
+                parser.parse("/api/v1/auth/reset-password"),
                 parser.parse("/api/v1/auth/refresh"),
                 parser.parse("/actuator/health"),
                 parser.parse("/api/v1/payments/webhook"),

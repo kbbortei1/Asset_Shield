@@ -13,6 +13,8 @@ import com.assetshield.auth.repo.UserRepository;
 import com.assetshield.auth.token.RefreshTokenService;
 import com.assetshield.auth.token.TokenService;
 import com.assetshield.auth.web.dto.AuthDtos.AuthTokensResponse;
+import com.assetshield.auth.web.dto.AuthDtos.ForgotPasswordRequest;
+import com.assetshield.auth.web.dto.AuthDtos.ForgotPasswordResponse;
 import com.assetshield.auth.web.dto.AuthDtos.LoginRequest;
 import com.assetshield.auth.web.dto.AuthDtos.LogoutRequest;
 import com.assetshield.auth.web.dto.AuthDtos.RefreshRequest;
@@ -22,6 +24,7 @@ import com.assetshield.auth.web.dto.AuthDtos.RegisterRequest;
 import com.assetshield.auth.web.dto.AuthDtos.RegisterResponse;
 import com.assetshield.auth.web.dto.AuthDtos.ResendOtpRequest;
 import com.assetshield.auth.web.dto.AuthDtos.ResendOtpResponse;
+import com.assetshield.auth.web.dto.AuthDtos.ResetPasswordRequest;
 import com.assetshield.auth.web.dto.AuthDtos.UserSummary;
 import com.assetshield.auth.web.dto.AuthDtos.VerifyOtpRequest;
 import java.util.UUID;
@@ -156,6 +159,35 @@ public class AuthService {
     private static ApiException badCredentials() {
         // Identical message whether the phone is unknown or the password is wrong.
         return new ApiException(ErrorCode.BAD_CREDENTIALS, "Invalid phone number or password");
+    }
+
+    /**
+     * Sends a LOGIN_RECOVERY code to the phone if (and only if) it belongs to an
+     * ACTIVE account. The response is identical either way, so the endpoint can't
+     * be used to enumerate registered numbers. OTP_THROTTLED still surfaces (the
+     * resend-interval guard); enumeration via timing is mitigated at the gateway
+     * by per-IP rate limiting.
+     */
+    @Transactional(noRollbackFor = ApiException.class)
+    public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
+        userRepository.findByPhoneNumberAndDeletedAtIsNull(request.phoneNumber())
+                .filter(user -> user.getStatus() == UserStatus.ACTIVE)
+                .ifPresent(user -> otpService.issue(user.getPhoneNumber(), OtpPurpose.LOGIN_RECOVERY));
+        return new ForgotPasswordResponse(true, otpService.ttlSeconds());
+    }
+
+    /**
+     * Verifies the LOGIN_RECOVERY code, sets the new password and revokes every
+     * refresh token (all sessions must re-login with the new password).
+     */
+    @Transactional(noRollbackFor = ApiException.class)
+    public void resetPassword(ResetPasswordRequest request) {
+        otpService.verify(request.phoneNumber(), OtpPurpose.LOGIN_RECOVERY, request.code());
+        User user = userRepository.findByPhoneNumberAndDeletedAtIsNull(request.phoneNumber())
+                .orElseThrow(() -> new ApiException(ErrorCode.OTP_INVALID, "Code is invalid"));
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+        refreshTokenService.revokeAllForUser(user.getId());
     }
 
     @Transactional(noRollbackFor = ApiException.class)

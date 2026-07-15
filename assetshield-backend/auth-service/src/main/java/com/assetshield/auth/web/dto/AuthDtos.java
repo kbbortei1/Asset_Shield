@@ -48,6 +48,19 @@ public final class AuthDtos {
             @NotBlank String password) {
     }
 
+    public record ForgotPasswordRequest(
+            @NotBlank @Pattern(regexp = PHONE_REGEX, message = PHONE_MESSAGE) String phoneNumber) {
+    }
+
+    public record ForgotPasswordResponse(boolean otpSent, long expiresInSeconds) {
+    }
+
+    public record ResetPasswordRequest(
+            @NotBlank @Pattern(regexp = PHONE_REGEX, message = PHONE_MESSAGE) String phoneNumber,
+            @NotBlank String code,
+            @NotBlank @Size(min = 8, max = 72, message = "must be at least 8 characters") String newPassword) {
+    }
+
     public record UserSummary(UUID id, String fullName, String role, String language) {
     }
 
