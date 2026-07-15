@@ -7,12 +7,14 @@ import {
 import { Sora_600SemiBold, Sora_700Bold, useFonts } from '@expo-google-fonts/sora';
 import { DefaultTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { Asset } from 'expo-asset';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ImageViewerProvider, ToastProvider } from '@/components/ui';
 import { AuthProvider, useAuth } from '@/lib/auth/AuthProvider';
 import { OfflineProvider } from '@/lib/offline/OfflineProvider';
@@ -21,6 +23,19 @@ import { queryClient } from '@/lib/query';
 import { colors } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
+
+// Warm the brand/backdrop images at boot. In Expo Go dev, require()d assets
+// stream from Metro over the LAN per first use, so on a weak network the logo
+// pops in late; preloading pulls them once, up front. (Production builds bundle
+// them, making this a fast no-op.) Fire-and-forget: failures just mean the
+// old lazy behavior.
+Asset.loadAsync([
+  require('@/assets/images/logo-emblem.png'),
+  require('@/assets/images/background1.jpg'),
+  require('@/assets/images/background2.jpg'),
+  require('@/assets/images/background3.jpg'),
+  require('@/assets/images/background4.jpg'),
+]).catch(() => {});
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -34,21 +49,23 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <OfflineProvider>
-              <ThemeProvider>
-                <ImageViewerProvider>
-                  <ToastProvider>
-                    <RootNav fontsLoaded={fontsLoaded} />
-                  </ToastProvider>
-                </ImageViewerProvider>
-              </ThemeProvider>
-            </OfflineProvider>
-          </AuthProvider>
-        </QueryClientProvider>
-      </SafeAreaProvider>
+      <ErrorBoundary>
+        <SafeAreaProvider>
+          <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+              <OfflineProvider>
+                <ThemeProvider>
+                  <ImageViewerProvider>
+                    <ToastProvider>
+                      <RootNav fontsLoaded={fontsLoaded} />
+                    </ToastProvider>
+                  </ImageViewerProvider>
+                </ThemeProvider>
+              </OfflineProvider>
+            </AuthProvider>
+          </QueryClientProvider>
+        </SafeAreaProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }
