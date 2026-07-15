@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { TextInput, TextInputProps, View } from 'react-native';
+import { Pressable, TextInput, TextInputProps, View } from 'react-native';
 import { colors, radius, spacing, type } from '@/theme';
 import { Text } from './Text';
 
@@ -10,12 +11,16 @@ export type InputProps = TextInputProps & {
 };
 
 /**
- * 56px, 12px-rounded field with a persistent label above (accessibility — never
+ * 56px, 12px-rounded field with a persistent label above (accessibility: never
  * placeholder-only). Hairline border, teal focus ring, red error state.
+ * Password fields (secureTextEntry) get a built-in show/hide eye toggle.
  */
-export function Input({ label, error, hint, style, onFocus, onBlur, ...rest }: InputProps) {
+export function Input({ label, error, hint, style, onFocus, onBlur, secureTextEntry, ...rest }: InputProps) {
   const [focused, setFocused] = useState(false);
+  const [hidden, setHidden] = useState(true);
   const borderColor = error ? colors.error : focused ? colors.primary : colors.border;
+  const isSecure = !!secureTextEntry;
+
   return (
     <View style={{ gap: spacing.xs, alignSelf: 'stretch' }}>
       {label ? (
@@ -23,31 +28,46 @@ export function Input({ label, error, hint, style, onFocus, onBlur, ...rest }: I
           {label}
         </Text>
       ) : null}
-      <TextInput
-        placeholderTextColor={colors.textMuted}
-        style={[
-          {
-            height: 56,
-            borderRadius: radius.md,
-            borderWidth: focused || error ? 1.5 : 1,
-            borderColor,
-            paddingHorizontal: spacing.lg,
-            backgroundColor: colors.card,
-            color: colors.text,
-            ...type.bodyMd,
-          },
-          style,
-        ]}
-        onFocus={(e) => {
-          setFocused(true);
-          onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          setFocused(false);
-          onBlur?.(e);
-        }}
-        {...rest}
-      />
+      <View>
+        <TextInput
+          placeholderTextColor={colors.textMuted}
+          secureTextEntry={isSecure && hidden}
+          style={[
+            {
+              height: 56,
+              borderRadius: radius.md,
+              borderWidth: focused || error ? 1.5 : 1,
+              borderColor,
+              paddingHorizontal: spacing.lg,
+              paddingRight: isSecure ? 52 : spacing.lg,
+              backgroundColor: colors.card,
+              color: colors.text,
+              ...type.bodyMd,
+            },
+            style,
+          ]}
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
+          {...rest}
+        />
+        {isSecure ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={hidden ? 'Show password' : 'Hide password'}
+            hitSlop={10}
+            onPress={() => setHidden((h) => !h)}
+            style={{ position: 'absolute', right: spacing.lg, top: 0, height: 56, justifyContent: 'center' }}
+          >
+            <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={22} color={colors.textMuted} />
+          </Pressable>
+        ) : null}
+      </View>
       {error ? (
         <Text variant="labelMd" color={colors.error}>
           {error}
