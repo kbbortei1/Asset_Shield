@@ -1,0 +1,35 @@
+name: frontend-ci
+
+on:
+  push:
+    branches: [main]
+    paths: ['assetshield-frontend/**', '.github/workflows/ci-frontend.yml']
+  pull_request:
+    paths: ['assetshield-frontend/**', '.github/workflows/ci-frontend.yml']
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: assetshield-frontend/Assetshield
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: assetshield-frontend/Assetshield/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx expo lint -- --max-warnings 0
+
+      - name: Unit tests
+        run: npm test --if-present
