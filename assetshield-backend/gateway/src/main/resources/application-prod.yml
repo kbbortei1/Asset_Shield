@@ -1,0 +1,10 @@
+# Production hardening (SPRING_PROFILES_ACTIVE=prod).
+# Swagger/api-docs are hard-off in prod — not overridable via env.
+app:
+  swagger-enabled: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

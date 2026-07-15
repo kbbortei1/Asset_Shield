@@ -135,15 +135,16 @@ app:
   rate-limit:
     capacity: 30
     refill-per-minute: 30
-  # Aggregated Swagger UI toggle. MUST be false in any public deployment —
-  # see README. The SwaggerGateFilter 404s all doc paths when false.
-  swagger-enabled: ${SWAGGER_ENABLED:true}
+  # Aggregated Swagger UI toggle. Secure by default: OFF unless explicitly
+  # enabled (the dev docker-compose opts in with SWAGGER_ENABLED=true). The
+  # SwaggerGateFilter 404s all doc paths when false.
+  swagger-enabled: ${SWAGGER_ENABLED:false}
 
 springdoc:
   api-docs:
-    enabled: ${SWAGGER_ENABLED:true}
+    enabled: ${SWAGGER_ENABLED:false}
   swagger-ui:
-    enabled: ${SWAGGER_ENABLED:true}
+    enabled: ${SWAGGER_ENABLED:false}
     path: /swagger-ui.html
     # The five downstream services, proxied via the api-docs-* routes above.
     urls:
