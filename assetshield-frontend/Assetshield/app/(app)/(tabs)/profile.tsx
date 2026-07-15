@@ -3,8 +3,9 @@ import { router } from 'expo-router';
 import { Alert, Pressable, View } from 'react-native';
 import { usersApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { useOffline } from '@/lib/offline/OfflineProvider';
 import { useTheme } from '@/lib/theme/ThemeProvider';
-import { Button, Card, Screen, Text } from '@/components/ui';
+import { Button, Card, Screen, Text, useToast } from '@/components/ui';
 import { colors, radius, spacing, ThemeName } from '@/theme';
 
 /** Stitch: "Profile & Settings". */
@@ -17,12 +18,19 @@ const THEME_OPTIONS: { key: ThemeName; label: string; icon: keyof typeof Ionicon
 export default function ProfileTab() {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { failed, retryFailedNow } = useOffline();
+  const { show } = useToast();
   const role = user?.role ?? 'OWNER';
+
+  const onRetryFailed = async () => {
+    await retryFailedNow();
+    show('Retrying failed uploads…');
+  };
 
   const confirmErasure = () =>
     Alert.alert(
       'Delete account?',
-      'This requests permanent erasure of your account and data. This cannot be undone.',
+      'Your account is deactivated immediately: your login stops working and your phone number is freed up. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -55,6 +63,23 @@ export default function ProfileTab() {
           </View>
         </View>
       </Card>
+
+      {failed > 0 ? (
+        <Card style={{ backgroundColor: colors.warning }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <Ionicons name="cloud-offline" size={22} color={colors.white} />
+            <View style={{ flex: 1 }}>
+              <Text variant="bodyMd" weight="semibold" color={colors.white}>
+                {failed} upload{failed === 1 ? '' : 's'} failed
+              </Text>
+              <Text variant="labelMd" color={colors.white}>
+                These were rejected by the server and stopped retrying.
+              </Text>
+            </View>
+            <Button title="Retry" fullWidth={false} variant="secondary" onPress={onRetryFailed} />
+          </View>
+        </Card>
+      ) : null}
 
       <View style={{ gap: spacing.sm }}>
         <Row icon="person-outline" label="Edit profile" onPress={() => router.push('/(app)/profile-edit' as never)} />

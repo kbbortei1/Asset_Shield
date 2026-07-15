@@ -78,6 +78,13 @@ const toItem = (r: Row): QueuedUpload => ({
   lastError: r.last_error,
 });
 
+/**
+ * A row that has failed this many times with a REAL server rejection (not mere
+ * connectivity loss) is dead-lettered: excluded from replay so it can't retry
+ * forever, but kept so the user can inspect/retry/discard it.
+ */
+export const MAX_ATTEMPTS = 5;
+
 export const queueDb = {
   async insert(item: Omit<QueuedUpload, 'attempts' | 'lastError'>): Promise<void> {
     const db = await getDb();
@@ -97,16 +104,48 @@ export const queueDb = {
     );
   },
 
+  /** Replayable items only — dead-lettered rows are excluded. */
   async all(): Promise<QueuedUpload[]> {
     const db = await getDb();
-    const rows = await db.getAllAsync<Row>(`SELECT * FROM upload_queue ORDER BY created_at ASC`);
+    const rows = await db.getAllAsync<Row>(
+      `SELECT * FROM upload_queue WHERE attempts < ? ORDER BY created_at ASC`,
+      MAX_ATTEMPTS,
+    );
     return rows.map(toItem);
   },
 
   async count(): Promise<number> {
     const db = await getDb();
-    const row = await db.getFirstAsync<{ c: number }>(`SELECT COUNT(*) AS c FROM upload_queue`);
+    const row = await db.getFirstAsync<{ c: number }>(
+      `SELECT COUNT(*) AS c FROM upload_queue WHERE attempts < ?`,
+      MAX_ATTEMPTS,
+    );
     return row?.c ?? 0;
+  },
+
+  /** Dead-lettered items (exhausted their retries on real server errors). */
+  async dead(): Promise<QueuedUpload[]> {
+    const db = await getDb();
+    const rows = await db.getAllAsync<Row>(
+      `SELECT * FROM upload_queue WHERE attempts >= ? ORDER BY created_at ASC`,
+      MAX_ATTEMPTS,
+    );
+    return rows.map(toItem);
+  },
+
+  async deadCount(): Promise<number> {
+    const db = await getDb();
+    const row = await db.getFirstAsync<{ c: number }>(
+      `SELECT COUNT(*) AS c FROM upload_queue WHERE attempts >= ?`,
+      MAX_ATTEMPTS,
+    );
+    return row?.c ?? 0;
+  },
+
+  /** Give every dead-lettered item a fresh set of retries. */
+  async reviveDead(): Promise<void> {
+    const db = await getDb();
+    await db.runAsync(`UPDATE upload_queue SET attempts = 0 WHERE attempts >= ?`, MAX_ATTEMPTS);
   },
 
   async remove(id: string): Promise<void> {
