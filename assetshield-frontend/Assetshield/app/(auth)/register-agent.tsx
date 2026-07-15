@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { isApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { Button, Card, Header, Input, Screen, Text } from '@/components/ui';
+import { validateAuthFields } from '@/lib/auth/validation';
+import { Button, Card, Header, Input, PhoneInput, Screen, Text } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** Stitch: "Agent Registration & Verification". Agents start PENDING_VERIFICATION. */
@@ -23,8 +24,19 @@ export default function RegisterAgent() {
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const submit = async () => {
-    setErrors({});
     setFormError(null);
+    const clientErrors = validateAuthFields(
+      {
+        fullName: form.fullName,
+        phoneNumber: form.phoneNumber,
+        password: form.password,
+        insurerName: form.insurerName,
+        nicLicenceNo: form.nicLicenceNo,
+      },
+      { passwordMinLength: true },
+    );
+    setErrors(clientErrors);
+    if (Object.keys(clientErrors).length > 0) return;
     setLoading(true);
     try {
       await registerAgent(form);
@@ -55,7 +67,7 @@ export default function RegisterAgent() {
 
       <View style={{ gap: spacing.lg, marginTop: spacing.sm }}>
         <Input label="Full name" value={form.fullName} onChangeText={set('fullName')} autoCapitalize="words" error={errors.fullName} />
-        <Input label="Phone number" value={form.phoneNumber} onChangeText={set('phoneNumber')} keyboardType="phone-pad" error={errors.phoneNumber} />
+        <PhoneInput value={form.phoneNumber} onChangeText={set('phoneNumber')} error={errors.phoneNumber} />
         <Input label="Password" value={form.password} onChangeText={set('password')} secureTextEntry error={errors.password} />
         <Input label="Insurer" value={form.insurerName} onChangeText={set('insurerName')} placeholder="e.g. Hollard Ghana" error={errors.insurerName} />
         <Input label="NIC licence number" value={form.nicLicenceNo} onChangeText={set('nicLicenceNo')} placeholder="NIC-12345" autoCapitalize="characters" error={errors.nicLicenceNo} />

@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { isApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { Button, Header, Input, Screen, Text } from '@/components/ui';
+import { validateAuthFields } from '@/lib/auth/validation';
+import { Button, Header, Input, PhoneInput, Screen, Text } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** Stitch: "Phone Sign-up" / "Sign Up & Verify" (owner path). */
@@ -17,8 +18,10 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
 
   const submit = async () => {
-    setErrors({});
     setFormError(null);
+    const clientErrors = validateAuthFields({ fullName, phoneNumber, password }, { passwordMinLength: true });
+    setErrors(clientErrors);
+    if (Object.keys(clientErrors).length > 0) return;
     setLoading(true);
     try {
       await register({ fullName, phoneNumber, password });
@@ -52,14 +55,7 @@ export default function Register() {
 
       <View style={{ gap: spacing.lg, marginTop: spacing.sm }}>
         <Input label="Full name" value={fullName} onChangeText={setFullName} placeholder="Akosua Owusu" error={errors.fullName} autoCapitalize="words" />
-        <Input
-          label="Phone number"
-          value={phoneNumber}
-          onChangeText={setPhoneNumber}
-          placeholder="+233201112233"
-          keyboardType="phone-pad"
-          error={errors.phoneNumber}
-        />
+        <PhoneInput value={phoneNumber} onChangeText={setPhoneNumber} error={errors.phoneNumber} />
         <Input
           label="Password"
           value={password}

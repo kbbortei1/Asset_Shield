@@ -34,7 +34,10 @@ export default function IssueQuote() {
     }
   };
 
-  const valid = Number(coverage) > 0 && Number(premium) > 0;
+  // mirrors backend QuoteCreateRequest: amounts > 0, term 1-60 months
+  const termN = Number(term) || 0;
+  const termValid = termN >= 1 && termN <= 60;
+  const valid = Number(coverage) > 0 && Number(premium) > 0 && termValid;
 
   return (
     <Screen footer={<Button title="Send quote" loading={loading} disabled={!valid} onPress={submit} />}>
@@ -42,7 +45,14 @@ export default function IssueQuote() {
       <View style={{ gap: spacing.lg }}>
         <Input label="Coverage amount (₵)" value={coverage} onChangeText={setCoverage} keyboardType="numeric" placeholder="40000" />
         <Input label="Premium per month (₵)" value={premium} onChangeText={setPremium} keyboardType="numeric" placeholder="120" />
-        <Input label="Term (months)" value={term} onChangeText={setTerm} keyboardType="numeric" placeholder="12" />
+        <Input
+          label="Term (months)"
+          value={term}
+          onChangeText={setTerm}
+          keyboardType="numeric"
+          placeholder="12"
+          error={term && !termValid ? 'Term must be between 1 and 60 months.' : undefined}
+        />
       </View>
       {valid ? (
         <Text variant="labelMd" color={colors.textMuted}>
