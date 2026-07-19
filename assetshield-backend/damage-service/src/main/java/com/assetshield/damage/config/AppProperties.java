@@ -7,7 +7,7 @@ public record AppProperties(
         Jwt jwt,
         String internalApiKey,
         String propertyServiceUri,
-        String marketplaceServiceUri,
+        String paymentServiceUri,
         String authServiceUri,
         java.math.BigDecimal dossierFeeGhs,
         double pairingRadiusMeters,

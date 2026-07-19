@@ -1,6 +1,6 @@
 package com.assetshield.damage.service;
 
-import com.assetshield.damage.client.MarketplacePaymentClient;
+import com.assetshield.damage.client.PaymentServiceClient;
 import com.assetshield.damage.client.PropertyInternalClient;
 import com.assetshield.damage.common.ApiException;
 import com.assetshield.damage.common.ErrorCode;
@@ -62,7 +62,7 @@ public class DossierService {
     private final DamagePhotoRepository photoRepository;
     private final PhotoPairRepository pairRepository;
     private final ReportGuard guard;
-    private final MarketplacePaymentClient paymentClient;
+    private final PaymentServiceClient paymentClient;
     private final PropertyInternalClient propertyClient;
     private final DossierGeneratorService generatorService;
     private final ManifestService manifestService;
@@ -75,7 +75,7 @@ public class DossierService {
                           DamagePhotoRepository photoRepository,
                           PhotoPairRepository pairRepository,
                           ReportGuard guard,
-                          MarketplacePaymentClient paymentClient,
+                          PaymentServiceClient paymentClient,
                           PropertyInternalClient propertyClient,
                           DossierGeneratorService generatorService,
                           ManifestService manifestService,
@@ -114,7 +114,7 @@ public class DossierService {
                     fields.put("status", existing.getStatus().name());
                     if (existing.getStatus() == DossierStatus.PENDING_PAYMENT) {
                         // the old init may have expired — give the client a fresh checkout
-                        MarketplacePaymentClient.PaymentInit init = paymentClient.initializeDossierFee(
+                        PaymentServiceClient.PaymentInit init = paymentClient.initializeDossierFee(
                                 user.id(), user.phone(), dossierFee, existing.getId());
                         fields.put("reference", init.reference());
                         fields.put("authorizationUrl", init.authorizationUrl());
@@ -128,7 +128,7 @@ public class DossierService {
         dossier.setRequestedByUserId(user.id());
         Dossier saved = dossierRepository.saveAndFlush(dossier);
 
-        MarketplacePaymentClient.PaymentInit init = paymentClient.initializeDossierFee(
+        PaymentServiceClient.PaymentInit init = paymentClient.initializeDossierFee(
                 user.id(), user.phone(), dossierFee, saved.getId());
         return new GenerateResponse(saved.getId(), saved.getStatus(),
                 new PaymentBlock(init.paymentId(), dossierFee, "GHS",

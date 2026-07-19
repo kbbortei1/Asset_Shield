@@ -21,7 +21,7 @@ app:
     secret: ${JWT_SECRET}
   internal-api-key: ${INTERNAL_API_KEY}
   property-service-uri: ${PROPERTY_SERVICE_URL:http://property-service:8082}
-  marketplace-service-uri: ${MARKETPLACE_SERVICE_URL:http://marketplace-service:8084}
+  payment-service-uri: ${PAYMENT_SERVICE_URL:http://payment-service:8086}
   auth-service-uri: ${AUTH_SERVICE_URL:http://auth-service:8081}
   dossier-fee-ghs: ${DOSSIER_FEE_GHS:50.00}
   pairing-radius-meters: ${PAIRING_RADIUS_METERS:25}

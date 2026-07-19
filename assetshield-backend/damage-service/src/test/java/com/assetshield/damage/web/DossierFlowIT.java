@@ -16,7 +16,7 @@ import com.assetshield.damage.TestProps;
 import com.assetshield.damage.TestTokens;
 import com.assetshield.damage.client.AccessLevel;
 import com.assetshield.damage.client.AuthUserClient;
-import com.assetshield.damage.client.MarketplacePaymentClient;
+import com.assetshield.damage.client.PaymentServiceClient;
 import com.assetshield.damage.client.PropertyInternalClient;
 import com.assetshield.damage.domain.Dossier;
 import com.assetshield.damage.domain.DossierStatus;
@@ -61,7 +61,7 @@ import tools.jackson.databind.ObjectMapper;
         "PAIRING_RADIUS_METERS=25",
         "DOSSIER_FEE_GHS=50.00",
         "PROPERTY_SERVICE_URL=http://property-service.invalid",
-        "MARKETPLACE_SERVICE_URL=http://marketplace-service.invalid",
+        "PAYMENT_SERVICE_URL=http://payment-service.invalid",
         "AUTH_SERVICE_URL=http://auth-service.invalid"
 })
 @AutoConfigureMockMvc
@@ -87,7 +87,7 @@ class DossierFlowIT {
     PropertyInternalClient propertyClient;
 
     @MockitoBean
-    MarketplacePaymentClient paymentClient;
+    PaymentServiceClient paymentClient;
 
     @MockitoBean
     AuthUserClient authUserClient;
@@ -112,7 +112,7 @@ class DossierFlowIT {
         when(authUserClient.byId(any())).thenReturn(Optional.of(
                 new AuthUserClient.AuthUserInfo(ownerId, "Kwesi Boateng", "+233244400001")));
         when(paymentClient.initializeDossierFee(any(), any(), any(), any())).thenAnswer(invocation ->
-                new MarketplacePaymentClient.PaymentInit(UUID.randomUUID(),
+                new PaymentServiceClient.PaymentInit(UUID.randomUUID(),
                         "ASGH-DSR-" + UUID.randomUUID().toString().substring(0, 12),
                         "http://localhost:8080/mock-checkout/test"));
 

@@ -12,20 +12,20 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-/** Initializes dossier-fee checkouts via marketplace-service's internal API. */
+/** Initializes dossier-fee checkouts via payment-service's internal API. */
 @Component
-public class MarketplacePaymentClient {
+public class PaymentServiceClient {
 
     public record PaymentInit(UUID paymentId, String reference, String authorizationUrl) {
     }
 
-    private static final Logger log = LoggerFactory.getLogger(MarketplacePaymentClient.class);
+    private static final Logger log = LoggerFactory.getLogger(PaymentServiceClient.class);
 
     private final RestClient restClient;
 
-    public MarketplacePaymentClient(AppProperties properties) {
+    public PaymentServiceClient(AppProperties properties) {
         this.restClient = RestClient.builder()
-                .baseUrl(properties.marketplaceServiceUri())
+                .baseUrl(properties.paymentServiceUri())
                 .defaultHeader("X-Internal-Api-Key", properties.internalApiKey())
                 .build();
     }
