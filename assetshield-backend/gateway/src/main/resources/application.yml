@@ -28,6 +28,12 @@ spring:
                 - Path=/api/v1/users/me/agent-interests,/api/v1/users/me/quotes,/api/v1/users/me/subscription
 
             # More specific than the auth /users/** route — must stay first.
+            - id: payment-service-users-me
+              uri: ${PAYMENT_SERVICE_URI:http://payment-service:8086}
+              predicates:
+                - Path=/api/v1/users/me/payments
+
+            # More specific than the auth /users/** route — must stay first.
             - id: notification-service-users-me
               uri: ${NOTIFICATION_SERVICE_URI:http://notification-service:8085}
               predicates:
@@ -79,8 +85,8 @@ spring:
               predicates:
                 - Path=/api/v1/dossiers/**
 
-            - id: marketplace-service
-              uri: ${MARKETPLACE_SERVICE_URI:http://marketplace-service:8084}
+            - id: payment-service
+              uri: ${PAYMENT_SERVICE_URI:http://payment-service:8086}
               predicates:
                 - Path=/api/v1/payments/**
 
@@ -127,6 +133,12 @@ spring:
                 - Path=/api-docs/notification
               filters:
                 - SetPath=/v3/api-docs
+            - id: api-docs-payment
+              uri: ${PAYMENT_SERVICE_URI:http://payment-service:8086}
+              predicates:
+                - Path=/api-docs/payment
+              filters:
+                - SetPath=/v3/api-docs
 
 # No default on purpose: the gateway must fail fast when JWT_SECRET is absent.
 app:
@@ -158,6 +170,8 @@ springdoc:
         url: /api-docs/marketplace
       - name: notification-service
         url: /api-docs/notification
+      - name: payment-service
+        url: /api-docs/payment
 
 management:
   endpoints:
