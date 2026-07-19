@@ -2,7 +2,6 @@ package com.assetshield.marketplace.subscription;
 
 import com.assetshield.marketplace.client.NotificationClient;
 import com.assetshield.marketplace.domain.AgentSubscription;
-import com.assetshield.marketplace.domain.Payment;
 import com.assetshield.marketplace.domain.SubscriptionStatus;
 import com.assetshield.marketplace.domain.UserSubscription;
 import com.assetshield.marketplace.repo.AgentSubscriptionRepository;
@@ -50,13 +49,12 @@ public class SubscriptionSettlementService {
      * fresh one. Re-dispatch of the same payment is a no-op (last_payment_id).
      */
     @Transactional
-    public void activateAgentSubscription(Payment payment) {
-        UUID agentId = payment.getReferenceEntityId();
+    public void activateAgentSubscription(UUID agentId, UUID paymentId) {
         AgentSubscription sub = agentSubscriptionRepository
                 .findByAgentIdAndStatus(agentId, SubscriptionStatus.ACTIVE)
                 .orElse(null);
         if (sub != null) {
-            if (payment.getId().equals(sub.getLastPaymentId())) {
+            if (paymentId.equals(sub.getLastPaymentId())) {
                 return; // this payment is already applied
             }
             sub.setExpiresAt(sub.getExpiresAt().plus(TERM));
@@ -68,7 +66,7 @@ public class SubscriptionSettlementService {
             sub.setStartedAt(Instant.now());
             sub.setExpiresAt(Instant.now().plus(TERM));
         }
-        sub.setLastPaymentId(payment.getId());
+        sub.setLastPaymentId(paymentId);
         agentSubscriptionRepository.save(sub);
         // activation is visible in the app immediately — no push type exists
         // for it in the Day 6 vocabulary, so an INFO line is the record
@@ -77,13 +75,12 @@ public class SubscriptionSettlementService {
 
     /** PRO_SUBSCRIPTION success: same extend-or-create rules on user_subscriptions. */
     @Transactional
-    public void activateProSubscription(Payment payment) {
-        UUID userId = payment.getReferenceEntityId();
+    public void activateProSubscription(UUID userId, UUID paymentId) {
         UserSubscription sub = userSubscriptionRepository
                 .findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)
                 .orElse(null);
         if (sub != null) {
-            if (payment.getId().equals(sub.getLastPaymentId())) {
+            if (paymentId.equals(sub.getLastPaymentId())) {
                 return; // this payment is already applied
             }
             sub.setExpiresAt(sub.getExpiresAt().plus(TERM));
@@ -95,7 +92,7 @@ public class SubscriptionSettlementService {
             sub.setStartedAt(Instant.now());
             sub.setExpiresAt(Instant.now().plus(TERM));
         }
-        sub.setLastPaymentId(payment.getId());
+        sub.setLastPaymentId(paymentId);
         userSubscriptionRepository.save(sub);
         // activation is visible in the app immediately — no push type exists
         // for it in the Day 6 vocabulary, so an INFO line is the record

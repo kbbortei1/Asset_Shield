@@ -10,15 +10,11 @@ public record AppProperties(
         String authServiceUri,
         String propertyServiceUri,
         String notificationServiceUri,
-        Payments payments,
+        String paymentServiceUri,
         Pricing pricing,
         Notifications notifications) {
 
     public record Jwt(String secret) {
-    }
-
-    public record Payments(String mode, String paystackSecretKey, String paystackBaseUrl,
-                           long mockAutoSettleMs, boolean reconcileEnabled) {
     }
 
     public record Pricing(java.math.BigDecimal agentSubGhs, java.math.BigDecimal proSubGhs) {

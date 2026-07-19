@@ -7,8 +7,8 @@ import com.assetshield.marketplace.client.PropertyClient;
 import com.assetshield.marketplace.domain.AgentSubscription;
 import com.assetshield.marketplace.domain.InsuranceAgent;
 import com.assetshield.marketplace.domain.SubscriptionStatus;
+import com.assetshield.marketplace.client.PaymentClient;
 import com.assetshield.marketplace.domain.VerificationStatus;
-import com.assetshield.marketplace.payment.DamageServiceClient;
 import com.assetshield.marketplace.repo.AgentSubscriptionRepository;
 import com.assetshield.marketplace.repo.InsuranceAgentRepository;
 import java.time.Duration;
@@ -34,10 +34,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 @SpringBootTest(properties = {
         "JWT_SECRET=" + TestProps.JWT_SECRET,
-        "INTERNAL_API_KEY=" + TestProps.INTERNAL_API_KEY,
-        "PAYMENTS_MODE=mock",
-        "MOCK_AUTO_SETTLE_MS=-1", // tests drive settlement explicitly
-        "PAYMENTS_RECONCILE_ENABLED=true"
+        "INTERNAL_API_KEY=" + TestProps.INTERNAL_API_KEY
 })
 @AutoConfigureMockMvc
 public abstract class MarketplaceITBase {
@@ -73,7 +70,7 @@ public abstract class MarketplaceITBase {
     protected AuthUserClient authUserClient;
 
     @MockitoBean
-    protected DamageServiceClient damageServiceClient;
+    protected PaymentClient paymentClient;
 
     // ── seed helpers ────────────────────────────────────────────────────────
 

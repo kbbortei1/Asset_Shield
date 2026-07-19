@@ -1,9 +1,0 @@
-# Production hardening (SPRING_PROFILES_ACTIVE=prod).
-# payments.mode has NO default: startup fails fast unless a mode is set
-# explicitly — a prod deployment can never fall back to mock (which
-# auto-settles fake payments) by omission.
-app:
-  payments:
-    mode: ${PAYMENTS_MODE}
-    # mock auto-settle is disabled in prod even if mode is misconfigured
-    mock-auto-settle-ms: -1

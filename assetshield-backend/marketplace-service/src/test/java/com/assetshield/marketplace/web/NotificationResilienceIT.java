@@ -12,18 +12,13 @@ import com.assetshield.marketplace.TestProps;
 import com.assetshield.marketplace.TestTokens;
 import com.assetshield.marketplace.client.AuthUserClient;
 import com.assetshield.marketplace.client.DossierClient;
+import com.assetshield.marketplace.client.PaymentClient;
 import com.assetshield.marketplace.client.PropertyClient;
 import com.assetshield.marketplace.domain.InsuranceAgent;
 import com.assetshield.marketplace.domain.SubscriptionStatus;
 import com.assetshield.marketplace.domain.VerificationStatus;
-import com.assetshield.marketplace.payment.DamageServiceClient;
-import com.assetshield.marketplace.payment.PaymentSettlementService;
 import com.assetshield.marketplace.repo.AgentSubscriptionRepository;
 import com.assetshield.marketplace.repo.InsuranceAgentRepository;
-import com.assetshield.marketplace.web.dto.PaymentDtos.InitializeRequest;
-import com.assetshield.marketplace.payment.PaymentService;
-import com.assetshield.marketplace.domain.PaymentPurpose;
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -51,8 +46,6 @@ import tools.jackson.databind.ObjectMapper;
 @SpringBootTest(properties = {
         "JWT_SECRET=" + TestProps.JWT_SECRET,
         "INTERNAL_API_KEY=" + TestProps.INTERNAL_API_KEY,
-        "PAYMENTS_MODE=mock",
-        "MOCK_AUTO_SETTLE_MS=-1",
         "NOTIFICATIONS_MODE=remote",
         // nothing listens here — every notify call fails at transport
         "NOTIFICATION_SERVICE_URL=http://localhost:1"
@@ -77,12 +70,6 @@ class NotificationResilienceIT {
     @Autowired
     AgentSubscriptionRepository agentSubscriptionRepository;
 
-    @Autowired
-    PaymentService paymentService;
-
-    @Autowired
-    PaymentSettlementService settlementService;
-
     @MockitoBean
     PropertyClient propertyClient;
 
@@ -93,7 +80,7 @@ class NotificationResilienceIT {
     AuthUserClient authUserClient;
 
     @MockitoBean
-    DamageServiceClient damageServiceClient;
+    PaymentClient paymentClient;
 
     @Test
     void interestRespondAndSettlementSucceedWithNotificationServiceDown() throws Exception {
@@ -134,12 +121,15 @@ class NotificationResilienceIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("ACCEPTED"));
 
-        // settlement (sweep notifications also ride the dead client) → ACTIVE
-        var init = paymentService.initialize(new InitializeRequest(agent.getUserId(),
-                "+233244111111", PaymentPurpose.AGENT_SUBSCRIPTION,
-                new BigDecimal("100.00"), agent.getId()));
-        settlementService.settle(init.reference(),
-                "{\"event\":\"charge.success\",\"reference\":\"" + init.reference() + "\"}");
+        // settlement callback (sweep notifications also ride the dead client) → applied
+        mockMvc.perform(post("/internal/subscriptions/payment-confirmed")
+                        .header("X-Internal-Api-Key", TestProps.INTERNAL_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"purpose":"AGENT_SUBSCRIPTION","referenceEntityId":"%s","paymentId":"%s"}
+                                """.formatted(agent.getId(), UUID.randomUUID())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.applied").value(true));
         assertThat(agentSubscriptionRepository
                 .findByAgentIdAndStatus(agent.getId(), SubscriptionStatus.ACTIVE)).isPresent();
     }

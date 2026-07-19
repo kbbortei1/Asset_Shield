@@ -1,18 +1,16 @@
 package com.assetshield.marketplace.agent;
 
+import com.assetshield.marketplace.client.PaymentClient;
 import com.assetshield.marketplace.config.AppProperties;
 import com.assetshield.marketplace.domain.AgentSubscription;
 import com.assetshield.marketplace.domain.InsuranceAgent;
 import com.assetshield.marketplace.domain.PaymentPurpose;
-import com.assetshield.marketplace.payment.PaymentService;
 import com.assetshield.marketplace.repo.AgentSubscriptionRepository;
 import com.assetshield.marketplace.security.AuthUser;
 import com.assetshield.marketplace.web.dto.MarketplaceDtos.AgentMeResponse;
 import com.assetshield.marketplace.web.dto.MarketplaceDtos.SubscriptionBrief;
 import com.assetshield.marketplace.web.dto.MarketplaceDtos.SubscriptionInitResponse;
 import com.assetshield.marketplace.web.dto.MarketplaceDtos.SubscriptionView;
-import com.assetshield.marketplace.web.dto.PaymentDtos.InitializeRequest;
-import com.assetshield.marketplace.web.dto.PaymentDtos.InitializeResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,14 +19,14 @@ public class AgentAccountService {
 
     private final AgentGates gates;
     private final AgentSubscriptionRepository subscriptionRepository;
-    private final PaymentService paymentService;
+    private final PaymentClient paymentClient;
     private final AppProperties properties;
 
     public AgentAccountService(AgentGates gates, AgentSubscriptionRepository subscriptionRepository,
-                               PaymentService paymentService, AppProperties properties) {
+                               PaymentClient paymentClient, AppProperties properties) {
         this.gates = gates;
         this.subscriptionRepository = subscriptionRepository;
-        this.paymentService = paymentService;
+        this.paymentClient = paymentClient;
         this.properties = properties;
     }
 
@@ -60,9 +58,9 @@ public class AgentAccountService {
     @Transactional
     public SubscriptionInitResponse initiateSubscription(AuthUser user) {
         InsuranceAgent agent = gates.requireVerifiedAgent(user);
-        InitializeResponse init = paymentService.initialize(new InitializeRequest(
-                user.id(), user.phone(), PaymentPurpose.AGENT_SUBSCRIPTION,
-                properties.pricing().agentSubGhs(), agent.getId()));
+        PaymentClient.PaymentInit init = paymentClient.initialize(
+                user.id(), user.phone(), PaymentPurpose.AGENT_SUBSCRIPTION.name(),
+                properties.pricing().agentSubGhs(), agent.getId());
         return new SubscriptionInitResponse(init.paymentId(), init.reference(),
                 properties.pricing().agentSubGhs(), "GHS", init.authorizationUrl());
     }

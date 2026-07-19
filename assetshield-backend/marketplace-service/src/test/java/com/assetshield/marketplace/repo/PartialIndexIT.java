@@ -24,8 +24,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @SpringBootTest(properties = {
         "JWT_SECRET=" + TestProps.JWT_SECRET,
         "INTERNAL_API_KEY=" + TestProps.INTERNAL_API_KEY,
-        "PAYMENTS_MODE=mock",
-        "MOCK_AUTO_SETTLE_MS=-1"
 })
 @Testcontainers
 class PartialIndexIT {

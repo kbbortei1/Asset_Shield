@@ -1,18 +1,16 @@
 package com.assetshield.marketplace.subscription;
 
+import com.assetshield.marketplace.client.PaymentClient;
 import com.assetshield.marketplace.common.ApiException;
 import com.assetshield.marketplace.common.ErrorCode;
 import com.assetshield.marketplace.config.AppProperties;
 import com.assetshield.marketplace.domain.PaymentPurpose;
 import com.assetshield.marketplace.domain.SubscriptionStatus;
 import com.assetshield.marketplace.domain.UserSubscription;
-import com.assetshield.marketplace.payment.PaymentService;
 import com.assetshield.marketplace.repo.UserSubscriptionRepository;
 import com.assetshield.marketplace.security.AuthUser;
 import com.assetshield.marketplace.web.dto.MarketplaceDtos.SubscriptionInitResponse;
 import com.assetshield.marketplace.web.dto.MarketplaceDtos.TierResponse;
-import com.assetshield.marketplace.web.dto.PaymentDtos.InitializeRequest;
-import com.assetshield.marketplace.web.dto.PaymentDtos.InitializeResponse;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -29,13 +27,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class SubscriptionService {
 
     private final UserSubscriptionRepository userSubscriptionRepository;
-    private final PaymentService paymentService;
+    private final PaymentClient paymentClient;
     private final AppProperties properties;
 
     public SubscriptionService(UserSubscriptionRepository userSubscriptionRepository,
-                               PaymentService paymentService, AppProperties properties) {
+                               PaymentClient paymentClient, AppProperties properties) {
         this.userSubscriptionRepository = userSubscriptionRepository;
-        this.paymentService = paymentService;
+        this.paymentClient = paymentClient;
         this.properties = properties;
     }
 
@@ -44,9 +42,9 @@ public class SubscriptionService {
         if (!"OWNER".equals(user.role())) {
             throw new ApiException(ErrorCode.FORBIDDEN, "PRO subscriptions are for owner accounts");
         }
-        InitializeResponse init = paymentService.initialize(new InitializeRequest(
-                user.id(), user.phone(), PaymentPurpose.PRO_SUBSCRIPTION,
-                properties.pricing().proSubGhs(), user.id()));
+        PaymentClient.PaymentInit init = paymentClient.initialize(
+                user.id(), user.phone(), PaymentPurpose.PRO_SUBSCRIPTION.name(),
+                properties.pricing().proSubGhs(), user.id());
         return new SubscriptionInitResponse(init.paymentId(), init.reference(),
                 properties.pricing().proSubGhs(), "GHS", init.authorizationUrl());
     }

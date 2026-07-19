@@ -25,13 +25,8 @@ app:
     pro-sub-ghs: ${PRO_SUB_GHS:15.00}
   notifications:
     mode: ${NOTIFICATIONS_MODE:log}
-  payments:
-    mode: ${PAYMENTS_MODE:mock}
-    paystack-secret-key: ${PAYSTACK_SECRET_KEY:}
-    paystack-base-url: ${PAYSTACK_BASE_URL:https://api.paystack.co}
-    # mock mode: auto-settle delay simulating instant MoMo confirmation; <0 disables
-    mock-auto-settle-ms: ${MOCK_AUTO_SETTLE_MS:2000}
-    reconcile-enabled: ${PAYMENTS_RECONCILE_ENABLED:true}
+  # money movement lives in payment-service; marketplace only initializes via its internal API
+  payment-service-uri: ${PAYMENT_SERVICE_URL:http://payment-service:8086}
 
 management:
   endpoints:

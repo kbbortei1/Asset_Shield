@@ -2,6 +2,8 @@ package com.assetshield.marketplace.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -9,27 +11,32 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.assetshield.marketplace.TestProps;
 import com.assetshield.marketplace.TestTokens;
+import com.assetshield.marketplace.client.PaymentClient;
 import com.assetshield.marketplace.domain.AgentSubscription;
 import com.assetshield.marketplace.domain.InsuranceAgent;
 import com.assetshield.marketplace.domain.SubscriptionStatus;
 import com.assetshield.marketplace.domain.UserSubscription;
 import com.assetshield.marketplace.domain.VerificationStatus;
-import com.assetshield.marketplace.payment.PaymentSettlementService;
 import com.assetshield.marketplace.repo.UserSubscriptionRepository;
 import com.assetshield.marketplace.subscription.SubscriptionSettlementService;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
+/**
+ * Subscription initiation delegates to payment-service (mocked PaymentClient);
+ * settlement arrives via POST /internal/subscriptions/payment-confirmed — the
+ * callback payment-service fires on charge success.
+ */
 class SubscriptionSettlementIT extends MarketplaceITBase {
-
-    @Autowired
-    PaymentSettlementService paymentSettlementService;
 
     @Autowired
     SubscriptionSettlementService subscriptionSettlementService;
@@ -37,24 +44,43 @@ class SubscriptionSettlementIT extends MarketplaceITBase {
     @Autowired
     UserSubscriptionRepository userSubscriptionRepository;
 
+    private final AtomicInteger seq = new AtomicInteger();
+
+    @BeforeEach
+    void mockPaymentInit() {
+        // every initialize yields a fresh payment id + reference, like the real service
+        when(paymentClient.initialize(any(), any(), any(), any(), any())).thenAnswer(inv ->
+                new PaymentClient.PaymentInit(UUID.randomUUID(),
+                        "ASGH-TST-" + seq.incrementAndGet(), "http://payment-service/mock-checkout"));
+    }
+
     private static String agentBearer(InsuranceAgent agent) {
         return "Bearer " + TestTokens.token(agent.getUserId(), "AGENT", "+233244111111");
     }
 
-    private String initAgentSubscription(InsuranceAgent agent) throws Exception {
+    /** Returns the paymentId the (mocked) payment-service allocated for this init. */
+    private UUID initAgentSubscription(InsuranceAgent agent) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/agents/me/subscription")
                         .header(HttpHeaders.AUTHORIZATION, agentBearer(agent)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.amount").value(100.00))
                 .andExpect(jsonPath("$.data.currency").value("GHS"))
+                .andExpect(jsonPath("$.data.reference").isNotEmpty())
                 .andReturn();
-        return objectMapper.readTree(result.getResponse().getContentAsString())
-                .get("data").get("reference").asString();
+        return UUID.fromString(objectMapper.readTree(result.getResponse().getContentAsString())
+                .get("data").get("paymentId").asString());
     }
 
-    private void settle(String reference) {
-        paymentSettlementService.settle(reference,
-                "{\"event\":\"charge.success\",\"reference\":\"" + reference + "\"}");
+    /** Simulates payment-service's settlement callback. */
+    private void confirm(String purpose, UUID referenceEntityId, UUID paymentId) throws Exception {
+        mockMvc.perform(post("/internal/subscriptions/payment-confirmed")
+                        .header("X-Internal-Api-Key", TestProps.INTERNAL_API_KEY)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"purpose":"%s","referenceEntityId":"%s","paymentId":"%s"}
+                                """.formatted(purpose, referenceEntityId, paymentId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.applied").value(true));
     }
 
     @Test
@@ -62,8 +88,8 @@ class SubscriptionSettlementIT extends MarketplaceITBase {
         InsuranceAgent agent = newAgent(VerificationStatus.VERIFIED);
 
         // first payment → fresh ACTIVE row, now + 30 days
-        String first = initAgentSubscription(agent);
-        settle(first);
+        UUID first = initAgentSubscription(agent);
+        confirm("AGENT_SUBSCRIPTION", agent.getId(), first);
         AgentSubscription sub = agentSubscriptionRepository
                 .findByAgentIdAndStatus(agent.getId(), SubscriptionStatus.ACTIVE).orElseThrow();
         assertThat(sub.getExpiresAt())
@@ -71,13 +97,13 @@ class SubscriptionSettlementIT extends MarketplaceITBase {
 
         // replayed settlement of the same payment is a no-op
         Instant firstExpiry = sub.getExpiresAt();
-        settle(first);
+        confirm("AGENT_SUBSCRIPTION", agent.getId(), first);
         assertThat(agentSubscriptionRepository.findById(sub.getId()).orElseThrow().getExpiresAt())
                 .isEqualTo(firstExpiry);
 
         // renewal extends from the CURRENT expiry, never truncates
-        String second = initAgentSubscription(agent);
-        settle(second);
+        UUID second = initAgentSubscription(agent);
+        confirm("AGENT_SUBSCRIPTION", agent.getId(), second);
         AgentSubscription renewed = agentSubscriptionRepository
                 .findById(sub.getId()).orElseThrow();
         assertThat(renewed.getExpiresAt()).isEqualTo(firstExpiry.plus(Duration.ofDays(30)));
@@ -119,9 +145,10 @@ class SubscriptionSettlementIT extends MarketplaceITBase {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.amount").value(15.00))
                 .andReturn();
-        String reference = objectMapper.readTree(result.getResponse().getContentAsString())
-                .get("data").get("reference").asString();
-        settle(reference);
+        UUID paymentId = UUID.fromString(objectMapper
+                .readTree(result.getResponse().getContentAsString())
+                .get("data").get("paymentId").asString());
+        confirm("PRO_SUBSCRIPTION", ownerId, paymentId);
 
         mockMvc.perform(get("/internal/users/{id}/tier", ownerId)
                         .header("X-Internal-Api-Key", TestProps.INTERNAL_API_KEY))
@@ -137,7 +164,7 @@ class SubscriptionSettlementIT extends MarketplaceITBase {
         UserSubscription sub = userSubscriptionRepository
                 .findByUserIdAndStatus(ownerId, SubscriptionStatus.ACTIVE).orElseThrow();
         Instant firstExpiry = sub.getExpiresAt();
-        settle(reference);
+        confirm("PRO_SUBSCRIPTION", ownerId, paymentId);
         assertThat(userSubscriptionRepository.findById(sub.getId()).orElseThrow().getExpiresAt())
                 .isEqualTo(firstExpiry);
 
