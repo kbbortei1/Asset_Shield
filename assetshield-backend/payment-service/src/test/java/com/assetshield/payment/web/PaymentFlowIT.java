@@ -1,4 +1,4 @@
-package com.assetshield.marketplace.web;
+package com.assetshield.payment.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -12,13 +12,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.assetshield.marketplace.TestProps;
-import com.assetshield.marketplace.TestTokens;
-import com.assetshield.marketplace.domain.Payment;
-import com.assetshield.marketplace.domain.PaymentStatus;
-import com.assetshield.marketplace.payment.DamageServiceClient;
-import com.assetshield.marketplace.payment.PaymentSettlementService;
-import com.assetshield.marketplace.repo.PaymentRepository;
+import com.assetshield.payment.TestProps;
+import com.assetshield.payment.TestTokens;
+import com.assetshield.payment.domain.Payment;
+import com.assetshield.payment.domain.PaymentStatus;
+import com.assetshield.payment.client.DamageServiceClient;
+import com.assetshield.payment.client.MarketplaceServiceClient;
+import com.assetshield.payment.service.PaymentSettlementService;
+import com.assetshield.payment.repo.PaymentRepository;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import java.util.UUID;
@@ -70,6 +71,9 @@ class PaymentFlowIT {
 
     @MockitoBean
     DamageServiceClient damageServiceClient;
+
+    @MockitoBean
+    MarketplaceServiceClient marketplaceServiceClient;
 
     private record InitResult(UUID paymentId, String reference, UUID userId, UUID dossierId) {
     }
