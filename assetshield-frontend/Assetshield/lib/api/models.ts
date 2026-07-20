@@ -88,10 +88,14 @@ export type Asset = {
   gpsLat?: number;
   gpsLng?: number;
   capturedAt?: string;
+  warrantyExpiresOn?: string | null; // YYYY-MM-DD
+  nextServiceOn?: string | null; // YYYY-MM-DD
   receiptCount?: number; // list/flat response
   receipts?: AssetReceipt[]; // detail response
   createdByUserId?: string;
   createdAt?: string;
+  /** Create response only: same photo already documents another property. */
+  duplicateWarning?: boolean | null;
 };
 
 /** Metadata JSON part sent alongside the `file` part for an asset upload. */
@@ -103,6 +107,52 @@ export type AssetMetadata = {
   description: string;
   estimatedValue?: number;
   category?: AssetCategory;
+  warrantyExpiresOn?: string; // YYYY-MM-DD
+  nextServiceOn?: string; // YYYY-MM-DD
+};
+
+/** ?q= / ?category= / value-range filters for the asset list (smart search). */
+export type AssetSearchFilters = {
+  q?: string;
+  category?: AssetCategory;
+  minValue?: number;
+  maxValue?: number;
+};
+
+// ---- insights ----
+export type TimelineEventType = 'PROPERTY_CREATED' | 'ASSET_ADDED' | 'ASSET_REMOVED' | 'RECEIPT_ADDED';
+
+export type TimelineEvent = {
+  type: TimelineEventType;
+  at: string;
+  assetId?: string | null;
+  label: string;
+};
+
+export type AnalyticsCategoryLine = { category: AssetCategory; count: number; value: number };
+export type AnalyticsPropertyLine = {
+  propertyId: string;
+  name: string;
+  assetCount: number;
+  totalValue: number;
+};
+
+export type AssetAnalytics = {
+  propertyCount: number;
+  assetCount: number;
+  totalValue: number;
+  byCategory: AnalyticsCategoryLine[];
+  byProperty: AnalyticsPropertyLine[];
+};
+
+/** Admin-only security audit row; actorUserId is null for unknown-phone failures. */
+export type AuditEvent = {
+  id: string;
+  actorUserId?: string | null;
+  action: string;
+  target?: string | null;
+  detail?: string | null;
+  createdAt: string;
 };
 
 export type Member = {
