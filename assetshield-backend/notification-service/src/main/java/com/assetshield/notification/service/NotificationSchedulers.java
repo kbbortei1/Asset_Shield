@@ -38,4 +38,13 @@ public class NotificationSchedulers {
             log.error("Redoc reminder sweep failed: {}", e.getMessage());
         }
     }
+
+    @Scheduled(cron = "${app.sched.maintenance-cron}", zone = "Africa/Accra")
+    public void maintenanceReminder() {
+        try {
+            schedulerService.remindMaintenanceDue();
+        } catch (Exception e) {
+            log.error("Maintenance reminder sweep failed: {}", e.getMessage());
+        }
+    }
 }

@@ -2,10 +2,12 @@ package com.assetshield.notification.service;
 
 import com.assetshield.notification.client.PropertyClient;
 import com.assetshield.notification.config.AppProperties;
+import com.assetshield.notification.domain.MaintenanceReminder;
 import com.assetshield.notification.domain.NotificationType;
 import com.assetshield.notification.domain.RedocReminder;
 import com.assetshield.notification.domain.Tip;
 import com.assetshield.notification.domain.TipsFrequency;
+import com.assetshield.notification.repo.MaintenanceReminderRepository;
 import com.assetshield.notification.repo.RedocReminderRepository;
 import com.assetshield.notification.repo.TipRepository;
 import java.time.Clock;
@@ -31,6 +33,7 @@ public class SchedulerService {
 
     private final TipRepository tipRepository;
     private final RedocReminderRepository redocReminderRepository;
+    private final MaintenanceReminderRepository maintenanceReminderRepository;
     private final PreferenceService preferenceService;
     private final TipGenerationService tipGenerationService;
     private final NotificationDispatchService dispatchService;
@@ -40,12 +43,14 @@ public class SchedulerService {
 
     public SchedulerService(TipRepository tipRepository,
                             RedocReminderRepository redocReminderRepository,
+                            MaintenanceReminderRepository maintenanceReminderRepository,
                             PreferenceService preferenceService,
                             TipGenerationService tipGenerationService,
                             NotificationDispatchService dispatchService,
                             PropertyClient propertyClient, AppProperties properties, Clock clock) {
         this.tipRepository = tipRepository;
         this.redocReminderRepository = redocReminderRepository;
+        this.maintenanceReminderRepository = maintenanceReminderRepository;
         this.preferenceService = preferenceService;
         this.tipGenerationService = tipGenerationService;
         this.dispatchService = dispatchService;
@@ -127,5 +132,62 @@ public class SchedulerService {
             }
             page++;
         } while (page < stalePage.totalPages());
+    }
+
+    /**
+     * Daily 08:15 Africa/Accra. Pages property-service's maintenance-due feed
+     * for both kinds; one reminder per asset+kind per due date — rescheduling
+     * the date re-arms the reminder.
+     */
+    @Transactional
+    public void remindMaintenanceDue() {
+        int lookaheadDays = properties.sched().maintenanceLookaheadDays();
+        for (String kind : List.of("WARRANTY", "SERVICE")) {
+            int page = 0;
+            PropertyClient.MaintenancePage duePage;
+            do {
+                duePage = propertyClient.maintenanceDue(kind, lookaheadDays, page, 100);
+                for (PropertyClient.MaintenanceDueItem item : duePage.items()) {
+                    MaintenanceReminder reminder = maintenanceReminderRepository
+                            .findById(new MaintenanceReminder.Key(item.assetId(), kind)).orElse(null);
+                    if (reminder != null && reminder.getDueOn().equals(item.dueOn())) {
+                        continue; // already reminded for this exact date
+                    }
+                    dispatchService.dispatch(item.ownerUserId(), NotificationType.MAINTENANCE_DUE,
+                            "WARRANTY".equals(kind)
+                                    ? "Warranty expiring soon" : "Maintenance due soon",
+                            reminderBody(kind, item),
+                            Map.of("assetId", item.assetId().toString(),
+                                    "propertyId", item.propertyId().toString(),
+                                    "kind", kind,
+                                    "dueOn", item.dueOn().toString(),
+                                    "deepLink", "asset/" + item.assetId()));
+                    if (reminder == null) {
+                        maintenanceReminderRepository.save(new MaintenanceReminder(
+                                item.assetId(), kind, item.dueOn(), clock.instant()));
+                    } else {
+                        reminder.setDueOn(item.dueOn());
+                        reminder.setRemindedAt(clock.instant());
+                        maintenanceReminderRepository.save(reminder);
+                    }
+                    log.info("Maintenance reminder ({}) sent to user {} for asset {} due {}",
+                            kind, item.ownerUserId(), item.assetId(), item.dueOn());
+                }
+                page++;
+            } while (page < duePage.totalPages());
+        }
+    }
+
+    /** notifications.body is VARCHAR(500) — keep the description contribution bounded. */
+    private static String reminderBody(String kind, PropertyClient.MaintenanceDueItem item) {
+        String description = item.description().length() > 120
+                ? item.description().substring(0, 117) + "..." : item.description();
+        String where = item.propertyName().length() > 120
+                ? item.propertyName().substring(0, 117) + "..." : item.propertyName();
+        return "WARRANTY".equals(kind)
+                ? "The warranty on \"" + description + "\" at " + where + " expires on "
+                        + item.dueOn() + ". Consider renewing or re-documenting it."
+                : "\"" + description + "\" at " + where + " is due for servicing on "
+                        + item.dueOn() + ".";
     }
 }
