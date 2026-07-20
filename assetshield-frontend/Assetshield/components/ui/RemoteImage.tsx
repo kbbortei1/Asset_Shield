@@ -18,6 +18,7 @@ export function RemoteImage({
   contentFit = 'cover',
   zoomable = false,
   style,
+  cacheKey,
 }: {
   uri?: string | null;
   width?: number | `${number}%`;
@@ -27,6 +28,12 @@ export function RemoteImage({
   /** tap to open the full-screen zoomable viewer */
   zoomable?: boolean;
   style?: ViewStyle;
+  /**
+   * Stable identity for the disk cache. Signed URLs rotate every ~15min, which
+   * would otherwise bust the cache on every refetch — pass something stable
+   * (the photo's sha256 hash is ideal) so each image downloads once, ever.
+   */
+  cacheKey?: string;
 }) {
   const resolved = resolveMediaUrl(uri);
   const w = width ?? '100%';
@@ -46,7 +53,7 @@ export function RemoteImage({
   }
   const img = (
     <Image
-      source={{ uri: resolved }}
+      source={{ uri: resolved, cacheKey }}
       style={[{ width: w, height, borderRadius: radius }, style as object]}
       contentFit={contentFit}
       transition={150}
