@@ -88,6 +88,8 @@ export default function ForgotPassword() {
               placeholder="123456"
               error={errors.code}
               autoFocus
+              autoComplete="sms-otp"
+              textContentType="oneTimeCode"
             />
             <Input
               label="New password"
@@ -96,6 +98,10 @@ export default function ForgotPassword() {
               secureTextEntry
               placeholder="At least 8 characters"
               error={errors.password ?? errors.newPassword}
+              autoComplete="new-password"
+              textContentType="newPassword"
+              returnKeyType="done"
+              onSubmitEditing={reset}
             />
           </>
         )}
