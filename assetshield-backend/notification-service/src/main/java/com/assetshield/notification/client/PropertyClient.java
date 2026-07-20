@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +36,15 @@ public class PropertyClient {
 
     public record StalePage(List<StaleProperty> items, int page, int size,
                             long totalElements, int totalPages) {
+    }
+
+    public record MaintenanceDueItem(UUID assetId, UUID propertyId, String propertyName,
+                                     UUID ownerUserId, String description, String kind,
+                                     LocalDate dueOn) {
+    }
+
+    public record MaintenancePage(List<MaintenanceDueItem> items, int page, int size,
+                                  long totalElements, int totalPages) {
     }
 
     private record AccessKey(UUID propertyId, UUID userId) {
@@ -117,6 +127,35 @@ public class PropertyClient {
                         String.valueOf(item.get("name")),
                         item.get("lastDocumentedAt") == null
                                 ? null : String.valueOf(item.get("lastDocumentedAt")))).toList(),
+                ((Number) data.get("page")).intValue(),
+                ((Number) data.get("size")).intValue(),
+                ((Number) data.get("totalElements")).longValue(),
+                ((Number) data.get("totalPages")).intValue());
+    }
+
+    /** Maintenance sweep feed: assets due within {@code withinDays} days. */
+    @SuppressWarnings("unchecked")
+    public MaintenancePage maintenanceDue(String kind, int withinDays, int page, int size) {
+        Map<String, Object> body = restClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/internal/assets/maintenance-due")
+                        .queryParam("kind", kind)
+                        .queryParam("withinDays", withinDays)
+                        .queryParam("page", page)
+                        .queryParam("size", size)
+                        .build())
+                .retrieve()
+                .body(Map.class);
+        Map<String, Object> data = (Map<String, Object>) body.get("data");
+        List<Map<String, Object>> items = (List<Map<String, Object>>) data.get("items");
+        return new MaintenancePage(
+                items.stream().map(item -> new MaintenanceDueItem(
+                        UUID.fromString(String.valueOf(item.get("assetId"))),
+                        UUID.fromString(String.valueOf(item.get("propertyId"))),
+                        String.valueOf(item.get("propertyName")),
+                        UUID.fromString(String.valueOf(item.get("ownerUserId"))),
+                        String.valueOf(item.get("description")),
+                        String.valueOf(item.get("kind")),
+                        LocalDate.parse(String.valueOf(item.get("dueOn"))))).toList(),
                 ((Number) data.get("page")).intValue(),
                 ((Number) data.get("size")).intValue(),
                 ((Number) data.get("totalElements")).longValue(),
