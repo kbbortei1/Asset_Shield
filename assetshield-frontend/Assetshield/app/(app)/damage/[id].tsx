@@ -7,9 +7,9 @@ import {
   Card,
   EmptyState,
   ErrorState,
+  EvidencePhoto,
   Header,
   Loading,
-  RemoteImage,
   Screen,
   StatusBadge,
   Text,
@@ -36,15 +36,18 @@ export default function DamageReportDetail() {
 
   const generate = useMutation({
     mutationFn: () => damageApi.generateDossier(reportId),
-    onSuccess: (res) =>
-      router.push(
-        `/(app)/dossier/${res.dossierId}?ref=${encodeURIComponent(res.payment?.reference ?? '')}&url=${encodeURIComponent(
-          res.payment?.authorizationUrl ?? '',
-        )}` as never,
-      ),
+    // the dossier screen fetches its own fresh checkout handle when unpaid
+    onSuccess: (res) => router.push(`/(app)/dossier/${res.dossierId}` as never),
     onError: (e) => {
-      if (isApiError(e) && e.code === 'DOSSIER_EXISTS') Alert.alert('Dossier exists', 'A dossier already exists for this report.');
-      else Alert.alert('Could not start', isApiError(e) ? e.message : 'Try again.');
+      if (isApiError(e) && e.code === 'DOSSIER_EXISTS') {
+        const existingId = e.fieldErrors?.dossierId;
+        if (existingId) {
+          // jump to the existing dossier — it offers Pay if still unpaid
+          router.push(`/(app)/dossier/${existingId}` as never);
+          return;
+        }
+        Alert.alert('Dossier exists', 'A dossier already exists for this report. Find it under Dossiers.');
+      } else Alert.alert('Could not start', isApiError(e) ? e.message : 'Try again.');
     },
   });
 
@@ -62,7 +65,23 @@ export default function DamageReportDetail() {
         isCompleted ? (
           <Button title="Generate dossier" loading={generate.isPending} onPress={() => generate.mutate()} />
         ) : (
-          <Button title="Complete report" loading={complete.isPending} disabled={photos.length === 0} onPress={() => complete.mutate()} />
+          <Button
+            title="Complete report"
+            loading={complete.isPending}
+            disabled={photos.length === 0}
+            onPress={() => {
+              const paired = photos.filter((ph) => ph.paired).length;
+              Alert.alert(
+                'Complete this report?',
+                `${photos.length} photo${photos.length === 1 ? '' : 's'} (${paired} paired with documented assets).\n\n` +
+                  'Once completed, the report is sealed as immutable evidence: no photos can be added or changed, and the estimated loss is computed.',
+                [
+                  { text: 'Keep editing', style: 'cancel' },
+                  { text: 'Complete & seal', onPress: () => complete.mutate() },
+                ],
+              );
+            }}
+          />
         )
       }
     >
@@ -117,18 +136,28 @@ export default function DamageReportDetail() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
           {photos.map((ph) => {
             const canPair = !isCompleted && !ph.paired;
+            // paired photos open the before/after comparison; unpaired (in a
+            // draft) resume pairing
+            const onPress = canPair
+              ? () => router.push(`/(app)/damage/${reportId}/pair?photoId=${ph.id}` as never)
+              : ph.paired
+                ? () => router.push(`/(app)/damage/${reportId}/compare?photoId=${ph.id}` as never)
+                : undefined;
             return (
-              <Card
-                key={ph.id}
-                padded={false}
-                style={{ width: '47%', overflow: 'hidden' }}
-                onPress={canPair ? () => router.push(`/(app)/damage/${reportId}/pair?photoId=${ph.id}` as never) : undefined}
-              >
-                <RemoteImage uri={ph.photoUrl} height={120} zoomable={!canPair} />
+              <Card key={ph.id} padded={false} style={{ width: '47%', overflow: 'hidden' }} onPress={onPress}>
+                <EvidencePhoto
+                  uri={ph.photoUrl}
+                  height={120}
+                  gpsLat={ph.gpsLat}
+                  gpsLng={ph.gpsLng}
+                  capturedAt={ph.capturedAt}
+                  verified={ph.sha256Hash}
+                  variant="incident"
+                />
                 <View style={{ padding: spacing.md, gap: spacing.xs }}>
                   <VerifiedBadge hash={ph.sha256Hash} />
                   <Text variant="labelMd" color={ph.paired ? colors.success : colors.cta}>
-                    {ph.paired ? 'Paired' : isCompleted ? 'Unpaired' : 'Unpaired · Tap to pair'}
+                    {ph.paired ? 'Paired · Before/After' : isCompleted ? 'Unpaired' : 'Unpaired · Tap to pair'}
                   </Text>
                 </View>
               </Card>
