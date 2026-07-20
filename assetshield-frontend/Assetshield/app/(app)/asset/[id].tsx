@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { propertiesApi } from '@/lib/api';
 import { buildFileForm, pickImage } from '@/lib/media/capture';
-import { Button, Card, Header, Input, Loading, RemoteImage, Screen, Text, VerifiedBadge, useToast } from '@/components/ui';
+import { Button, Card, EvidencePhoto, Header, Input, Loading, Screen, Text, VerifiedBadge, useToast } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 export default function AssetDetail() {
@@ -73,7 +73,15 @@ export default function AssetDetail() {
     <Screen>
       <Header title="Asset" />
       <Card padded={false} style={{ overflow: 'hidden' }}>
-        <RemoteImage uri={a.photoUrl} height={260} zoomable />
+        <EvidencePhoto
+          uri={a.photoUrl}
+          height={260}
+          gpsLat={a.gpsLat}
+          gpsLng={a.gpsLng}
+          capturedAt={a.capturedAt}
+          verified={a.sha256Hash}
+          zoomable
+        />
       </Card>
 
       <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
