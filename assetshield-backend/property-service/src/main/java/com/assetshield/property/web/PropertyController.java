@@ -4,6 +4,7 @@ import com.assetshield.property.common.ApiResponse;
 import com.assetshield.property.common.PageEnvelope;
 import com.assetshield.property.domain.AssetCategory;
 import com.assetshield.property.security.AuthUser;
+import com.assetshield.property.service.AssetInsightsService;
 import com.assetshield.property.service.AssetService;
 import com.assetshield.property.service.InvitationService;
 import com.assetshield.property.service.PropertyService;
@@ -19,13 +20,17 @@ import com.assetshield.property.web.dto.PropertyDtos.OptInResponse;
 import com.assetshield.property.web.dto.PropertyDtos.PropertyDetailResponse;
 import com.assetshield.property.web.dto.PropertyDtos.PropertyListItem;
 import com.assetshield.property.web.dto.PropertyDtos.PropertyResponse;
+import com.assetshield.property.web.dto.PropertyDtos.TimelineEvent;
 import com.assetshield.property.web.dto.PropertyDtos.UpdatePropertyRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -49,13 +54,16 @@ public class PropertyController {
 
     private final PropertyService propertyService;
     private final AssetService assetService;
+    private final AssetInsightsService insightsService;
     private final InvitationService invitationService;
     private final MetadataParser metadataParser;
 
     public PropertyController(PropertyService propertyService, AssetService assetService,
+                              AssetInsightsService insightsService,
                               InvitationService invitationService, MetadataParser metadataParser) {
         this.propertyService = propertyService;
         this.assetService = assetService;
+        this.insightsService = insightsService;
         this.invitationService = invitationService;
         this.metadataParser = metadataParser;
     }
@@ -121,16 +129,41 @@ public class PropertyController {
                         "Asset captured"));
     }
 
-    @Operation(summary = "List assets of a property (optional ?category=)")
+    @Operation(summary = "List/search assets (?category= &q= &minValue= &maxValue=)")
     @GetMapping("/{id}/assets")
     public ApiResponse<PageEnvelope<AssetResponse>> listAssets(Authentication authentication,
                                                                @PathVariable UUID id,
                                                                @RequestParam(required = false) AssetCategory category,
+                                                               @RequestParam(required = false) String q,
+                                                               @RequestParam(required = false) BigDecimal minValue,
+                                                               @RequestParam(required = false) BigDecimal maxValue,
                                                                @RequestParam(defaultValue = "0") int page,
                                                                @RequestParam(defaultValue = "20") int size) {
         return ApiResponse.success(
-                assetService.listAssets(principal(authentication), id, category, page, size),
+                assetService.listAssets(principal(authentication), id, category, q,
+                        minValue, maxValue, page, size),
                 "Assets fetched");
+    }
+
+    @Operation(summary = "Export live assets as CSV (owner or export-enabled member)")
+    @GetMapping("/{id}/assets/export")
+    public ResponseEntity<byte[]> exportAssets(Authentication authentication, @PathVariable UUID id) {
+        AssetInsightsService.CsvExport export =
+                insightsService.exportCsv(principal(authentication), id);
+        return ResponseEntity.ok()
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + export.filename() + "\"")
+                .body(export.csv().getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Operation(summary = "Derived history timeline (newest first, max 500 events)")
+    @GetMapping("/{id}/timeline")
+    public ApiResponse<Map<String, List<TimelineEvent>>> timeline(Authentication authentication,
+                                                                  @PathVariable UUID id) {
+        return ApiResponse.success(
+                Map.of("items", insightsService.timeline(principal(authentication), id)),
+                "Timeline fetched");
     }
 
     @Operation(summary = "Invite a phone number to the household (owner only)")
