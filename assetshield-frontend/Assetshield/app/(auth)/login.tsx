@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Pressable, TextInput, View } from 'react-native';
 import { isApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { validateAuthFields } from '@/lib/auth/validation';
@@ -16,6 +16,7 @@ export default function Login() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
 
   const submit = async () => {
     setFormError(null);
@@ -62,8 +63,25 @@ export default function Login() {
 
       <AnimatedItem index={2}>
         <View style={{ gap: spacing.lg, marginTop: spacing.sm }}>
-          <PhoneInput value={phoneNumber} onChangeText={setPhoneNumber} error={errors.phoneNumber} />
-          <Input label="Password" value={password} onChangeText={setPassword} secureTextEntry error={errors.password} />
+          <PhoneInput
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+            error={errors.phoneNumber}
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
+          />
+          <Input
+            ref={passwordRef}
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            error={errors.password}
+            autoComplete="password"
+            textContentType="password"
+            returnKeyType="done"
+            onSubmitEditing={submit}
+          />
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push('/(auth)/forgot-password' as never)}
