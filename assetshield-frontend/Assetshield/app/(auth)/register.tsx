@@ -54,8 +54,18 @@ export default function Register() {
       </View>
 
       <View style={{ gap: spacing.lg, marginTop: spacing.sm }}>
-        <Input label="Full name" value={fullName} onChangeText={setFullName} placeholder="Akosua Owusu" error={errors.fullName} autoCapitalize="words" />
-        <PhoneInput value={phoneNumber} onChangeText={setPhoneNumber} error={errors.phoneNumber} />
+        <Input
+          label="Full name"
+          value={fullName}
+          onChangeText={setFullName}
+          placeholder="Akosua Owusu"
+          error={errors.fullName}
+          autoCapitalize="words"
+          autoComplete="name"
+          textContentType="name"
+          returnKeyType="next"
+        />
+        <PhoneInput value={phoneNumber} onChangeText={setPhoneNumber} error={errors.phoneNumber} returnKeyType="next" />
         <Input
           label="Password"
           value={password}
@@ -63,6 +73,10 @@ export default function Register() {
           placeholder="At least 8 characters"
           secureTextEntry
           error={errors.password}
+          autoComplete="new-password"
+          textContentType="newPassword"
+          returnKeyType="done"
+          onSubmitEditing={submit}
         />
         {formError ? (
           <Text variant="labelMd" color={colors.error}>
