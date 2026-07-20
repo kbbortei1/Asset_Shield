@@ -19,6 +19,7 @@ public class DamageServiceClient {
 
     public DamageServiceClient(AppProperties properties) {
         this.restClient = RestClient.builder()
+                .requestFactory(InternalHttp.requestFactory())
                 .baseUrl(properties.damageServiceUri())
                 .defaultHeader("X-Internal-Api-Key", properties.internalApiKey())
                 .build();
