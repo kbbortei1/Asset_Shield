@@ -19,14 +19,18 @@ import com.assetshield.property.web.dto.PropertyDtos.InternalPropertyResponse;
 import com.assetshield.property.web.dto.PropertyDtos.CategoryLine;
 import com.assetshield.property.web.dto.PropertyDtos.LeadListItem;
 import com.assetshield.property.web.dto.PropertyDtos.LeadViewResponse;
+import com.assetshield.property.web.dto.PropertyDtos.MaintenanceDueItem;
 import com.assetshield.property.web.dto.PropertyDtos.StaleDocumentationItem;
 import com.assetshield.property.web.dto.PropertyDtos.TipsContextResponse;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -160,6 +164,29 @@ public class InternalQueryService {
                 .toList();
         return new TipsContextResponse(p.getId(), p.getOwnerUserId(), p.getType(),
                 p.getGpsLat(), p.getGpsLng(), byCategory);
+    }
+
+    /**
+     * Maintenance sweep feed: live assets whose warranty ({@code kind=WARRANTY})
+     * or service date ({@code kind=SERVICE}) falls within the next
+     * {@code withinDays} days. Africa/Accra dates — the sweep runs on that clock.
+     */
+    @Transactional(readOnly = true)
+    public PageEnvelope<MaintenanceDueItem> maintenanceDue(String kind, int withinDays,
+                                                           int page, int size) {
+        String normalized = kind == null ? "" : kind.trim().toUpperCase();
+        if (!normalized.equals("WARRANTY") && !normalized.equals("SERVICE")) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED, "kind must be WARRANTY or SERVICE");
+        }
+        LocalDate from = LocalDate.now(ZoneId.of("Africa/Accra"));
+        LocalDate to = from.plusDays(Math.clamp(withinDays, 1, 60));
+        Pageable pageable = PageRequest.of(PageEnvelope.clampPage(page), PageEnvelope.clampSize(size));
+        Page<AssetRepository.MaintenanceDueRow> rows = normalized.equals("WARRANTY")
+                ? assetRepository.warrantyDueBetween(from, to, pageable)
+                : assetRepository.serviceDueBetween(from, to, pageable);
+        return PageEnvelope.of(rows.map(row -> new MaintenanceDueItem(row.getAssetId(),
+                row.getPropertyId(), row.getPropertyName(), row.getOwnerUserId(),
+                row.getDescription(), normalized, row.getDueOn())));
     }
 
     /** Redoc sweep feed: documented once, stale for more than {@code days}. */

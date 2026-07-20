@@ -9,6 +9,7 @@ import com.assetshield.property.web.dto.PropertyDtos.InternalAssetResponse;
 import com.assetshield.property.web.dto.PropertyDtos.InternalPropertyResponse;
 import com.assetshield.property.web.dto.PropertyDtos.LeadListItem;
 import com.assetshield.property.web.dto.PropertyDtos.LeadViewResponse;
+import com.assetshield.property.web.dto.PropertyDtos.MaintenanceDueItem;
 import com.assetshield.property.web.dto.PropertyDtos.StaleDocumentationItem;
 import com.assetshield.property.web.dto.PropertyDtos.TipsContextResponse;
 import java.util.List;
@@ -89,5 +90,16 @@ public class InternalPropertyController {
             @RequestParam(defaultValue = "20") int size) {
         return ApiResponse.success(internalQueryService.staleDocumentation(days, page, size),
                 "Stale documentation fetched");
+    }
+
+    /** Maintenance-reminder sweep feed (literal path, matched before /assets/{id}). */
+    @GetMapping("/assets/maintenance-due")
+    public ApiResponse<PageEnvelope<MaintenanceDueItem>> maintenanceDue(
+            @RequestParam String kind,
+            @RequestParam(defaultValue = "14") int withinDays,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ApiResponse.success(internalQueryService.maintenanceDue(kind, withinDays, page, size),
+                "Maintenance due fetched");
     }
 }
