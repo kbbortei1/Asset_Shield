@@ -77,6 +77,9 @@ export default function Otp() {
           keyboardType="number-pad"
           error={error}
           maxLength={6}
+          autoFocus
+          autoComplete="sms-otp"
+          textContentType="oneTimeCode"
         />
         <Button title="Verify" loading={loading} disabled={code.length < 6} onPress={verify} />
         <Button
