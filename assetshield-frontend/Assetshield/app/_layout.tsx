@@ -13,6 +13,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ImageViewerProvider, ToastProvider } from '@/components/ui';
@@ -50,7 +51,8 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
-        <SafeAreaProvider>
+        <KeyboardProvider>
+          <SafeAreaProvider>
           <QueryClientProvider client={queryClient}>
             <AuthProvider>
               <OfflineProvider>
@@ -64,7 +66,8 @@ export default function RootLayout() {
               </OfflineProvider>
             </AuthProvider>
           </QueryClientProvider>
-        </SafeAreaProvider>
+          </SafeAreaProvider>
+        </KeyboardProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>
   );
