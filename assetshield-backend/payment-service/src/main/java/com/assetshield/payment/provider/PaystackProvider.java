@@ -25,6 +25,7 @@ public class PaystackProvider implements PaymentProvider {
             throw new IllegalStateException("PAYMENTS_MODE=paystack but PAYSTACK_SECRET_KEY is empty");
         }
         this.restClient = RestClient.builder()
+                .requestFactory(com.assetshield.payment.client.InternalHttp.externalRequestFactory())
                 .baseUrl(baseUrl)
                 .defaultHeader("Authorization", "Bearer " + secretKey)
                 .build();
