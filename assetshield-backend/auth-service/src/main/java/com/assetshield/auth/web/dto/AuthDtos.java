@@ -104,6 +104,11 @@ public final class AuthDtos {
     public record CreateAdminResponse(UUID userId) {
     }
 
+    /** One security audit row; actorUserId is null for unknown-phone failures. */
+    public record AuditEventItem(UUID id, UUID actorUserId, String action, String target,
+                                 String detail, Instant createdAt) {
+    }
+
     public record InternalUserResponse(UUID id, String fullName, String phoneNumber,
                                        String role, String status) {
     }
