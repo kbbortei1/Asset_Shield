@@ -5,8 +5,12 @@ import { damageApi, DossierStatus, marketplaceApi, PaymentHandle } from '@/lib/a
  * Drive the Paystack checkout (handoff §6). In mock mode the authorizationUrl is
  * a stub and payment auto-settles ~2s after generate — we still call verify and
  * then the caller polls status, so the same code path works in both modes.
+ *
+ * Outcomes: 'success' = settled; 'failed' = provider declined; 'pending' = not
+ * completed yet (user closed the checkout without paying, or verification could
+ * not confirm) — the caller should tell the user they can retry any time.
  */
-export async function runCheckout(payment: PaymentHandle): Promise<'success' | 'failed'> {
+export async function runCheckout(payment: PaymentHandle): Promise<'success' | 'failed' | 'pending'> {
   const url = payment.authorizationUrl;
   if (url && /^https?:\/\//i.test(url)) {
     try {
@@ -17,10 +21,11 @@ export async function runCheckout(payment: PaymentHandle): Promise<'success' | '
   }
   try {
     const res = await marketplaceApi.verifyPayment(payment.reference);
-    return res.status === 'FAILED' ? 'failed' : 'success';
+    if (res.status === 'SUCCESS') return 'success';
+    if (res.status === 'FAILED') return 'failed';
+    return 'pending'; // still INITIATED — checkout abandoned or MoMo confirming
   } catch {
-    // verification call failed; let the caller poll/treat as pending
-    return 'success';
+    return 'pending';
   }
 }
 
