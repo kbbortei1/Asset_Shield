@@ -28,6 +28,8 @@ export default function Subscription() {
       const res = isAgent ? await marketplaceApi.subscribeAgent() : await marketplaceApi.buyPro();
       const outcome = await runCheckout(res); // subscription-init returns a flat PaymentHandle
       if (outcome === 'failed') Alert.alert('Payment failed', 'Please try again.');
+      else if (outcome === 'pending')
+        Alert.alert('Payment not completed', 'No charge was made. Tap Subscribe again any time to finish.');
       qc.invalidateQueries({ queryKey: ['subscription'] });
       qc.invalidateQueries({ queryKey: ['agent', 'me'] });
       qc.invalidateQueries({ queryKey: ['subscription', isAgent ? 'agent' : 'owner'] });
