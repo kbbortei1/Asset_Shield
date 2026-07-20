@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { File, Paths } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, Switch, View } from 'react-native';
-import { Asset, propertiesApi } from '@/lib/api';
+import * as Sharing from 'expo-sharing';
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, Switch, View } from 'react-native';
+import { Asset, AssetCategory, isApiError, propertiesApi } from '@/lib/api';
 import {
   Button,
   Card,
@@ -11,6 +14,7 @@ import {
   EvidencePhoto,
   Header,
   Hero,
+  Input,
   ListScreen,
   Loading,
   SectionHeader,
@@ -28,8 +32,20 @@ type GridItem = Asset | typeof ADD_TILE;
 
 const BREAKDOWN_COLORS = ['#0E5A52', '#F4A93C', '#3FA392', '#8A8F8D'];
 
+const CATEGORIES: AssetCategory[] = ['ELECTRONICS', 'FURNITURE', 'CLOTHING_STOCK', 'MACHINERY', 'DOCUMENTS', 'OTHER'];
+
 function titleCase(v: string): string {
   return v.split('_').map((w) => w[0] + w.slice(1).toLowerCase()).join(' ');
+}
+
+/** Debounce a fast-changing value (search-as-you-type without query spam). */
+function useDebounced<T>(value: T, ms: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return debounced;
 }
 
 /** Property dashboard — the hub for documenting, reporting and managing a property. */
@@ -38,10 +54,39 @@ export default function PropertyDetail() {
   const propertyId = id!;
   const qc = useQueryClient();
 
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState<AssetCategory | undefined>(undefined);
+  const q = useDebounced(search.trim(), 300);
+  const filtering = q.length > 0 || category !== undefined;
+
   const property = useQuery({ queryKey: ['property', propertyId], queryFn: () => propertiesApi.get(propertyId) });
-  const assets = useQuery({ queryKey: ['assets', propertyId], queryFn: () => propertiesApi.listAssets(propertyId, { size: 100 }) });
+  const assets = useQuery({
+    queryKey: ['assets', propertyId, q, category ?? 'ALL'],
+    queryFn: () => propertiesApi.listAssets(propertyId, { size: 100, q: q || undefined, category }),
+    placeholderData: keepPreviousData,
+  });
 
   const { show } = useToast();
+  const [exporting, setExporting] = useState(false);
+  const exportCsv = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const csv = await propertiesApi.exportAssetsCsv(propertyId);
+      const file = new File(Paths.cache, `assetshield-assets-${propertyId.slice(0, 8)}.csv`);
+      if (file.exists) file.delete();
+      file.write(csv);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: 'Export assets' });
+      } else {
+        show('Sharing is not available on this device');
+      }
+    } catch (e) {
+      Alert.alert('Could not export', isApiError(e) ? e.message : 'Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
   const optin = useMutation({
     mutationFn: (open: boolean) => propertiesApi.setOffersOptin(propertyId, open),
     onSuccess: (_d, open) => {
@@ -54,6 +99,7 @@ export default function PropertyDetail() {
   if (property.isError) return <ErrorState onRetry={() => property.refetch()} />;
   const p = property.data!;
   const isOwner = p.myAccess === 'OWNER';
+  const canExport = isOwner || p.myAccess === 'MEMBER_EXPORT';
   const items = assets.data?.items ?? [];
   const totalValue = p.dashboard?.totalEstimatedValue ?? p.totalEstimatedValue ?? items.reduce((s, a) => s + (a.estimatedValue ?? 0), 0);
   const assetCount = p.dashboard?.assetCount ?? p.assetCount ?? items.length;
@@ -83,6 +129,12 @@ export default function PropertyDetail() {
         <QuickLink icon="people-outline" label="Household" onPress={() => router.push(`/(app)/property/${propertyId}/invite` as never)} />
         <QuickLink icon="bulb-outline" label="Safety tips" onPress={() => router.push(`/(app)/property/${propertyId}/tips` as never)} />
         <QuickLink icon="alert-circle-outline" label="Reports" onPress={() => router.push(`/(app)/damage/list?propertyId=${propertyId}` as never)} />
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: spacing.md }}>
+        <QuickLink icon="time-outline" label="History" onPress={() => router.push(`/(app)/property/${propertyId}/timeline` as never)} />
+        <QuickLink icon="bar-chart-outline" label="Analytics" onPress={() => router.push('/(app)/analytics' as never)} />
+        {canExport ? <QuickLink icon="download-outline" label={exporting ? 'Exporting…' : 'Export CSV'} onPress={exportCsv} /> : null}
       </View>
 
       {isOwner ? (
@@ -125,10 +177,42 @@ export default function PropertyDetail() {
         actionLabel="Capture"
         onAction={() => router.push(`/(app)/property/${propertyId}/capture` as never)}
       />
+
+      <Input
+        placeholder="Search assets by name…"
+        value={search}
+        onChangeText={setSearch}
+        autoCapitalize="none"
+        returnKeyType="search"
+      />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        {CATEGORIES.map((c) => {
+          const active = category === c;
+          return (
+            <Pressable
+              key={c}
+              onPress={() => setCategory(active ? undefined : c)}
+              style={{
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.xs,
+                borderRadius: radius.xl,
+                borderWidth: 1,
+                borderColor: active ? colors.primary : colors.border,
+                backgroundColor: active ? colors.primary : 'transparent',
+              }}
+            >
+              <Text variant="labelMd" weight="semibold" color={active ? colors.onPrimary : colors.textMuted}>
+                {titleCase(c)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 
-  const gridData: GridItem[] = items.length > 0 ? [...items, ADD_TILE] : [];
+  // the dashed "add asset" tile only belongs to the unfiltered grid
+  const gridData: GridItem[] = items.length > 0 ? (filtering ? items : [...items, ADD_TILE]) : [];
 
   return (
     <ListScreen
@@ -192,6 +276,12 @@ export default function PropertyDetail() {
       empty={
         assets.isLoading ? (
           <Loading />
+        ) : filtering ? (
+          <EmptyState
+            icon="search-outline"
+            title="No matching assets"
+            body="Try a different search term or clear the category filter."
+          />
         ) : (
           <EmptyState
             icon="cube-outline"
