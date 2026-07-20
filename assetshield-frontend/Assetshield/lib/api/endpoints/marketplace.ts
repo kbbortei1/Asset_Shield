@@ -53,4 +53,6 @@ export const marketplaceApi = {
   // payments
   verifyPayment: (reference: string) => api.post<Payment>(`/payments/${reference}/verify`),
   getPayment: (reference: string) => api.get<Payment>(`/payments/${reference}`),
+  /** The caller's billing history, newest first (payment-service). */
+  myPayments: (params?: PageParams) => api.get<Page<Payment>>('/users/me/payments', { query: params }),
 };
