@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { QuickAction, QuickMenu } from '@/components/nav/QuickMenu';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { colors, fontFamily } from '@/theme';
@@ -8,6 +9,7 @@ import { colors, fontFamily } from '@/theme';
 type Role = 'OWNER' | 'MEMBER' | 'AGENT' | 'ADMIN';
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const role = (user?.role ?? 'OWNER') as Role;
   const isOwner = role === 'OWNER' || role === 'MEMBER';
@@ -67,8 +69,10 @@ export default function TabsLayout() {
             backgroundColor: colors.card,
             borderTopColor: colors.border,
             borderTopWidth: 0.5,
-            height: 68,
-            paddingBottom: 8,
+            // fixed heights break devices with bottom insets (gesture nav /
+            // home indicator) - grow with the inset instead
+            height: 60 + Math.max(insets.bottom, 8),
+            paddingBottom: Math.max(insets.bottom, 8),
             paddingTop: 4,
             shadowColor: '#11252B',
             shadowOpacity: 0.06,
