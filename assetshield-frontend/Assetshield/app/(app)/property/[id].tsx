@@ -2,17 +2,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, Switch, View } from 'react-native';
-import { propertiesApi } from '@/lib/api';
+import { Asset, propertiesApi } from '@/lib/api';
 import {
   Button,
   Card,
   EmptyState,
   ErrorState,
+  EvidencePhoto,
   Header,
   Hero,
   ListScreen,
   Loading,
-  RemoteImage,
   SectionHeader,
   Text,
   VerifiedBadge,
@@ -20,7 +20,17 @@ import {
   formatCedis,
   useToast,
 } from '@/components/ui';
-import { colors, spacing } from '@/theme';
+import { colors, radius, spacing } from '@/theme';
+
+/** Sentinel row appended to the asset grid: the dashed "log new asset" tile. */
+const ADD_TILE = '__add_asset__';
+type GridItem = Asset | typeof ADD_TILE;
+
+const BREAKDOWN_COLORS = ['#0E5A52', '#F4A93C', '#3FA392', '#8A8F8D'];
+
+function titleCase(v: string): string {
+  return v.split('_').map((w) => w[0] + w.slice(1).toLowerCase()).join(' ');
+}
 
 /** Property dashboard — the hub for documenting, reporting and managing a property. */
 export default function PropertyDetail() {
@@ -97,6 +107,19 @@ export default function PropertyDetail() {
         </Card>
       ) : null}
 
+      {items.length > 0 ? <ValueBreakdown assets={items} /> : null}
+
+      <Card>
+        <View style={{ gap: spacing.sm }}>
+          <AuditRow label="Assets logged" value={String(assetCount)} />
+          <AuditRow label="Tamper-evident photos" value={items.length > 0 ? '100% hashed' : '-'} good={items.length > 0} />
+          <AuditRow
+            label="Last documented"
+            value={p.lastDocumentedAt ? new Date(p.lastDocumentedAt).toLocaleDateString() : 'Not yet'}
+          />
+        </View>
+      </Card>
+
       <SectionHeader
         title="Documented assets"
         actionLabel="Capture"
@@ -105,29 +128,67 @@ export default function PropertyDetail() {
     </View>
   );
 
+  const gridData: GridItem[] = items.length > 0 ? [...items, ADD_TILE] : [];
+
   return (
     <ListScreen
-      data={items}
+      data={gridData}
       numColumns={2}
       columnWrapperStyle={{ gap: spacing.md }}
-      keyExtractor={(a) => a.id}
+      keyExtractor={(a) => (a === ADD_TILE ? ADD_TILE : a.id)}
       refreshing={assets.isRefetching}
       onRefresh={() => { property.refetch(); assets.refetch(); }}
       header={header}
-      renderItem={({ item: a }) => (
-        <Pressable onPress={() => router.push(`/(app)/asset/${a.id}` as never)} style={{ flex: 1 }}>
-          <Card padded={false} style={{ overflow: 'hidden' }}>
-            <RemoteImage uri={a.photoUrl} height={120} />
-            <View style={{ padding: spacing.md, gap: spacing.xs }}>
-              <Text variant="labelMd" numberOfLines={1} weight="semibold">
-                {a.description}
+      renderItem={({ item: a }) =>
+        a === ADD_TILE ? (
+          <Pressable
+            onPress={() => router.push(`/(app)/property/${propertyId}/capture` as never)}
+            style={{ flex: 1 }}
+          >
+            <View
+              style={{
+                minHeight: 180,
+                borderRadius: radius.lg,
+                borderWidth: 1.5,
+                borderStyle: 'dashed',
+                borderColor: colors.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: spacing.sm,
+                backgroundColor: colors.tealTint,
+              }}
+            >
+              <Ionicons name="add-circle" size={30} color={colors.primary} />
+              <Text variant="labelMd" weight="semibold" color={colors.primary}>
+                Log new asset
               </Text>
-              {typeof a.estimatedValue === 'number' ? <ValuePill amount={a.estimatedValue} /> : null}
-              <VerifiedBadge hash={a.sha256Hash} />
+              <Text variant="labelMd" color={colors.textMuted} style={{ fontSize: 10 }}>
+                Secure & hashed
+              </Text>
             </View>
-          </Card>
-        </Pressable>
-      )}
+          </Pressable>
+        ) : (
+          <Pressable onPress={() => router.push(`/(app)/asset/${a.id}` as never)} style={{ flex: 1 }}>
+            <Card padded={false} style={{ overflow: 'hidden' }}>
+              <EvidencePhoto
+                uri={a.photoUrl}
+                height={120}
+                gpsLat={a.gpsLat}
+                gpsLng={a.gpsLng}
+                capturedAt={a.capturedAt}
+                verified={a.sha256Hash}
+              />
+              <View style={{ padding: spacing.md, gap: spacing.xs }}>
+                <Text variant="labelMd" numberOfLines={1} weight="semibold">
+                  {a.description}
+                </Text>
+                {typeof a.estimatedValue === 'number' ? <ValuePill amount={a.estimatedValue} /> : null}
+                <VerifiedBadge hash={a.sha256Hash} />
+              </View>
+            </Card>
+          </Pressable>
+        )
+      }
       empty={
         assets.isLoading ? (
           <Loading />
@@ -142,6 +203,61 @@ export default function PropertyDetail() {
         )
       }
     />
+  );
+}
+
+function AuditRow({ label, value, good }: { label: string; value: string; good?: boolean }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Text variant="labelMd" color={colors.textMuted}>
+        {label}
+      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        {good ? <Ionicons name="checkmark-circle" size={14} color={colors.success} /> : null}
+        <Text variant="bodyMd" weight="semibold">
+          {value}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+/** Stacked bar showing how the protected value splits across asset categories. */
+function ValueBreakdown({ assets }: { assets: Asset[] }) {
+  const byCategory = new Map<string, number>();
+  for (const a of assets) {
+    if (typeof a.estimatedValue !== 'number') continue;
+    const key = a.category ?? 'OTHER';
+    byCategory.set(key, (byCategory.get(key) ?? 0) + a.estimatedValue);
+  }
+  const entries = [...byCategory.entries()].sort((x, y) => y[1] - x[1]).slice(0, 4);
+  const sum = entries.reduce((s, [, v]) => s + v, 0);
+  if (sum <= 0) return null;
+
+  return (
+    <Card>
+      <Text variant="labelMd" color={colors.textMuted} style={{ marginBottom: spacing.sm }}>
+        Value by category
+      </Text>
+      <View style={{ flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: spacing.md }}>
+        {entries.map(([cat, v], i) => (
+          <View key={cat} style={{ flex: v / sum, backgroundColor: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length] }} />
+        ))}
+      </View>
+      <View style={{ gap: spacing.xs }}>
+        {entries.map(([cat, v], i) => (
+          <View key={cat} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: BREAKDOWN_COLORS[i % BREAKDOWN_COLORS.length] }} />
+            <Text variant="labelMd" color={colors.textMuted} style={{ flex: 1 }}>
+              {titleCase(cat)}
+            </Text>
+            <Text variant="labelMd" weight="semibold">
+              {formatCedis(v)}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </Card>
   );
 }
 
