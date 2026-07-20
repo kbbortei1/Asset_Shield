@@ -42,6 +42,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final PasswordEncoder passwordEncoder;
     private final AgentSyncService agentSyncService;
+    private final AuditService auditService;
 
     public AuthService(UserRepository userRepository,
                        PendingAgentDetailsRepository pendingAgentRepository,
@@ -49,7 +50,8 @@ public class AuthService {
                        TokenService tokenService,
                        RefreshTokenService refreshTokenService,
                        PasswordEncoder passwordEncoder,
-                       AgentSyncService agentSyncService) {
+                       AgentSyncService agentSyncService,
+                       AuditService auditService) {
         this.userRepository = userRepository;
         this.pendingAgentRepository = pendingAgentRepository;
         this.otpService = otpService;
@@ -57,6 +59,7 @@ public class AuthService {
         this.refreshTokenService = refreshTokenService;
         this.passwordEncoder = passwordEncoder;
         this.agentSyncService = agentSyncService;
+        this.auditService = auditService;
     }
 
     @Transactional(noRollbackFor = ApiException.class)
@@ -127,6 +130,8 @@ public class AuthService {
             // best-effort; the 60 s re-push job covers marketplace downtime
             agentSyncService.pushAfterVerification(user.getId());
         }
+        auditService.record(user.getId(), AuditService.ACCOUNT_VERIFIED, user.getPhoneNumber(),
+                user.getRole().name() + " account activated");
         return issueTokens(user);
     }
 
@@ -143,16 +148,23 @@ public class AuthService {
     @Transactional
     public AuthTokensResponse login(LoginRequest request) {
         User user = userRepository.findByPhoneNumberAndDeletedAtIsNull(request.phoneNumber())
-                .orElseThrow(AuthService::badCredentials);
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+                .orElse(null);
+        if (user == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            // REQUIRES_NEW inside AuditService: the row survives this rollback
+            auditService.record(user == null ? null : user.getId(), AuditService.LOGIN_FAILED,
+                    request.phoneNumber(), "Bad credentials");
             throw badCredentials();
         }
         if (user.getStatus() == UserStatus.PENDING_OTP) {
             throw new ApiException(ErrorCode.OTP_REQUIRED, "Phone number not verified yet");
         }
         if (user.getStatus() == UserStatus.SUSPENDED) {
+            auditService.record(user.getId(), AuditService.LOGIN_FAILED,
+                    request.phoneNumber(), "Suspended account");
             throw new ApiException(ErrorCode.FORBIDDEN, "Account is suspended");
         }
+        auditService.record(user.getId(), AuditService.LOGIN_SUCCESS, request.phoneNumber(),
+                user.getRole().name());
         return issueTokens(user);
     }
 
@@ -188,6 +200,8 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
         refreshTokenService.revokeAllForUser(user.getId());
+        auditService.record(user.getId(), AuditService.PASSWORD_RESET, user.getPhoneNumber(),
+                "All sessions revoked");
     }
 
     @Transactional(noRollbackFor = ApiException.class)
