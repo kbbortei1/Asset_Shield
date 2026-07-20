@@ -8,6 +8,11 @@ spring:
     gateway:
       server:
         webflux:
+          # A slow downstream must not hold gateway connections indefinitely:
+          # fail fast at the edge and let the client retry.
+          httpclient:
+            connect-timeout: 3000 # ms
+            response-timeout: 20s
           routes:
             # More specific than the auth /users/** route — must stay first.
             - id: property-service-invitations
