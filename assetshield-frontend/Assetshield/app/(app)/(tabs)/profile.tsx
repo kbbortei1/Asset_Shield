@@ -91,6 +91,7 @@ export default function ProfileTab() {
         ) : null}
         <Row icon="receipt-outline" label="Billing history" onPress={() => router.push('/(app)/billing' as never)} />
         {role === 'ADMIN' ? <Row icon="person-add-outline" label="Create an admin" onPress={() => router.push('/(app)/admin/new' as never)} /> : null}
+        {role === 'ADMIN' ? <Row icon="shield-outline" label="Audit trail" onPress={() => router.push('/(app)/admin/audit' as never)} /> : null}
       </View>
 
       <SectionHeader title="Preferences" />

@@ -46,6 +46,8 @@ export default function TabsLayout() {
   const quickActions: QuickAction[] = isOwner
     ? [
         { icon: 'add-circle', label: 'New property', href: '/(app)/property/new' },
+        { icon: 'qr-code', label: 'Scan asset label', href: '/(app)/scan' },
+        { icon: 'bar-chart', label: 'Analytics', href: '/(app)/analytics' },
         { icon: 'people', label: 'Connections', href: '/(app)/(tabs)/market' },
         { icon: 'notifications', label: 'Alerts', href: '/(app)/(tabs)/notifications' },
         { icon: 'bulb', label: 'Safety tips', href: '/(app)/tips' },
