@@ -221,6 +221,29 @@ class DossierFlowIT {
     // ── flows ────────────────────────────────────────────────────────────────
 
     @Test
+    void unpaidDossierCanResumePaymentWithAFreshCheckout() throws Exception {
+        UUID reportId = createCompletedReport();
+        UUID dossierId = requestDossier(reportId);
+
+        // abandoned checkout → the client asks for a fresh handle any time
+        mockMvc.perform(post("/api/v1/dossiers/{id}/pay", dossierId)
+                        .header(HttpHeaders.AUTHORIZATION, ownerBearer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PENDING_PAYMENT"))
+                .andExpect(jsonPath("$.data.payment.amount").value(50.00))
+                .andExpect(jsonPath("$.data.payment.reference").isNotEmpty())
+                .andExpect(jsonPath("$.data.payment.authorizationUrl").isNotEmpty());
+
+        // once paid, resume is refused
+        UUID paymentId = UUID.randomUUID();
+        confirmPayment(dossierId, paymentId);
+        mockMvc.perform(post("/api/v1/dossiers/{id}/pay", dossierId)
+                        .header(HttpHeaders.AUTHORIZATION, ownerBearer))
+                .andExpect(status().is4xxClientError())
+                .andExpect(jsonPath("$.data.errorCode").value("INVALID_STATE_TRANSITION"));
+    }
+
+    @Test
     void dossierOnDraftReportIsRejected() throws Exception {
         MvcResult created = mockMvc.perform(post("/api/v1/properties/{id}/damage-reports", propertyId)
                         .header(HttpHeaders.AUTHORIZATION, ownerBearer)
