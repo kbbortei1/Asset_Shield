@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { notificationsApi } from '@/lib/api';
 import { TipCard } from '@/components/cards/TipCard';
-import { EmptyState, ErrorState, Header, Loading, Screen } from '@/components/ui';
+import { EmptyState, ErrorState, Header, ListScreen, Loading, Screen } from '@/components/ui';
 
 /** Property-specific safety tips. Tips are English-only by design. */
 export default function PropertyTips() {
@@ -15,18 +15,24 @@ export default function PropertyTips() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tips', propertyId] }),
   });
 
-  return (
-    <Screen refreshing={q.isRefetching} onRefresh={q.refetch}>
-      <Header title="Safety tips" />
-      {q.isLoading ? (
+  if (q.isLoading)
+    return (
+      <Screen>
+        <Header title="Safety tips" />
         <Loading />
-      ) : q.isError ? (
-        <ErrorState onRetry={() => q.refetch()} />
-      ) : (q.data?.items.length ?? 0) === 0 ? (
-        <EmptyState icon="bulb-outline" title="No tips yet" body="Personalised safety tips for this property will appear here." />
-      ) : (
-        q.data!.items.map((t) => <TipCard key={t.id} tip={t} onPress={() => !t.readAt && markRead.mutate(t.id)} />)
-      )}
-    </Screen>
+      </Screen>
+    );
+  if (q.isError) return <ErrorState onRetry={() => q.refetch()} />;
+
+  return (
+    <ListScreen
+      data={q.data?.items ?? []}
+      keyExtractor={(t) => t.id}
+      refreshing={q.isRefetching}
+      onRefresh={q.refetch}
+      header={<Header title="Safety tips" />}
+      renderItem={({ item: t }) => <TipCard tip={t} onPress={() => !t.readAt && markRead.mutate(t.id)} />}
+      empty={<EmptyState icon="bulb-outline" title="No tips yet" body="Personalised safety tips for this property will appear here." />}
+    />
   );
 }
