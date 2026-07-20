@@ -20,6 +20,7 @@ public class RemoteEventPublisher implements EventPublisher {
 
     public RemoteEventPublisher(String notificationUri, String internalApiKey) {
         this.restClient = RestClient.builder()
+                .requestFactory(InternalHttp.requestFactory())
                 .baseUrl(notificationUri)
                 .defaultHeader("X-Internal-Api-Key", internalApiKey)
                 .build();
