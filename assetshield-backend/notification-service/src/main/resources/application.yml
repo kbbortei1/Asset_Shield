@@ -28,6 +28,8 @@ app:
     tip-delivery-cron: ${SCHED_TIP_DELIVERY_CRON:0 0 7 * * *}
     redoc-cron: ${SCHED_REDOC_CRON:0 0 9 * * *}
     redoc-stale-days: ${REDOC_STALE_DAYS:90}
+    maintenance-cron: ${SCHED_MAINTENANCE_CRON:0 15 8 * * *}
+    maintenance-lookahead-days: ${MAINTENANCE_LOOKAHEAD_DAYS:14}
 
 management:
   endpoints:

@@ -20,6 +20,7 @@ public record AppProperties(
     public record Tips(int batchSize, long debounceMinutes) {
     }
 
-    public record Sched(String tipDeliveryCron, String redocCron, int redocStaleDays) {
+    public record Sched(String tipDeliveryCron, String redocCron, int redocStaleDays,
+                        String maintenanceCron, int maintenanceLookaheadDays) {
     }
 }
