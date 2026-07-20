@@ -42,6 +42,7 @@ public class PropertyClient {
 
     public PropertyClient(AppProperties properties) {
         this.restClient = RestClient.builder()
+                .requestFactory(InternalHttp.requestFactory())
                 .baseUrl(properties.propertyServiceUri())
                 .defaultHeader("X-Internal-Api-Key", properties.internalApiKey())
                 .build();
