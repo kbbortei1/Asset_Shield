@@ -28,3 +28,4 @@ export { AnimatedItem } from './AnimatedItem';
 export { ImageViewerProvider, useImageViewer } from './ImageViewer';
 export { AppBackground } from './AppBackground';
 export { LocationConfirm } from './LocationConfirm';
+export { EvidencePhoto } from './EvidencePhoto';
