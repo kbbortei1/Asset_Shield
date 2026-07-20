@@ -20,6 +20,9 @@ public interface AssetReceiptRepository extends JpaRepository<AssetReceipt, UUID
 
     List<AssetReceipt> findByAssetIdAndDeletedAtIsNullOrderByCreatedAtAsc(UUID assetId);
 
+    /** Timeline: soft-deleted receipts included — the add event still happened. */
+    List<AssetReceipt> findByAssetIdInOrderByCreatedAtAsc(Collection<UUID> assetIds);
+
     long countByAssetIdAndDeletedAtIsNull(UUID assetId);
 
     @Query("""
