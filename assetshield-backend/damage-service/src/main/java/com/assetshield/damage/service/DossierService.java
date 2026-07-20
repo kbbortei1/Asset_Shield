@@ -135,6 +135,29 @@ public class DossierService {
                         init.reference(), init.authorizationUrl()));
     }
 
+    /**
+     * Fresh checkout handle for an unpaid dossier, so the client can resume
+     * payment any time (e.g. the user abandoned the original checkout and came
+     * back later from the dossier list). Each call re-initializes with the
+     * provider: old INITIATED rows are harmless, settlement is replay-safe.
+     */
+    @Transactional
+    public GenerateResponse paymentHandle(AuthUser user, UUID dossierId) {
+        Dossier dossier = dossierRepository.findById(dossierId)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Dossier not found"));
+        DamageReport report = guard.requireReport(dossier.getDamageReportId());
+        guard.requireMutate(report.getPropertyId(), user.id());
+        if (dossier.getStatus() != DossierStatus.PENDING_PAYMENT) {
+            throw new ApiException(ErrorCode.INVALID_STATE_TRANSITION,
+                    "This dossier's fee has already been paid");
+        }
+        PaymentServiceClient.PaymentInit init = paymentClient.initializeDossierFee(
+                user.id(), user.phone(), dossierFee, dossier.getId());
+        return new GenerateResponse(dossier.getId(), dossier.getStatus(),
+                new PaymentBlock(init.paymentId(), dossierFee, "GHS",
+                        init.reference(), init.authorizationUrl()));
+    }
+
     // ── status / download / shared / rotate / retry / list ─────────────────
 
     @Transactional(readOnly = true)
