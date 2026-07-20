@@ -22,6 +22,7 @@ public class RemoteMarketplaceEventsClient implements MarketplaceEventsClient {
 
     public RemoteMarketplaceEventsClient(String marketplaceUri, String internalApiKey) {
         this.restClient = RestClient.builder()
+                .requestFactory(InternalHttp.requestFactory())
                 .baseUrl(marketplaceUri)
                 .defaultHeader("X-Internal-Api-Key", internalApiKey)
                 .build();
