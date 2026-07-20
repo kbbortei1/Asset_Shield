@@ -17,16 +17,32 @@ export default function AssetDetail() {
 
   const [description, setDescription] = useState('');
   const [value, setValue] = useState('');
+  const [warranty, setWarranty] = useState('');
+  const [service, setService] = useState('');
 
   useEffect(() => {
     if (q.data) {
       setDescription(q.data.description);
       setValue(q.data.estimatedValue != null ? String(q.data.estimatedValue) : '');
+      setWarranty(q.data.warrantyExpiresOn ?? '');
+      setService(q.data.nextServiceOn ?? '');
     }
   }, [q.data]);
 
   const save = useMutation({
-    mutationFn: () => propertiesApi.updateAsset(assetId, { description, estimatedValue: value ? Number(value) : undefined }),
+    mutationFn: () => {
+      for (const [label, date] of [['Warranty expiry', warranty], ['Next service', service]] as const) {
+        if (date && !isIsoDate(date)) {
+          throw new Error(`${label} must be a valid date in YYYY-MM-DD format.`);
+        }
+      }
+      return propertiesApi.updateAsset(assetId, {
+        description,
+        estimatedValue: value ? Number(value) : undefined,
+        warrantyExpiresOn: warranty || undefined,
+        nextServiceOn: service || undefined,
+      });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['asset', assetId] });
       if (q.data?.propertyId) qc.invalidateQueries({ queryKey: ['assets', q.data.propertyId] });
@@ -101,14 +117,49 @@ export default function AssetDetail() {
       <View style={{ gap: spacing.lg }}>
         <Input label="Description" value={description} onChangeText={setDescription} />
         <Input label="Estimated value (₵)" value={value} onChangeText={setValue} keyboardType="numeric" />
+        <View style={{ flexDirection: 'row', gap: spacing.md }}>
+          <View style={{ flex: 1 }}>
+            <Input
+              label="Warranty expires"
+              value={warranty}
+              onChangeText={setWarranty}
+              placeholder="YYYY-MM-DD"
+              autoCapitalize="none"
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Input
+              label="Next service"
+              value={service}
+              onChangeText={setService}
+              placeholder="YYYY-MM-DD"
+              autoCapitalize="none"
+            />
+          </View>
+        </View>
+        <Text variant="labelMd" color={colors.textMuted}>
+          Set either date and AssetShield reminds you before it arrives.
+        </Text>
         <Button title="Save changes" loading={save.isPending} onPress={() => save.mutate()} />
         <Button
           title={(a.receiptCount ?? a.receipts?.length ?? 0) > 0 ? 'Add another receipt' : 'Add receipt'}
           variant="secondary"
           onPress={addReceipt}
         />
+        <Button
+          title="QR label"
+          variant="secondary"
+          onPress={() => router.push(`/(app)/asset/${assetId}/qr` as never)}
+        />
         <Button title="Delete asset" variant="danger" onPress={remove} />
       </View>
     </Screen>
   );
+}
+
+/** A real calendar date in YYYY-MM-DD (rejects 2026-02-31 and the like). */
+function isIsoDate(v: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const d = new Date(`${v}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
 }
