@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
@@ -8,7 +7,7 @@ import { damageApi, DamagePhoto, isApiError, PairingSuggestion } from '@/lib/api
 import { CapturedImage, getLocationFix, LocationFix, PermissionError, pickImage } from '@/lib/media/capture';
 import { uploadDamagePhoto } from '@/lib/media/uploads';
 import { useOffline } from '@/lib/offline/OfflineProvider';
-import { Button, Card, EmptyState, Header, Input, LocationConfirm, RemoteImage, Screen, Text } from '@/components/ui';
+import { Button, Card, EmptyState, EvidencePhoto, Header, Input, LocationConfirm, RemoteImage, Screen, Text } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 type Phase = 'capture' | 'pairing';
@@ -94,7 +93,15 @@ export default function CaptureDamage() {
       <Screen footer={<Button title="Skip pairing" variant="secondary" onPress={() => router.back()} />}>
         <Header title="Pair with an asset" showBack={false} />
         <Card padded={false} style={{ overflow: 'hidden' }}>
-          <RemoteImage uri={photo?.photoUrl} height={180} />
+          <EvidencePhoto
+            uri={photo?.photoUrl}
+            height={180}
+            gpsLat={photo?.gpsLat}
+            gpsLng={photo?.gpsLng}
+            capturedAt={photo?.capturedAt}
+            verified={photo?.sha256Hash}
+            variant="incident"
+          />
         </Card>
         <Text variant="bodyMd" color={colors.textMuted}>
           We found these documented assets near where this photo was taken. Pair to show before/after evidence.
@@ -131,7 +138,14 @@ export default function CaptureDamage() {
       <Header title="Add damage photo" />
       {image ? (
         <Card padded={false} style={{ overflow: 'hidden' }}>
-          <Image source={{ uri: image.uri }} style={{ width: '100%', height: 240 }} contentFit="cover" />
+          <EvidencePhoto
+            localUri={image.uri}
+            height={240}
+            gpsLat={fix?.gpsLat}
+            gpsLng={fix?.gpsLng}
+            capturedAt={new Date().toISOString()}
+            variant="incident"
+          />
         </Card>
       ) : (
         <View style={{ flexDirection: 'row', gap: spacing.md }}>
