@@ -63,7 +63,10 @@ public class TipService {
                 .filter(found -> found.getUserId().equals(user.id()))
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Tip not found"));
         if (tip.getReadAt() == null) { // idempotent: first read wins
-            tip.setReadAt(Instant.now());
+            // truncate to what PostgreSQL stores (micros) so the value returned
+            // from memory now and from the DB later are identical — Postgres
+            // ROUNDS nanoseconds, which made the two differ by 1µs half the time
+            tip.setReadAt(Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS));
             tipRepository.save(tip);
         }
         return new TipReadResponse(tip.getReadAt());
