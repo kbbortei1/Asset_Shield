@@ -12,6 +12,8 @@ export type PhoneInputProps = {
   error?: string | null;
   hint?: string;
   autoFocus?: boolean;
+  returnKeyType?: 'next' | 'done';
+  onSubmitEditing?: () => void;
 };
 
 export const GH_PREFIX = '+233';
@@ -36,7 +38,16 @@ export function isCompleteGhPhone(value: string): boolean {
  * +233XXXXXXXXX, so the code is locked rather than user-editable; a typed
  * leading 0 (local habit, e.g. 020 111 2233) is stripped automatically.
  */
-export function PhoneInput({ label = 'Phone number', value, onChangeText, error, hint, autoFocus }: PhoneInputProps) {
+export function PhoneInput({
+  label = 'Phone number',
+  value,
+  onChangeText,
+  error,
+  hint,
+  autoFocus,
+  returnKeyType,
+  onSubmitEditing,
+}: PhoneInputProps) {
   const [focused, setFocused] = useState(false);
   const borderColor = error ? colors.error : focused ? colors.primary : colors.border;
   const digits = localPart(value);
@@ -80,6 +91,10 @@ export function PhoneInput({ label = 'Phone number', value, onChangeText, error,
           keyboardType="number-pad"
           maxLength={10} // 9 digits + headroom for a pasted leading 0
           autoFocus={autoFocus}
+          autoComplete="tel"
+          textContentType="telephoneNumber"
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
           placeholder="201112233"
           placeholderTextColor={colors.textMuted}
           accessibilityLabel="Ghana phone number without the country code"
