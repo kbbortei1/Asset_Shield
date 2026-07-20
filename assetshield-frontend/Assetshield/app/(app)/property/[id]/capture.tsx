@@ -64,6 +64,13 @@ export default function CaptureAsset() {
         Alert.alert('Already documented', 'This exact photo is already on this property.', [{ text: 'OK', onPress: () => router.back() }]);
       } else if (outcome.status === 'queued') {
         Alert.alert('Saved offline', 'This asset will sync automatically when you’re back online.', [{ text: 'OK', onPress: () => router.back() }]);
+      } else if (outcome.data?.duplicateWarning) {
+        // fraud signal from the backend: same bytes documented on ANOTHER property
+        Alert.alert(
+          'Duplicate photo detected',
+          'This exact photo already documents an asset on another property. It was saved, but duplicate evidence can be rejected by insurers.',
+          [{ text: 'Understood', onPress: () => router.back() }],
+        );
       } else {
         router.back();
       }
