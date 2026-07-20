@@ -13,7 +13,7 @@ import { colors, spacing } from '@/theme';
 
 /** DOSSIER (beat 3) + CONTROL (beat 5): pay → poll → download → share/rotate. */
 export default function DossierScreen() {
-  const { id, ref, url } = useLocalSearchParams<{ id: string; ref?: string; url?: string }>();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const dossierId = id!;
   const qc = useQueryClient();
   const [paying, setPaying] = useState(false);
@@ -28,15 +28,21 @@ export default function DossierScreen() {
   });
 
   const pay = async () => {
-    if (!ref) {
-      Alert.alert('Payment unavailable', 'Open this dossier from the report you just generated to complete payment.');
-      return;
-    }
     setPaying(true);
     try {
-      const result = await runCheckout({ reference: ref, authorizationUrl: url ?? '' });
+      // Always fetch a fresh checkout handle: works on first pay AND when the
+      // user abandoned an earlier checkout and returns from the dossier list.
+      const handle = await damageApi.dossierPay(dossierId);
+      const result = await runCheckout({
+        reference: handle.payment?.reference ?? '',
+        authorizationUrl: handle.payment?.authorizationUrl ?? '',
+      });
       if (result === 'failed') Alert.alert('Payment failed', 'Please try again.');
+      else if (result === 'pending')
+        Alert.alert('Payment not completed', 'No charge was made. You can tap Pay again any time.');
       qc.invalidateQueries({ queryKey: ['dossier-status', dossierId] });
+    } catch (e) {
+      Alert.alert('Could not start payment', isApiError(e) ? e.message : 'Please try again.');
     } finally {
       setPaying(false);
     }
@@ -107,7 +113,29 @@ export default function DossierScreen() {
 
       {status === 'READY' ? (
         <View style={{ gap: spacing.md }}>
+          <Card style={{ backgroundColor: colors.tealTint }}>
+            <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' }}>
+              <Ionicons name="shield-checkmark" size={18} color={colors.primary} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text variant="labelMd" weight="semibold" color={colors.primary}>
+                  Cryptographically signed
+                </Text>
+                <Text variant="labelMd" color={colors.primary}>
+                  {q.data?.manifestHash
+                    ? `Manifest hash ${q.data.manifestHash.slice(0, 16)}… is sealed into the PDF. Any change to the evidence breaks it.`
+                    : 'The evidence manifest is hashed and sealed into the PDF.'}
+                </Text>
+              </View>
+            </View>
+          </Card>
           <Button title="Download dossier (PDF)" loading={downloading} onPress={download} leftIcon={<Ionicons name="download" size={18} color={colors.onCta} />} />
+          <Button
+            title="Share PDF (WhatsApp & more)"
+            variant="secondary"
+            loading={downloading}
+            onPress={download}
+            leftIcon={<Ionicons name="logo-whatsapp" size={18} color={colors.primary} />}
+          />
           <Button title="Share with an agent" variant="secondary" onPress={() => router.push(`/(app)/dossier/${dossierId}/share` as never)} />
           <Button title="Rotate share link" variant="ghost" loading={rotate.isPending} onPress={() => rotate.mutate()} />
         </View>
