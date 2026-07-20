@@ -1,17 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { View } from 'react-native';
-import { damageApi, marketplaceApi } from '@/lib/api';
+import { marketplaceApi, Payment } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { Card, EmptyState, Header, Loading, Screen, StatusBadge, Text } from '@/components/ui';
+import { Card, EmptyState, Header, ListScreen, Loading, Screen, StatusBadge, Text, formatCedis } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
-/**
- * Stitch: "Billing History". The backend exposes no list-payments endpoint, so
- * this aggregates the billable artifacts we CAN read: the current subscription
- * plus each generated dossier (the dossier fee). Payment-by-reference details
- * are available via GET /payments/{reference} when a reference is known.
- */
+const PURPOSE_META: Record<string, { icon: keyof typeof Ionicons.glyphMap; label: string }> = {
+  PRO_SUBSCRIPTION: { icon: 'star', label: 'AssetShield PRO' },
+  AGENT_SUBSCRIPTION: { icon: 'star', label: 'Agent subscription' },
+  DOSSIER_FEE: { icon: 'document-text', label: 'Dossier fee' },
+};
+
+/** Stitch: "Billing History" — real payment records from payment-service. */
 export default function Billing() {
   const { user } = useAuth();
   const isAgent = user?.role === 'AGENT';
@@ -20,14 +21,13 @@ export default function Billing() {
     queryKey: ['subscription', isAgent ? 'agent' : 'owner'],
     queryFn: () => (isAgent ? marketplaceApi.agentSubscription() : marketplaceApi.mySubscription()),
   });
-  const dossiers = useQuery({
-    queryKey: ['my-dossiers'],
-    queryFn: () => damageApi.myDossiers({ size: 50 }),
-    enabled: !isAgent,
+  const payments = useQuery({
+    queryKey: ['my-payments'],
+    queryFn: () => marketplaceApi.myPayments({ size: 50 }),
   });
 
-  return (
-    <Screen refreshing={sub.isRefetching} onRefresh={() => { sub.refetch(); dossiers.refetch(); }}>
+  const header = (
+    <View style={{ gap: spacing.lg }}>
       <Header title="Billing history" />
 
       <Text variant="headlineSm">Subscription</Text>
@@ -50,38 +50,60 @@ export default function Billing() {
         </Card>
       )}
 
-      {!isAgent ? (
-        <>
-          <Text variant="headlineSm" style={{ marginTop: spacing.md }}>
-            Dossier fees
+      <Text variant="headlineSm">Payments</Text>
+    </View>
+  );
+
+  if (payments.isLoading)
+    return (
+      <Screen>
+        {header}
+        <Loading />
+      </Screen>
+    );
+
+  return (
+    <ListScreen
+      data={payments.data?.items ?? []}
+      keyExtractor={(p) => p.reference}
+      refreshing={payments.isRefetching}
+      onRefresh={() => {
+        sub.refetch();
+        payments.refetch();
+      }}
+      header={header}
+      renderItem={({ item }) => <PaymentRow p={item} />}
+      empty={<EmptyState icon="receipt-outline" title="No charges yet" body="Subscription and dossier payments will appear here." />}
+    />
+  );
+}
+
+function PaymentRow({ p }: { p: Payment }) {
+  const meta = PURPOSE_META[p.purpose ?? ''] ?? { icon: 'card' as const, label: p.purpose ?? 'Payment' };
+  return (
+    <Card>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <Ionicons name={meta.icon} size={22} color={colors.primary} />
+        <View style={{ flex: 1 }}>
+          <Text variant="bodyMd" weight="semibold">
+            {meta.label}
           </Text>
-          {dossiers.isLoading ? (
-            <Loading />
-          ) : (dossiers.data?.items.length ?? 0) === 0 ? (
-            <EmptyState icon="receipt-outline" title="No charges yet" body="Dossier generation fees will appear here." />
-          ) : (
-            dossiers.data!.items.map((d) => (
-              <Card key={d.id}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                  <Ionicons name="document-text" size={22} color={colors.primary} />
-                  <View style={{ flex: 1 }}>
-                    <Text variant="bodyMd" weight="semibold">
-                      {d.propertyName ?? 'Dossier'}
-                    </Text>
-                    <Text variant="labelMd" color={colors.textMuted}>
-                      {d.generatedAt ? new Date(d.generatedAt).toLocaleDateString() : d.disasterType ?? 'Dossier fee'}
-                    </Text>
-                  </View>
-                  <StatusBadge
-                    status={d.status === 'READY' ? 'secured' : d.status === 'FAILED' ? 'damaged' : 'needsUpdate'}
-                    label={d.status === 'PENDING_PAYMENT' ? 'Unpaid' : 'Paid'}
-                  />
-                </View>
-              </Card>
-            ))
-          )}
-        </>
-      ) : null}
-    </Screen>
+          <Text variant="labelMd" color={colors.textMuted}>
+            {p.createdAt ? new Date(p.createdAt).toLocaleDateString() : p.reference}
+          </Text>
+        </View>
+        <View style={{ alignItems: 'flex-end', gap: 4 }}>
+          {typeof p.amount === 'number' ? (
+            <Text variant="bodyMd" weight="semibold">
+              {formatCedis(p.amount)}
+            </Text>
+          ) : null}
+          <StatusBadge
+            status={p.status === 'SUCCESS' ? 'secured' : p.status === 'FAILED' ? 'damaged' : 'needsUpdate'}
+            label={p.status === 'INITIATED' ? 'UNPAID' : p.status}
+          />
+        </View>
+      </View>
+    </Card>
   );
 }
