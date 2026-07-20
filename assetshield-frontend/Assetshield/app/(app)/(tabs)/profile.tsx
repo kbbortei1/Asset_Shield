@@ -5,7 +5,7 @@ import { usersApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useOffline } from '@/lib/offline/OfflineProvider';
 import { useTheme } from '@/lib/theme/ThemeProvider';
-import { Button, Card, Screen, Text, useToast } from '@/components/ui';
+import { Button, Card, Screen, SectionHeader, Text, useToast } from '@/components/ui';
 import { colors, radius, spacing, ThemeName } from '@/theme';
 
 /** Stitch: "Profile & Settings". */
@@ -81,6 +81,7 @@ export default function ProfileTab() {
         </Card>
       ) : null}
 
+      <SectionHeader title="Account" />
       <View style={{ gap: spacing.sm }}>
         <Row icon="person-outline" label="Edit profile" onPress={() => router.push('/(app)/profile-edit' as never)} />
         <Row icon="card-outline" label="Ghana Card (KYC)" onPress={() => router.push('/(app)/kyc' as never)} />
@@ -92,6 +93,7 @@ export default function ProfileTab() {
         {role === 'ADMIN' ? <Row icon="person-add-outline" label="Create an admin" onPress={() => router.push('/(app)/admin/new' as never)} /> : null}
       </View>
 
+      <SectionHeader title="Preferences" />
       <Card>
         <Text variant="bodyMd" weight="semibold" style={{ marginBottom: spacing.md }}>
           Appearance
