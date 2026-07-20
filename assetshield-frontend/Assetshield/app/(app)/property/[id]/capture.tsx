@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
@@ -8,7 +7,7 @@ import { AssetCategory, isApiError } from '@/lib/api';
 import { CapturedImage, getLocationFix, LocationFix, PermissionError, pickImage } from '@/lib/media/capture';
 import { uploadAssetPhoto } from '@/lib/media/uploads';
 import { useOffline } from '@/lib/offline/OfflineProvider';
-import { Button, Card, Header, Input, LocationConfirm, Screen, Text } from '@/components/ui';
+import { Button, Card, EvidencePhoto, Header, Input, LocationConfirm, Screen, Text } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 const CATEGORIES: AssetCategory[] = ['ELECTRONICS', 'FURNITURE', 'CLOTHING_STOCK', 'MACHINERY', 'DOCUMENTS', 'OTHER'];
@@ -87,8 +86,14 @@ export default function CaptureAsset() {
 
       {image ? (
         <Card padded={false} style={{ overflow: 'hidden' }}>
-          <Image source={{ uri: image.uri }} style={{ width: '100%', height: 240 }} contentFit="cover" />
-          <Pressable onPress={() => choose('camera')} style={{ position: 'absolute', bottom: spacing.md, right: spacing.md, backgroundColor: colors.card, borderRadius: radius.pill, padding: spacing.sm }}>
+          <EvidencePhoto
+            localUri={image.uri}
+            height={240}
+            gpsLat={fix?.gpsLat}
+            gpsLng={fix?.gpsLng}
+            capturedAt={new Date().toISOString()}
+          />
+          <Pressable onPress={() => choose('camera')} style={{ position: 'absolute', top: spacing.md, right: spacing.md, backgroundColor: colors.card, borderRadius: radius.pill, padding: spacing.sm }}>
             <Ionicons name="camera-reverse" size={22} color={colors.primary} />
           </Pressable>
         </Card>
