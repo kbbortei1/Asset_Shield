@@ -35,6 +35,8 @@ export const damageApi = {
   // dossiers
   generateDossier: (reportId: string) =>
     api.post<GenerateDossierResult>(`/damage-reports/${reportId}/generate-dossier`),
+  /** Fresh checkout for an unpaid dossier — resume payment any time. */
+  dossierPay: (dossierId: string) => api.post<GenerateDossierResult>(`/dossiers/${dossierId}/pay`),
   dossierStatus: (dossierId: string) => api.get<DossierStatusResult>(`/dossiers/${dossierId}/status`),
   dossierDownload: (dossierId: string) => api.get<DossierDownload>(`/dossiers/${dossierId}/download`),
   rotateShareToken: (dossierId: string) => api.post<{ shareToken: string }>(`/dossiers/${dossierId}/rotate-share-token`),
