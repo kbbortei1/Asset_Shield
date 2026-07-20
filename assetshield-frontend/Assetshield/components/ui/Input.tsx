@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 import { Pressable, TextInput, TextInputProps, View } from 'react-native';
 import { colors, radius, spacing, type } from '@/theme';
 import { Text } from './Text';
@@ -14,8 +14,13 @@ export type InputProps = TextInputProps & {
  * 56px, 12px-rounded field with a persistent label above (accessibility: never
  * placeholder-only). Hairline border, teal focus ring, red error state.
  * Password fields (secureTextEntry) get a built-in show/hide eye toggle.
+ * Forwards its ref to the TextInput so forms can chain focus with
+ * returnKeyType="next" + onSubmitEditing.
  */
-export function Input({ label, error, hint, style, onFocus, onBlur, secureTextEntry, ...rest }: InputProps) {
+export const Input = forwardRef<TextInput, InputProps>(function Input(
+  { label, error, hint, style, onFocus, onBlur, secureTextEntry, ...rest },
+  ref,
+) {
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(true);
   const borderColor = error ? colors.error : focused ? colors.primary : colors.border;
@@ -30,6 +35,7 @@ export function Input({ label, error, hint, style, onFocus, onBlur, secureTextEn
       ) : null}
       <View>
         <TextInput
+          ref={ref}
           placeholderTextColor={colors.textMuted}
           secureTextEntry={isSecure && hidden}
           style={[
@@ -79,4 +85,4 @@ export function Input({ label, error, hint, style, onFocus, onBlur, secureTextEn
       ) : null}
     </View>
   );
-}
+});
