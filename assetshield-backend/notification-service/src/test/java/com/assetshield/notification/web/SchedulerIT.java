@@ -157,4 +157,46 @@ class SchedulerIT extends NotificationITBase {
                 .stream().filter(n -> n.getType() == NotificationType.REDOC_REMINDER).count();
         assertThat(after).isEqualTo(2);
     }
+
+    @Test
+    void maintenanceReminderFiresOncePerDueDateAndRearmsOnReschedule() {
+        clock.setInstant(java.time.Instant.now());
+        UUID ownerId = UUID.randomUUID();
+        UUID assetId = UUID.randomUUID();
+        UUID propertyId = UUID.randomUUID();
+        java.time.LocalDate due = java.time.LocalDate.now().plusDays(7);
+        var item = new com.assetshield.notification.client.PropertyClient.MaintenanceDueItem(
+                assetId, propertyId, "Osu Kiosk", ownerId, "Deep freezer", "WARRANTY", due);
+        when(propertyClient.maintenanceDue(eq("WARRANTY"), anyInt(), anyInt(), anyInt()))
+                .thenReturn(new com.assetshield.notification.client.PropertyClient.MaintenancePage(
+                        List.of(item), 0, 100, 1, 1));
+        when(propertyClient.maintenanceDue(eq("SERVICE"), anyInt(), anyInt(), anyInt()))
+                .thenReturn(new com.assetshield.notification.client.PropertyClient.MaintenancePage(
+                        List.of(), 0, 100, 0, 0));
+
+        schedulerService.remindMaintenanceDue();
+        schedulerService.remindMaintenanceDue(); // same due date → suppressed
+
+        var sent = notificationRepository
+                .findByUserIdOrderByCreatedAtDesc(ownerId, PageRequest.of(0, 50))
+                .stream().filter(n -> n.getType() == NotificationType.MAINTENANCE_DUE).toList();
+        assertThat(sent).hasSize(1);
+        assertThat(sent.get(0).getTitle()).isEqualTo("Warranty expiring soon");
+        assertThat(sent.get(0).getBody()).contains("Deep freezer").contains("Osu Kiosk")
+                .contains(due.toString());
+
+        // owner reschedules → a fresh reminder is due
+        var moved = new com.assetshield.notification.client.PropertyClient.MaintenanceDueItem(
+                assetId, propertyId, "Osu Kiosk", ownerId, "Deep freezer", "WARRANTY",
+                due.plusDays(30));
+        when(propertyClient.maintenanceDue(eq("WARRANTY"), anyInt(), anyInt(), anyInt()))
+                .thenReturn(new com.assetshield.notification.client.PropertyClient.MaintenancePage(
+                        List.of(moved), 0, 100, 1, 1));
+        schedulerService.remindMaintenanceDue();
+
+        long after = notificationRepository
+                .findByUserIdOrderByCreatedAtDesc(ownerId, PageRequest.of(0, 50))
+                .stream().filter(n -> n.getType() == NotificationType.MAINTENANCE_DUE).count();
+        assertThat(after).isEqualTo(2);
+    }
 }
