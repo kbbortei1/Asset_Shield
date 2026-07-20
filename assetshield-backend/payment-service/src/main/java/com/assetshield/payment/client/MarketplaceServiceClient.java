@@ -19,6 +19,7 @@ public class MarketplaceServiceClient {
 
     public MarketplaceServiceClient(AppProperties properties) {
         this.restClient = RestClient.builder()
+                .requestFactory(InternalHttp.requestFactory())
                 .baseUrl(properties.marketplaceServiceUri())
                 .defaultHeader("X-Internal-Api-Key", properties.internalApiKey())
                 .build();
