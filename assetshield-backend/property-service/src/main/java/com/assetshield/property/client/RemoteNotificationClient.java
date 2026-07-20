@@ -21,6 +21,7 @@ public class RemoteNotificationClient implements NotificationClient {
 
     public RemoteNotificationClient(String notificationUri, String internalApiKey) {
         this.restClient = RestClient.builder()
+                .requestFactory(InternalHttp.requestFactory())
                 .baseUrl(notificationUri)
                 .defaultHeader("X-Internal-Api-Key", internalApiKey)
                 .build();
