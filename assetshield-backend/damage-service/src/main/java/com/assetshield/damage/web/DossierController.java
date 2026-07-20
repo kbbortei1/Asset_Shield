@@ -41,6 +41,14 @@ public class DossierController {
                         "Dossier requested — complete the payment to start generation"));
     }
 
+    @Operation(summary = "Fresh checkout for an unpaid dossier (resume payment any time)")
+    @PostMapping("/api/v1/dossiers/{id}/pay")
+    public ApiResponse<GenerateResponse> pay(Authentication authentication, @PathVariable UUID id) {
+        return ApiResponse.success(
+                dossierService.paymentHandle(DamageReportController.principal(authentication), id),
+                "Payment initialized — complete the checkout to start generation");
+    }
+
     @Operation(summary = "Dossier status (client polls this after paying)")
     @GetMapping("/api/v1/dossiers/{id}/status")
     public ApiResponse<StatusResponse> status(Authentication authentication, @PathVariable UUID id) {
