@@ -7,7 +7,12 @@ export type Envelope<T> = {
 
 export type ErrorData = {
   errorCode: string;
-  /** present on VALIDATION_FAILED */
+  /**
+   * Per-field details. The backend emits `fields` (VALIDATION_FAILED per-field
+   * messages, and context like the existing dossierId on DOSSIER_EXISTS);
+   * `fieldErrors` kept for tolerance.
+   */
+  fields?: Record<string, string>;
   fieldErrors?: Record<string, string>;
 };
 

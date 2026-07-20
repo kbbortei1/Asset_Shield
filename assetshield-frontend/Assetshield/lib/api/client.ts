@@ -123,7 +123,7 @@ async function request<T>(path: string, opts: RequestOptions = {}, retry = true)
   throw new ApiError({
     code,
     httpStatus: res.status,
-    fieldErrors: errData?.fieldErrors,
+    fieldErrors: errData?.fields ?? errData?.fieldErrors,
     serverMessage: envelope?.message,
   });
 }
