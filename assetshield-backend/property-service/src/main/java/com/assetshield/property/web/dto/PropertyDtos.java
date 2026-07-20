@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -85,13 +86,22 @@ public final class PropertyDtos {
             @NotNull Instant capturedAt,
             @NotBlank @Size(max = 500) String description,
             @NotNull @DecimalMin(value = "0") @DecimalMax(value = MAX_VALUE) BigDecimal estimatedValue,
-            @NotNull AssetCategory category) {
+            @NotNull AssetCategory category,
+            LocalDate warrantyExpiresOn,
+            LocalDate nextServiceOn) {
     }
 
+    /**
+     * duplicateWarning is only computed on creation (null on reads): true when
+     * the same photo already documents an asset on ANOTHER property — advisory
+     * fraud signal, the upload still succeeds.
+     */
     public record AssetResponse(UUID id, UUID propertyId, String photoUrl, String sha256Hash,
                                 BigDecimal gpsLat, BigDecimal gpsLng, Instant capturedAt,
                                 String description, BigDecimal estimatedValue, AssetCategory category,
-                                long receiptCount, UUID createdByUserId, Instant createdAt) {
+                                LocalDate warrantyExpiresOn, LocalDate nextServiceOn,
+                                long receiptCount, UUID createdByUserId, Instant createdAt,
+                                Boolean duplicateWarning) {
     }
 
     public record ReceiptItem(UUID id, String receiptUrl, Instant createdAt) {
@@ -100,13 +110,16 @@ public final class PropertyDtos {
     public record AssetDetailResponse(UUID id, UUID propertyId, String photoUrl, String sha256Hash,
                                       BigDecimal gpsLat, BigDecimal gpsLng, Instant capturedAt,
                                       String description, BigDecimal estimatedValue, AssetCategory category,
+                                      LocalDate warrantyExpiresOn, LocalDate nextServiceOn,
                                       UUID createdByUserId, Instant createdAt, List<ReceiptItem> receipts) {
     }
 
     public record UpdateAssetRequest(
             @Size(min = 1, max = 500) String description,
             @DecimalMin(value = "0") @DecimalMax(value = MAX_VALUE) BigDecimal estimatedValue,
-            AssetCategory category) {
+            AssetCategory category,
+            LocalDate warrantyExpiresOn,
+            LocalDate nextServiceOn) {
     }
 
     public record ReceiptMetadata(
@@ -180,5 +193,27 @@ public final class PropertyDtos {
     /** Stale-documentation sweep item (Day 6 redoc reminders). */
     public record StaleDocumentationItem(UUID propertyId, UUID ownerUserId, String name,
                                          Instant lastDocumentedAt) {
+    }
+
+    /** Maintenance sweep item for notification-service's reminder cron. */
+    public record MaintenanceDueItem(UUID assetId, UUID propertyId, String propertyName,
+                                     UUID ownerUserId, String description, String kind,
+                                     LocalDate dueOn) {
+    }
+
+    // ── insights (timeline, analytics) ──────────────────────────────────────
+
+    /** One derived history event; assetId is null for property-level events. */
+    public record TimelineEvent(String type, Instant at, UUID assetId, String label) {
+    }
+
+    public record AnalyticsPropertyLine(UUID propertyId, String name, long assetCount,
+                                        BigDecimal totalValue) {
+    }
+
+    /** Cross-property portfolio rollup for the analytics dashboard. */
+    public record AssetAnalyticsResponse(long propertyCount, long assetCount, BigDecimal totalValue,
+                                         List<CategoryLine> byCategory,
+                                         List<AnalyticsPropertyLine> byProperty) {
     }
 }
