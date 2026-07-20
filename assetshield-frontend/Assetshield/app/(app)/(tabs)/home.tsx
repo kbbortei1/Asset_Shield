@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { View } from 'react-native';
-import { marketplaceApi, propertiesApi } from '@/lib/api';
+import { useState } from 'react';
+import { Pressable, View } from 'react-native';
+import { marketplaceApi, notificationsApi, propertiesApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { PropertyCard } from '@/components/cards/PropertyCard';
 import { AnimatedItem, Button, Card, EmptyState, ErrorState, Hero, ListScreen, ListSkeleton, Loading, Screen, Text, formatCedis } from '@/components/ui';
@@ -16,19 +17,62 @@ export default function HomeTab() {
   return <OwnerHome />;
 }
 
+function timeGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 function Greeting({ subtitle }: { subtitle: string }) {
   const { user } = useAuth();
   const firstName = user?.fullName?.split(' ')[0] ?? 'there';
   return (
     <View style={{ gap: 2 }}>
       <Text variant="labelMd" color={colors.textMuted}>
-        Welcome back
+        Akwaaba
       </Text>
-      <Text variant="headlineLgMobile">Hi, {firstName}</Text>
+      <Text variant="headlineLgMobile">
+        {timeGreeting()}, {firstName}
+      </Text>
       <Text variant="bodyMd" color={colors.textMuted}>
         {subtitle}
       </Text>
     </View>
+  );
+}
+
+/**
+ * Ghana-aware proactive banner: surfaces the freshest unread safety tip
+ * (seasonal flood/fire risks from the tips engine) on the home screen.
+ * Dismissible for the session; tapping opens the full tips feed.
+ */
+function RiskBanner() {
+  const [dismissed, setDismissed] = useState(false);
+  const tips = useQuery({ queryKey: ['tips-feed-banner'], queryFn: () => notificationsApi.feed({ size: 5 }) });
+  const tip = (tips.data?.items ?? []).find((t) => !t.readAt) ?? tips.data?.items?.[0];
+  if (dismissed || !tip) return null;
+
+  // Dark ink on the amber banner (the warning color is the same amber family in
+  // every theme, so a constant ink keeps AA contrast in light, dark and gold).
+  const ink = '#2E2108';
+  return (
+    <Card style={{ backgroundColor: colors.warning }} onPress={() => router.push('/(app)/tips' as never)}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
+        <Ionicons name="warning" size={20} color={ink} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text variant="labelMd" weight="semibold" color={ink}>
+            {tip.category ? tip.category.replace(/_/g, ' ') : 'Safety tip'}
+          </Text>
+          <Text variant="labelMd" color={ink} numberOfLines={3}>
+            {tip.tipText}
+          </Text>
+        </View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Dismiss tip" hitSlop={10} onPress={() => setDismissed(true)}>
+          <Ionicons name="close" size={18} color={ink} />
+        </Pressable>
+      </View>
+    </Card>
   );
 }
 
@@ -51,6 +95,8 @@ function OwnerHome() {
   const header = (
     <View style={{ gap: spacing.lg }}>
       <Greeting subtitle="Here's what you're protecting." />
+
+      <RiskBanner />
 
       <Hero>
         <Text variant="labelMd" color={colors.tealMuted}>
