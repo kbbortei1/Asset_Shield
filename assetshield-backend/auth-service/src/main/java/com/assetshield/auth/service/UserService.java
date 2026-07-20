@@ -36,13 +36,16 @@ public class UserService {
     private final RefreshTokenService refreshTokenService;
     private final PasswordEncoder passwordEncoder;
     private final StorageProvider storageProvider;
+    private final AuditService auditService;
 
     public UserService(UserRepository userRepository, RefreshTokenService refreshTokenService,
-                       PasswordEncoder passwordEncoder, StorageProvider storageProvider) {
+                       PasswordEncoder passwordEncoder, StorageProvider storageProvider,
+                       AuditService auditService) {
         this.userRepository = userRepository;
         this.refreshTokenService = refreshTokenService;
         this.passwordEncoder = passwordEncoder;
         this.storageProvider = storageProvider;
+        this.auditService = auditService;
     }
 
     @Transactional(readOnly = true)
@@ -89,6 +92,8 @@ public class UserService {
         user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
         userRepository.save(user);
         refreshTokenService.revokeAllForUser(userId);
+        auditService.record(userId, AuditService.ACCOUNT_PURGED, null,
+                "User requested account deletion; PII scrubbed, sessions revoked");
         return new PurgeResponse(true, now);
     }
 
@@ -118,7 +123,7 @@ public class UserService {
     }
 
     @Transactional
-    public CreateAdminResponse createAdmin(CreateAdminRequest request) {
+    public CreateAdminResponse createAdmin(UUID actorUserId, CreateAdminRequest request) {
         userRepository.findByPhoneNumberAndDeletedAtIsNull(request.phoneNumber())
                 .ifPresent(existing -> {
                     throw new ApiException(ErrorCode.PHONE_EXISTS, "Phone number is already registered");
@@ -129,7 +134,10 @@ public class UserService {
         admin.setFullName(request.fullName().trim());
         admin.setRole(Role.ADMIN);
         admin.setStatus(UserStatus.ACTIVE);
-        return new CreateAdminResponse(userRepository.save(admin).getId());
+        UUID adminId = userRepository.save(admin).getId();
+        auditService.record(actorUserId, AuditService.ADMIN_CREATED, request.phoneNumber(),
+                "New admin account created");
+        return new CreateAdminResponse(adminId);
     }
 
     @Transactional(readOnly = true)
