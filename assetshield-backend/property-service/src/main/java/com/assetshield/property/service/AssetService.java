@@ -16,6 +16,7 @@ import com.assetshield.property.repo.AssetRepository;
 import com.assetshield.property.repo.PropertyRepository;
 import com.assetshield.property.security.AuthUser;
 import com.assetshield.property.storage.StorageProvider;
+import com.assetshield.property.web.dto.PropertyDtos;
 import com.assetshield.property.web.dto.PropertyDtos.AssetDetailResponse;
 import com.assetshield.property.web.dto.PropertyDtos.AssetMetadata;
 import com.assetshield.property.web.dto.PropertyDtos.AssetResponse;
@@ -26,6 +27,7 @@ import com.assetshield.property.web.dto.PropertyDtos.ReceiptResponse;
 import com.assetshield.property.web.dto.PropertyDtos.UpdateAssetRequest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -90,6 +92,9 @@ public class AssetService {
             throw new ApiException(ErrorCode.DUPLICATE_ASSET_HASH,
                     "An identical photo already exists on this property");
         }
+        // fraud signal, computed BEFORE the insert: the same-property case was
+        // rejected above, so any remaining match lives on another property
+        boolean duplicateElsewhere = assetRepository.countBySha256HashAndDeletedAtIsNull(hash) > 0;
         String objectPath = storageProvider.store(bytes,
                 "assets/" + propertyId + "/" + hash + extensionFor(file), file.getContentType());
 
@@ -104,24 +109,34 @@ public class AssetService {
         asset.setDescription(metadata.description().trim());
         asset.setEstimatedValue(metadata.estimatedValue());
         asset.setCategory(metadata.category());
+        asset.setWarrantyExpiresOn(metadata.warrantyExpiresOn());
+        asset.setNextServiceOn(metadata.nextServiceOn());
         // flush so @CreationTimestamp is populated before the DTO is built
         Asset saved = assetRepository.saveAndFlush(asset);
 
         property.setLastDocumentedAt(Instant.now());
         propertyRepository.save(property);
         eventPublisher.assetCaptured(user.id(), propertyId);
-        return toResponse(saved, 0);
+        return toResponse(saved, 0, duplicateElsewhere);
     }
 
     @Transactional(readOnly = true)
     public PageEnvelope<AssetResponse> listAssets(AuthUser user, UUID propertyId,
-                                                  AssetCategory category, int page, int size) {
+                                                  AssetCategory category, String q,
+                                                  BigDecimal minValue, BigDecimal maxValue,
+                                                  int page, int size) {
         accessService.requireMember(propertyId, user.id());
         Pageable pageable = PageRequest.of(PageEnvelope.clampPage(page), PageEnvelope.clampSize(size));
+        // "" and the full value range mean "no filter" — see AssetRepository
+        String text = q == null ? "" : q.trim();
+        if (text.length() > 100) {
+            text = text.substring(0, 100);
+        }
+        BigDecimal min = minValue == null ? BigDecimal.ZERO : minValue;
+        BigDecimal max = maxValue == null ? new BigDecimal(PropertyDtos.MAX_VALUE) : maxValue;
         Page<Asset> assets = category == null
-                ? assetRepository.findByPropertyIdAndDeletedAtIsNullOrderByCreatedAtDesc(propertyId, pageable)
-                : assetRepository.findByPropertyIdAndCategoryAndDeletedAtIsNullOrderByCreatedAtDesc(
-                        propertyId, category, pageable);
+                ? assetRepository.search(propertyId, text, min, max, pageable)
+                : assetRepository.searchByCategory(propertyId, category, text, min, max, pageable);
         List<UUID> ids = assets.map(Asset::getId).getContent();
         Map<UUID, Long> receiptCounts = ids.isEmpty() ? Map.of()
                 : receiptRepository.countsByAsset(ids).stream()
@@ -143,8 +158,8 @@ public class AssetService {
         return new AssetDetailResponse(asset.getId(), asset.getPropertyId(),
                 storageProvider.signedUrl(asset.getPhotoUrl(), signedUrlTtl), asset.getSha256Hash(),
                 asset.getGpsLat(), asset.getGpsLng(), asset.getCapturedAt(), asset.getDescription(),
-                asset.getEstimatedValue(), asset.getCategory(), asset.getCreatedByUserId(),
-                asset.getCreatedAt(), receipts);
+                asset.getEstimatedValue(), asset.getCategory(), asset.getWarrantyExpiresOn(),
+                asset.getNextServiceOn(), asset.getCreatedByUserId(), asset.getCreatedAt(), receipts);
     }
 
     /** Only description, value and category — photo, hash, GPS, capturedAt are immutable evidence. */
@@ -159,6 +174,12 @@ public class AssetService {
         }
         if (request.category() != null) {
             asset.setCategory(request.category());
+        }
+        if (request.warrantyExpiresOn() != null) {
+            asset.setWarrantyExpiresOn(request.warrantyExpiresOn());
+        }
+        if (request.nextServiceOn() != null) {
+            asset.setNextServiceOn(request.nextServiceOn());
         }
         assetRepository.save(asset);
         return getAsset(user, assetId);
@@ -218,11 +239,16 @@ public class AssetService {
     }
 
     AssetResponse toResponse(Asset asset, long receiptCount) {
+        return toResponse(asset, receiptCount, null);
+    }
+
+    AssetResponse toResponse(Asset asset, long receiptCount, Boolean duplicateWarning) {
         return new AssetResponse(asset.getId(), asset.getPropertyId(),
                 storageProvider.signedUrl(asset.getPhotoUrl(), signedUrlTtl), asset.getSha256Hash(),
                 asset.getGpsLat(), asset.getGpsLng(), asset.getCapturedAt(), asset.getDescription(),
-                asset.getEstimatedValue(), asset.getCategory(), receiptCount,
-                asset.getCreatedByUserId(), asset.getCreatedAt());
+                asset.getEstimatedValue(), asset.getCategory(), asset.getWarrantyExpiresOn(),
+                asset.getNextServiceOn(), receiptCount, asset.getCreatedByUserId(),
+                asset.getCreatedAt(), duplicateWarning);
     }
 
     private static byte[] readImage(MultipartFile file) {
