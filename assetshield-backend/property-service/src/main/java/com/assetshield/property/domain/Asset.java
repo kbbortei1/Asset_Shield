@@ -10,6 +10,7 @@ import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.sql.Types;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -62,6 +63,12 @@ public class Asset {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private AssetCategory category;
+
+    @Column(name = "warranty_expires_on")
+    private LocalDate warrantyExpiresOn;
+
+    @Column(name = "next_service_on")
+    private LocalDate nextServiceOn;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -160,6 +167,22 @@ public class Asset {
 
     public void setCategory(AssetCategory category) {
         this.category = category;
+    }
+
+    public LocalDate getWarrantyExpiresOn() {
+        return warrantyExpiresOn;
+    }
+
+    public void setWarrantyExpiresOn(LocalDate warrantyExpiresOn) {
+        this.warrantyExpiresOn = warrantyExpiresOn;
+    }
+
+    public LocalDate getNextServiceOn() {
+        return nextServiceOn;
+    }
+
+    public void setNextServiceOn(LocalDate nextServiceOn) {
+        this.nextServiceOn = nextServiceOn;
     }
 
     public Instant getCreatedAt() {
