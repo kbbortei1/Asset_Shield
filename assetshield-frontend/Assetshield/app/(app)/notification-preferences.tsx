@@ -59,9 +59,6 @@ export default function NotificationPreferencesScreen() {
           onValueChange={(v) => update.mutate({ pushEnabled: v })}
         />
       </Card>
-      <Text variant="labelMd" color={colors.textMuted}>
-        Phone banners need a device build — in Expo Go, in-app alerts still work.
-      </Text>
 
       <SectionHeader title="Safety tips" />
       <Text variant="bodyMd" color={colors.textMuted}>
