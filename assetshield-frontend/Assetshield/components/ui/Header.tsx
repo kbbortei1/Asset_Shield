@@ -12,7 +12,12 @@ export type HeaderProps = {
 };
 
 /** Lightweight in-content header (use when not relying on the Stack header). */
-export function Header({ title, showBack = true, onBack, right }: HeaderProps) {
+export function Header({ title, showBack, onBack, right }: HeaderProps) {
+  // Only offer "back" when there's actually somewhere to go (or a custom
+  // handler). A screen reached via router.replace() has no history, so an
+  // unguarded router.back() dispatches an unhandled GO_BACK. Callers can still
+  // force the arrow on/off with an explicit showBack.
+  const visible = showBack ?? (onBack != null || router.canGoBack());
   return (
     <View
       style={{
@@ -26,12 +31,15 @@ export function Header({ title, showBack = true, onBack, right }: HeaderProps) {
         backgroundColor: 'transparent',
       }}
     >
-      {showBack ? (
+      {visible ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
           hitSlop={12}
-          onPress={() => (onBack ? onBack() : router.back())}
+          onPress={() => {
+            if (onBack) return onBack();
+            if (router.canGoBack()) router.back();
+          }}
         >
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </Pressable>
