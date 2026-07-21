@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, Switch, View } from 'react-native';
 import { Asset, AssetCategory, isApiError, propertiesApi } from '@/lib/api';
 import {
+  ActionTile,
   Button,
   Card,
   EmptyState,
@@ -126,15 +127,22 @@ export default function PropertyDetail() {
       </View>
 
       <View style={{ flexDirection: 'row', gap: spacing.md }}>
-        <QuickLink icon="people-outline" label="Household" onPress={() => router.push(`/(app)/property/${propertyId}/invite` as never)} />
-        <QuickLink icon="bulb-outline" label="Safety tips" onPress={() => router.push(`/(app)/property/${propertyId}/tips` as never)} />
-        <QuickLink icon="alert-circle-outline" label="Reports" onPress={() => router.push(`/(app)/damage/list?propertyId=${propertyId}` as never)} />
+        <ActionTile icon="people" label="Household" onPress={() => router.push(`/(app)/property/${propertyId}/invite` as never)} />
+        <ActionTile icon="bulb" label="Safety tips" onPress={() => router.push(`/(app)/property/${propertyId}/tips` as never)} />
+        <ActionTile icon="alert-circle" label="Reports" onPress={() => router.push(`/(app)/damage/list?propertyId=${propertyId}` as never)} />
       </View>
 
       <View style={{ flexDirection: 'row', gap: spacing.md }}>
-        <QuickLink icon="time-outline" label="History" onPress={() => router.push(`/(app)/property/${propertyId}/timeline` as never)} />
-        <QuickLink icon="bar-chart-outline" label="Analytics" onPress={() => router.push('/(app)/analytics' as never)} />
-        {canExport ? <QuickLink icon="download-outline" label={exporting ? 'Exporting…' : 'Export CSV'} onPress={exportCsv} /> : null}
+        <ActionTile icon="time" label="History" onPress={() => router.push(`/(app)/property/${propertyId}/timeline` as never)} />
+        <ActionTile icon="bar-chart" label="Analytics" onPress={() => router.push('/(app)/analytics' as never)} />
+        {canExport ? (
+          <ActionTile
+            icon="download"
+            label={exporting ? 'Exporting…' : 'Export CSV'}
+            muted={exporting}
+            onPress={exportCsv}
+          />
+        ) : null}
       </View>
 
       {isOwner ? (
@@ -351,15 +359,3 @@ function ValueBreakdown({ assets }: { assets: Asset[] }) {
   );
 }
 
-function QuickLink({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={{ flex: 1 }}>
-      <Card padded style={{ alignItems: 'center', paddingVertical: spacing.md }}>
-        <Ionicons name={icon} size={24} color={colors.primary} />
-        <Text variant="labelMd" color={colors.textMuted} style={{ marginTop: 4 }}>
-          {label}
-        </Text>
-      </Card>
-    </Pressable>
-  );
-}
