@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { marketplaceApi, notificationsApi, propertiesApi } from '@/lib/api';
+import { Property, marketplaceApi, notificationsApi, propertiesApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { PropertyCard } from '@/components/cards/PropertyCard';
 import { AnimatedItem, Button, Card, EmptyState, ErrorState, Hero, ListScreen, ListSkeleton, Loading, Screen, Text, formatCedis } from '@/components/ui';
@@ -107,6 +107,77 @@ function RiskBanner() {
   );
 }
 
+/**
+ * Documentation goes stale after the same 90 days the backend's re-documentation
+ * sweep uses (REDOC_STALE_DAYS), so what the home screen says and the reminder
+ * you eventually receive can never disagree.
+ */
+const STALE_DAYS = 90;
+
+function isStale(lastDocumentedAt?: string): boolean {
+  if (!lastDocumentedAt) return true;
+  return (Date.now() - new Date(lastDocumentedAt).getTime()) / 86_400_000 > STALE_DAYS;
+}
+
+function plural(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/**
+ * "Am I covered?" — a readiness statement, deliberately not a score. This app is
+ * opened months apart, so the first thing an owner should learn on return is
+ * whether their evidence still holds up, and which property to fix if it doesn't.
+ * Tapping jumps straight to the property that needs the work.
+ */
+function ReadinessNote({ properties }: { properties: Property[] }) {
+  const undocumented = properties.filter((p) => (p.assetCount ?? 0) === 0);
+  const stale = properties.filter((p) => (p.assetCount ?? 0) > 0 && isStale(p.lastDocumentedAt));
+  const target = undocumented[0] ?? stale[0];
+  const needsWork = target !== undefined;
+
+  const detail = needsWork
+    ? [
+        undocumented.length ? `${plural(undocumented.length, 'property has', 'properties have')} no assets yet` : null,
+        stale.length ? `${plural(stale.length, 'record is', 'records are')} over ${STALE_DAYS} days old` : null,
+      ]
+        .filter(Boolean)
+        .join('. ') + '.'
+    : properties.length === 1
+      ? 'Your property is documented and up to date.'
+      : `All ${properties.length} properties are documented and up to date.`;
+
+  const accent = needsWork ? colors.cta : colors.success;
+  const chipBg = needsWork ? 'rgba(244,169,60,0.16)' : 'rgba(27,127,88,0.12)';
+
+  return (
+    <Card onPress={needsWork ? () => router.push(`/(app)/property/${target.id}` as never) : undefined}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: chipBg,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name={needsWork ? 'alert-circle' : 'shield-checkmark'} size={20} color={accent} />
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text variant="labelMd" weight="semibold">
+            {needsWork ? 'Worth updating' : "You're covered"}
+          </Text>
+          <Text variant="labelMd" color={colors.textMuted}>
+            {detail}
+          </Text>
+        </View>
+        {needsWork ? <Ionicons name="chevron-forward" size={18} color={colors.textMuted} /> : null}
+      </View>
+    </Card>
+  );
+}
+
 /** Stitch: "Owner Home — Protection Score" / "Dashboard". */
 function OwnerHome() {
   const q = useQuery({ queryKey: ['properties'], queryFn: () => propertiesApi.list({ size: 50 }) });
@@ -141,6 +212,8 @@ function OwnerHome() {
           <Stat label="Assets documented" value={String(totalAssets)} />
         </View>
       </Hero>
+
+      {items.length > 0 ? <ReadinessNote properties={items} /> : null}
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text variant="headlineSm">Your properties</Text>
