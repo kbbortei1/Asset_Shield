@@ -11,6 +11,7 @@ import {
   Card,
   EmptyState,
   ErrorState,
+  GatedNotice,
   ListScreen,
   ListSkeleton,
   Screen,
@@ -129,15 +130,53 @@ function OwnerActivity() {
 
 /** Agent: dossiers shared with me + quotes I've issued. */
 function AgentActivity() {
-  const shared = useQuery({ queryKey: ['shared-dossiers'], queryFn: () => marketplaceApi.sharedDossiers({ size: 50 }) });
-  const quotes = useQuery({ queryKey: ['agent-quotes'], queryFn: () => marketplaceApi.myQuotes({ size: 50 }) });
+  // Shared dossiers are gated on an active subscription server-side, so check
+  // the agent's status first and show a calm "subscribe" wall instead of the
+  // generic error screen an unsubscribed agent used to hit here.
+  const me = useQuery({ queryKey: ['agent', 'me'], queryFn: () => marketplaceApi.agentMe() });
+  const verified = (me.data?.verificationStatus ?? me.data?.status) === 'VERIFIED';
+  const subscribed = me.data?.subscription?.status === 'ACTIVE';
+  const unlocked = verified && subscribed;
 
-  if (shared.isLoading)
+  const shared = useQuery({
+    queryKey: ['shared-dossiers'],
+    queryFn: () => marketplaceApi.sharedDossiers({ size: 50 }),
+    enabled: unlocked,
+  });
+  const quotes = useQuery({
+    queryKey: ['agent-quotes'],
+    queryFn: () => marketplaceApi.myQuotes({ size: 50 }),
+    enabled: unlocked,
+  });
+
+  if (me.isLoading || (unlocked && shared.isLoading))
     return (
       <Screen>
         <ListSkeleton />
       </Screen>
     );
+
+  if (!unlocked) {
+    return (
+      <Screen>
+        <Text variant="headlineLgMobile" style={{ marginBottom: spacing.lg }}>
+          Shared dossiers
+        </Text>
+        <GatedNotice
+          icon={verified ? 'lock-closed' : 'shield-checkmark-outline'}
+          title={verified ? 'Subscription required' : 'Verification required'}
+          body={
+            verified
+              ? 'Subscribe to receive and verify dossiers that owners share with you, then send quotes.'
+              : 'An admin must verify your agent account before owners can share dossiers with you.'
+          }
+          actionLabel={verified ? 'Subscribe' : undefined}
+          onAction={verified ? () => router.push('/(app)/subscription' as never) : undefined}
+        />
+      </Screen>
+    );
+  }
+
   if (shared.isError) return <ErrorState onRetry={() => shared.refetch()} />;
   const items = shared.data?.items ?? [];
   const qItems = quotes.data?.items ?? [];
