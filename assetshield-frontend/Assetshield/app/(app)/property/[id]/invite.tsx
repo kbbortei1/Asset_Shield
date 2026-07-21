@@ -4,7 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Switch, View } from 'react-native';
 import { isApiError, propertiesApi } from '@/lib/api';
-import { Button, Card, EmptyState, Header, Input, Loading, Screen, Text } from '@/components/ui';
+import { Button, Card, EmptyState, Header, Input, Loading, Screen, Text, useConfirm } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** Household: invite a member + manage existing members. */
@@ -12,6 +12,7 @@ export default function HouseholdInvite() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const propertyId = id!;
   const qc = useQueryClient();
+  const confirm = useConfirm();
 
   const [phone, setPhone] = useState('+233');
   const [canExport, setCanExport] = useState(true);
@@ -83,12 +84,16 @@ export default function HouseholdInvite() {
                 variant="ghost"
                 fullWidth={false}
                 loading={removeMember.isPending}
-                onPress={() =>
-                  Alert.alert('Remove member?', `Remove ${m.fullName} from this household?`, [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Remove', style: 'destructive', onPress: () => removeMember.mutate(m.userId) },
-                  ])
-                }
+                onPress={async () => {
+                  const { confirmed } = await confirm({
+                    title: 'Remove member?',
+                    message: `Remove ${m.fullName} from this household? They'll lose access to this property.`,
+                    confirmLabel: 'Remove',
+                    destructive: true,
+                    icon: 'person-remove-outline',
+                  });
+                  if (confirmed) removeMember.mutate(m.userId);
+                }}
               />
             </View>
           </Card>
