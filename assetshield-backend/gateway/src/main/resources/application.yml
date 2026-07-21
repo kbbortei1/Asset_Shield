@@ -53,7 +53,7 @@ spring:
             - id: auth-service
               uri: ${AUTH_SERVICE_URI:http://auth-service:8081}
               predicates:
-                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/admin/admins,/api/v1/admin/audit-events,/api/v1/public/user-files/**
+                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/admin/admins,/api/v1/admin/audit-events,/api/v1/admin/problem-reports/**,/api/v1/admin/broadcast,/api/v1/admin/audience-counts,/api/v1/admin/users,/api/v1/problem-reports/**,/api/v1/public/user-files/**
 
             # More specific than the property /properties/** route — must stay first.
             - id: damage-service-property-reports
