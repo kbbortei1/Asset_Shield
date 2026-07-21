@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { AgentInterest, marketplaceApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { Button, Card, EmptyState, ErrorState, ListScreen, ListSkeleton, Screen, StatusBadge, Text } from '@/components/ui';
+import { Button, Card, EmptyState, ErrorState, GatedNotice, ListScreen, ListSkeleton, Screen, StatusBadge, Text, useConfirm } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 export default function MarketTab() {
@@ -18,6 +18,7 @@ export default function MarketTab() {
 /** Stitch: "Connections" — agents who've expressed interest in my properties. */
 function OwnerConnections() {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const q = useQuery({ queryKey: ['agent-interests'], queryFn: () => marketplaceApi.myAgentInterests({ size: 50 }) });
 
   const respond = useMutation({
@@ -52,12 +53,16 @@ function OwnerConnections() {
           interest={it}
           onAccept={() => respond.mutate({ id: it.interestId, accept: true })}
           onDecline={() => respond.mutate({ id: it.interestId, accept: false })}
-          onRevoke={() =>
-            Alert.alert('Revoke access?', 'This immediately seals the agent’s access to this property.', [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Revoke', style: 'destructive', onPress: () => revoke.mutate(it.interestId) },
-            ])
-          }
+          onRevoke={async () => {
+            const { confirmed } = await confirm({
+              title: 'Revoke access?',
+              message: 'This immediately seals the agent’s access to this property.',
+              confirmLabel: 'Revoke',
+              destructive: true,
+              icon: 'lock-closed',
+            });
+            if (confirmed) revoke.mutate(it.interestId);
+          }}
           busy={respond.isPending || revoke.isPending}
         />
       )}
@@ -139,20 +144,20 @@ function AgentLeads() {
   if (!verified || !subscribed) {
     return (
       <Screen>
-        <Text variant="headlineLgMobile">Leads</Text>
-        <Card style={{ backgroundColor: colors.tealTint }}>
-          <Text variant="headlineSm" color={colors.primary}>
-            {!verified ? 'Verification required' : 'Subscription required'}
-          </Text>
-          <Text variant="bodyMd" color={colors.primary}>
-            {!verified
-              ? 'An admin must verify your agent account before you can browse leads.'
-              : 'Subscribe to unlock owner leads in your area.'}
-          </Text>
-        </Card>
-        {verified && !subscribed ? (
-          <Button title="Subscribe" onPress={() => router.push('/(app)/subscription' as never)} />
-        ) : null}
+        <Text variant="headlineLgMobile" style={{ marginBottom: spacing.lg }}>
+          Leads
+        </Text>
+        <GatedNotice
+          icon={verified ? 'lock-closed' : 'shield-checkmark-outline'}
+          title={verified ? 'Subscription required' : 'Verification required'}
+          body={
+            verified
+              ? 'Subscribe to unlock owner leads in your area and start winning clients.'
+              : 'An admin must verify your agent account before you can browse leads.'
+          }
+          actionLabel={verified ? 'Subscribe' : undefined}
+          onAction={verified ? () => router.push('/(app)/subscription' as never) : undefined}
+        />
       </Screen>
     );
   }
