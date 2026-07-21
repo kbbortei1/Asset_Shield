@@ -38,6 +38,7 @@ export type UserProfile = {
   role: UserRole;
   language?: string;
   ghanaCardUploaded?: boolean;
+  avatarUrl?: string | null; // signed, ~15min TTL (relative in local storage)
   createdAt?: string;
 };
 
@@ -381,7 +382,8 @@ export type NotificationType =
   | 'QUOTE_RESPONSE'
   | 'AGENT_VERIFIED'
   | 'AGENT_REJECTED'
-  | 'SUBSCRIPTION_EXPIRY';
+  | 'SUBSCRIPTION_EXPIRY'
+  | 'MAINTENANCE_DUE';
 
 export type AppNotification = {
   id: string;
@@ -404,4 +406,8 @@ export type Tip = {
 };
 
 export type DeviceTokenRequest = { fcmToken: string; platform: Platform };
-export type NotificationPreferences = { tipsFrequency: TipsFrequency };
+export type NotificationPreferences = {
+  tipsFrequency: TipsFrequency;
+  pushEnabled: boolean;
+  inAppEnabled: boolean;
+};
