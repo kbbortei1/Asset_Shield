@@ -155,7 +155,8 @@ public class ShareService {
                 .map(AuthUserClient.AuthUserInfo::fullName).orElse(null);
         String propertyName = interest.flatMap(i -> propertyClient.propertyCached(i.getPropertyId()))
                 .map(PropertyClient.PropertyInfo::name).orElse(null);
-        return new SharedDossierItem(share.getDossierId(), share.getId(), ownerName, propertyName,
+        return new SharedDossierItem(share.getDossierId(), share.getId(), share.getAgentInterestId(),
+                ownerName, propertyName,
                 meta.map(DossierClient.DossierMeta::disasterType).orElse(null),
                 meta.map(DossierClient.DossierMeta::totalEstimatedLoss).orElse(null),
                 share.getConsentAt());
