@@ -33,14 +33,17 @@ public class NotificationDispatchService {
     private final DeviceTokenRepository deviceTokenRepository;
     private final PushSender pushSender;
     private final ObjectMapper objectMapper;
+    private final PreferenceService preferenceService;
 
     public NotificationDispatchService(AppNotificationRepository notificationRepository,
                                        DeviceTokenRepository deviceTokenRepository,
-                                       PushSender pushSender, ObjectMapper objectMapper) {
+                                       PushSender pushSender, ObjectMapper objectMapper,
+                                       PreferenceService preferenceService) {
         this.notificationRepository = notificationRepository;
         this.deviceTokenRepository = deviceTokenRepository;
         this.pushSender = pushSender;
         this.objectMapper = objectMapper;
+        this.preferenceService = preferenceService;
     }
 
     /** Fire-and-forget entry point — callers never block on FCM. */
@@ -65,21 +68,28 @@ public class NotificationDispatchService {
 
     private AppNotification doDispatch(UUID userId, NotificationType type, String title, String body,
                                        Map<String, Object> payload) {
-        AppNotification notification = new AppNotification();
-        notification.setUserId(userId);
-        notification.setType(type);
-        notification.setTitle(title);
-        notification.setBody(body);
-        notification.setPayload(payload == null || payload.isEmpty()
-                ? null : objectMapper.writeValueAsString(payload));
-        notification = notificationRepository.saveAndFlush(notification);
+        PreferenceService.Channels channels = preferenceService.channelsFor(userId);
 
-        List<DeviceToken> devices = deviceTokenRepository.findByUserIdAndRevokedAtIsNull(userId);
+        // In-app history (the Alerts tab): only recorded when in-app is enabled.
+        AppNotification notification = null;
+        if (channels.inAppEnabled()) {
+            notification = new AppNotification();
+            notification.setUserId(userId);
+            notification.setType(type);
+            notification.setTitle(title);
+            notification.setBody(body);
+            notification.setPayload(payload == null || payload.isEmpty()
+                    ? null : objectMapper.writeValueAsString(payload));
+            notification = notificationRepository.saveAndFlush(notification);
+        }
+
+        // Push banners: only when the user has push on. When off (or no devices),
+        // nothing is sent and the in-app row — if any — is simply SENT.
+        List<DeviceToken> devices = channels.pushEnabled()
+                ? deviceTokenRepository.findByUserIdAndRevokedAtIsNull(userId)
+                : List.of();
         if (devices.isEmpty()) {
-            // history-only delivery: nothing to push, nothing failed
-            notification.setStatus(NotificationStatus.SENT);
-            notification.setSentAt(Instant.now());
-            return notificationRepository.save(notification);
+            return markSent(notification);
         }
 
         PushSender.PushOutcome outcome = pushSender.send(
@@ -95,12 +105,25 @@ public class NotificationDispatchService {
             }
         }
 
+        if (notification == null) {
+            return null; // in-app suppressed; push was best-effort
+        }
         if (outcome.successCount() > 0 || outcome.failureCount() == 0) {
             notification.setStatus(NotificationStatus.SENT);
             notification.setSentAt(Instant.now());
         } else {
             notification.setStatus(NotificationStatus.FAILED);
         }
+        return notificationRepository.save(notification);
+    }
+
+    /** Marks an in-app row SENT (history-only delivery); no-op passthrough for null. */
+    private AppNotification markSent(AppNotification notification) {
+        if (notification == null) {
+            return null;
+        }
+        notification.setStatus(NotificationStatus.SENT);
+        notification.setSentAt(Instant.now());
         return notificationRepository.save(notification);
     }
 
