@@ -111,14 +111,25 @@ function ConnectionCard({
                 Next: share a damage dossier so they can verify it and send you a quote.
               </Text>
             </View>
-            <Button
-              title="Share a dossier"
-              onPress={() =>
-                router.push(
-                  `/(app)/connection/${interest.interestId}?agent=${encodeURIComponent(interest.agentName ?? 'this agent')}` as never,
-                )
-              }
-            />
+            <View style={{ flexDirection: 'row', gap: spacing.md }}>
+              <Button
+                title="Message"
+                variant="secondary"
+                onPress={() =>
+                  router.push(
+                    `/(app)/chat/${interest.interestId}?name=${encodeURIComponent(interest.agentName ?? 'Agent')}` as never,
+                  )
+                }
+              />
+              <Button
+                title="Share a dossier"
+                onPress={() =>
+                  router.push(
+                    `/(app)/connection/${interest.interestId}?agent=${encodeURIComponent(interest.agentName ?? 'this agent')}` as never,
+                  )
+                }
+              />
+            </View>
             <Button title="Revoke access" variant="danger" onPress={onRevoke} loading={busy} />
           </View>
         ) : null}

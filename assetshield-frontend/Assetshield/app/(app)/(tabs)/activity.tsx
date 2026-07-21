@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { damageApi, DossierStatus, marketplaceApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import {
@@ -222,6 +222,18 @@ function AgentActivity() {
                 {s.ownerName ?? 'Owner'}
               </Text>
             </View>
+            {s.agentInterestId ? (
+              <Pressable
+                accessibilityLabel="Message owner"
+                hitSlop={8}
+                style={{ padding: 4 }}
+                onPress={() =>
+                  router.push(`/(app)/chat/${s.agentInterestId}?name=${encodeURIComponent(s.ownerName ?? 'Owner')}` as never)
+                }
+              >
+                <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.primary} />
+              </Pressable>
+            ) : null}
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </View>
         </Card>
