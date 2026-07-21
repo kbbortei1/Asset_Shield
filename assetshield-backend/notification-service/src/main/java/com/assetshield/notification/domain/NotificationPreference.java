@@ -27,6 +27,12 @@ public class NotificationPreference {
     @Column(name = "tips_frequency", nullable = false, length = 10)
     private TipsFrequency tipsFrequency = TipsFrequency.WEEKLY;
 
+    @Column(name = "push_enabled", nullable = false)
+    private boolean pushEnabled = true;
+
+    @Column(name = "in_app_enabled", nullable = false)
+    private boolean inAppEnabled = true;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -53,6 +59,22 @@ public class NotificationPreference {
 
     public void setTipsFrequency(TipsFrequency tipsFrequency) {
         this.tipsFrequency = tipsFrequency;
+    }
+
+    public boolean isPushEnabled() {
+        return pushEnabled;
+    }
+
+    public void setPushEnabled(boolean pushEnabled) {
+        this.pushEnabled = pushEnabled;
+    }
+
+    public boolean isInAppEnabled() {
+        return inAppEnabled;
+    }
+
+    public void setInAppEnabled(boolean inAppEnabled) {
+        this.inAppEnabled = inAppEnabled;
     }
 
     public Instant getCreatedAt() {
