@@ -43,34 +43,34 @@ export function LegalContent() {
       </Text>
 
       <Section icon="document-text-outline" title="What we collect">
-        <Bullet>Your name and phone number — to create and secure your account.</Bullet>
+        <Bullet>Your name and phone number, used to create and secure your account.</Bullet>
         <Bullet>Your Ghana Card, only if you upload it, to verify your identity.</Bullet>
-        <Bullet>Photos and details of the assets and damage you document — with the GPS location and time you confirm.</Bullet>
+        <Bullet>Photos and details of the assets and damage you document, with the GPS location and time you confirm.</Bullet>
         <Bullet>A profile photo, only if you choose to add one.</Bullet>
       </Section>
 
       <Section icon="lock-closed-outline" title="How your images & records are stored">
         <Bullet>Every photo is fingerprinted with a SHA-256 hash the moment it’s captured, proving it hasn’t been altered.</Bullet>
-        <Bullet>Files are kept in secured storage. The app never exposes a public link — each view uses a fresh, short-lived signed link (about 15 minutes), so your photos are never openly browsable.</Bullet>
+        <Bullet>Files are kept in secured storage. The app never exposes a public link. Each view uses a fresh, short-lived signed link (about 15 minutes), so your photos are never openly browsable.</Bullet>
         <Bullet>Your records are retained in their original form, so they stay reliable evidence.</Bullet>
       </Section>
 
       <Section icon="people-outline" title="Who can see your data">
         <Bullet>Only you, and household members you invite, can view your assets.</Bullet>
-        <Bullet>An insurance agent sees a damage dossier only after you explicitly share it — and you can revoke that access at any time.</Bullet>
+        <Bullet>An insurance agent sees a damage dossier only after you explicitly share it, and you can revoke that access at any time.</Bullet>
         <Bullet>We never sell your data.</Bullet>
       </Section>
 
       <Section icon="shield-checkmark-outline" title="Your rights & control">
         <Bullet>View and edit your details anytime.</Bullet>
-        <Bullet>Delete your account whenever you want — your login is disabled immediately, your phone number is released, and your Ghana Card image is erased.</Bullet>
+        <Bullet>Delete your account whenever you want. Your login is disabled immediately, your phone number is released, and your Ghana Card image is erased.</Bullet>
         <Bullet>You choose what to document and what to share.</Bullet>
       </Section>
 
       <Section icon="library-outline" title="Ghana legal compliance">
         <Bullet>
           <Text variant="labelMd" weight="semibold" color={colors.text}>Data Protection Act, 2012 (Act 843):</Text> we follow the
-          eight data-protection principles (s.17), including data security safeguards (s.28) — appropriate technical and
+          eight data-protection principles (s.17), including data security safeguards (s.28): appropriate technical and
           organisational measures, kept up to date, with your right to access and participate.
         </Bullet>
         <Bullet>

@@ -8,7 +8,7 @@ export default function Terms() {
     <Screen>
       <Header title="Terms & privacy" />
       <Text variant="bodyMd" color={colors.textMuted} style={{ marginBottom: spacing.sm }}>
-        By creating an account you agree to use AssetShield GH lawfully and honestly — the
+        By creating an account you agree to use AssetShield GH lawfully and honestly. The
         evidence you document is only as trustworthy as the care you take capturing it. Below is
         how we handle and protect your data.
       </Text>

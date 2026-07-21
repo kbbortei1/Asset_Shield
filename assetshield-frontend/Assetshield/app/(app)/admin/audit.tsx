@@ -63,7 +63,7 @@ function AuditRow({ event }: { event: AuditEvent }) {
             {titleCase(event.action)}
           </Text>
           <Text variant="labelMd" color={colors.textMuted} numberOfLines={1}>
-            {[event.target, event.detail].filter(Boolean).join(' · ') || '—'}
+            {[event.target, event.detail].filter(Boolean).join(' · ') || '-'}
           </Text>
         </View>
         <Text variant="labelMd" color={colors.textMuted}>

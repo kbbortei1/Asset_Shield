@@ -63,7 +63,7 @@ export default function ScanAssetQr() {
         />
       </View>
       <Text variant="labelMd" color={badScan ? colors.error : colors.textMuted} style={{ textAlign: 'center', marginTop: spacing.md }}>
-        {badScan ? 'Not an AssetShield label — try another code.' : 'Point the camera at an AssetShield QR label.'}
+        {badScan ? 'Not an AssetShield label. Try another code.' : 'Point the camera at an AssetShield QR label.'}
       </Text>
     </Screen>
   );

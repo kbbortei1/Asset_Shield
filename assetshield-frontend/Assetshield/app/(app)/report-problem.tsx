@@ -34,7 +34,7 @@ export default function ReportProblem() {
         message: message.trim(),
         context: `${Platform.OS}${version ? ` · v${version}` : ''}`,
       });
-      show('Thanks — your report was sent');
+      show('Thanks, your report was sent');
       router.back();
     } catch (e) {
       Alert.alert('Could not send', isApiError(e) ? e.message : 'Please try again.');

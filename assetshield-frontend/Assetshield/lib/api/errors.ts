@@ -58,7 +58,7 @@ const MESSAGES: Record<string, string> = {
   OTP_EXPIRED: 'That code has expired. Request a new one.',
   OTP_THROTTLED: 'Too many attempts. Please wait a moment before trying again.',
   BAD_CREDENTIALS: 'Phone or password is incorrect.',
-  PHONE_EXISTS: 'This number already has an account — please log in.',
+  PHONE_EXISTS: 'This number already has an account. Please log in.',
   LICENCE_EXISTS: 'This licence number is already registered.',
   RATE_LIMITED: 'Too many requests. Please try again shortly.',
   FORBIDDEN: "You don't have access to that.",

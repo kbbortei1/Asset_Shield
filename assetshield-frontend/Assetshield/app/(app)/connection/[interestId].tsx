@@ -111,7 +111,7 @@ export default function ShareWithConnection() {
         <EmptyState
           icon="document-text-outline"
           title="No ready dossiers"
-          body="Complete a damage report and generate its dossier first — then share it here to get a quote."
+          body="Complete a damage report and generate its dossier first, then share it here to get a quote."
           actionLabel="Go to Dossiers"
           onAction={() => router.replace('/(app)/(tabs)/activity' as never)}
         />

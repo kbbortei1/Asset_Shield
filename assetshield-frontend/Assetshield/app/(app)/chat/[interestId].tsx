@@ -95,7 +95,7 @@ export default function Chat() {
         <EmptyState
           icon="chatbubbles-outline"
           title="No messages yet"
-          body="Start the conversation — ask a question or share details about the property."
+          body="Start the conversation. Ask a question or share details about the property."
         />
       ) : (
         <FlatList
