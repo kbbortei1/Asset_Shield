@@ -10,6 +10,7 @@ public record AppProperties(
         Sms sms,
         String internalApiKey,
         String marketplaceServiceUri,
+        String notificationServiceUri,
         Superadmin superadmin,
         Storage storage) {
 

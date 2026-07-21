@@ -22,6 +22,7 @@ public final class TestProps {
                 new AppProperties.Sms("mock"),
                 INTERNAL_API_KEY,
                 "http://marketplace-service.invalid",
+                "http://notification-service.invalid",
                 new AppProperties.Superadmin(SUPERADMIN_PHONE, SUPERADMIN_PASSWORD),
                 new AppProperties.Storage("local", "target/test-storage", "", "", "", "",
                         "assetshield", 15));

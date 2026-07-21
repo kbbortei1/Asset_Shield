@@ -31,6 +31,7 @@ app:
     provider: ${SMS_PROVIDER:mock}
   internal-api-key: ${INTERNAL_API_KEY}
   marketplace-service-uri: ${MARKETPLACE_SERVICE_URL:http://marketplace-service:8084}
+  notification-service-uri: ${NOTIFICATION_SERVICE_URL:http://notification-service:8085}
   superadmin:
     phone: ${SUPERADMIN_PHONE:}
     password: ${SUPERADMIN_PASSWORD:}
