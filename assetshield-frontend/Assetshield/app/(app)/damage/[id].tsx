@@ -18,6 +18,53 @@ import {
 } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
+/**
+ * Sealing a report is the most anxious moment in the app: something bad has
+ * happened, and the owner has just locked their only evidence of it. A single
+ * "generate a dossier" line left them guessing what the rest of the journey is,
+ * so spell out all three steps at the point they're asking the question.
+ */
+function WhatHappensNext() {
+  const steps: [string, string][] = [
+    ['Generate the dossier', 'A tamper-evident PDF holding every photo and its hash.'],
+    ['Share it with an agent', 'Only agents whose interest you accepted can open it, and you can revoke that at any time.'],
+    ['Receive a quote', 'The agent verifies the dossier is unaltered, then sends you an offer.'],
+  ];
+  return (
+    <Card style={{ backgroundColor: colors.tealTint, gap: spacing.md }}>
+      <Text variant="labelMd" weight="semibold" color={colors.primary}>
+        Sealed. Here's what happens next
+      </Text>
+      {steps.map(([title, body], i) => (
+        <View key={title} style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' }}>
+          <View
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 11,
+              backgroundColor: colors.primary,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text variant="labelMd" weight="semibold" color={colors.onPrimary} style={{ fontSize: 11 }}>
+              {i + 1}
+            </Text>
+          </View>
+          <View style={{ flex: 1, gap: 1 }}>
+            <Text variant="labelMd" weight="semibold" color={colors.primary}>
+              {title}
+            </Text>
+            <Text variant="labelMd" color={colors.textMuted}>
+              {body}
+            </Text>
+          </View>
+        </View>
+      ))}
+    </Card>
+  );
+}
+
 /** DISASTER (beat 2): report detail — photos, pairing status, complete, generate dossier. */
 export default function DamageReportDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -116,13 +163,7 @@ export default function DamageReportDetail() {
         ) : null}
       </View>
 
-      {isCompleted ? (
-        <Card style={{ backgroundColor: colors.tealTint }}>
-          <Text variant="labelMd" color={colors.primary}>
-            This report is completed and locked. Generate a dossier to share it with an agent.
-          </Text>
-        </Card>
-      ) : null}
+      {isCompleted ? <WhatHappensNext /> : null}
 
       {photos.length === 0 ? (
         <EmptyState
