@@ -328,6 +328,7 @@ export type AgentInterest = {
 export type SharedDossier = {
   dossierId: string;
   shareId?: string;
+  agentInterestId?: string;
   ownerName?: string;
   propertyName?: string;
   disasterType?: DisasterType;
@@ -384,7 +385,16 @@ export type NotificationType =
   | 'AGENT_REJECTED'
   | 'SUBSCRIPTION_EXPIRY'
   | 'MAINTENANCE_DUE'
-  | 'ANNOUNCEMENT';
+  | 'ANNOUNCEMENT'
+  | 'CHAT_MESSAGE';
+
+export type InterestMessage = {
+  id: string;
+  senderUserId: string;
+  senderRole: 'OWNER' | 'AGENT';
+  body: string;
+  createdAt: string;
+};
 
 // ---- support / problem reports ----
 export type ReportCategory = 'BUG' | 'PAYMENT' | 'ACCOUNT' | 'SUGGESTION' | 'OTHER';

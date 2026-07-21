@@ -4,6 +4,7 @@ import {
   AgentProfile,
   CreateQuoteRequest,
   DossierVerification,
+  InterestMessage,
   Lead,
   Payment,
   PaymentHandle,
@@ -39,6 +40,12 @@ export const marketplaceApi = {
   respondInterest: (interestId: string, accept: boolean) =>
     api.put<AgentInterest>(`/agent-interests/${interestId}/respond`, { accept }),
   revokeInterest: (interestId: string) => api.del<void>(`/agent-interests/${interestId}`),
+
+  // owner<->agent chat (scoped to an accepted interest)
+  messages: (interestId: string, params?: PageParams) =>
+    api.get<Page<InterestMessage>>(`/agent-interests/${interestId}/messages`, { query: params }),
+  sendMessage: (interestId: string, body: string) =>
+    api.post<InterestMessage>(`/agent-interests/${interestId}/messages`, { body }),
   shareToAgent: (dossierId: string, agentInterestId: string) =>
     api.post<SharedDossier>(`/dossiers/${dossierId}/share-to-agent`, { agentInterestId }),
   revokeShare: (dossierId: string, agentRecordId: string) =>

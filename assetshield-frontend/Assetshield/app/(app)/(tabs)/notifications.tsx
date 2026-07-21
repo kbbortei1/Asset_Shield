@@ -24,6 +24,7 @@ const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   SUBSCRIPTION_EXPIRY: 'time',
   MAINTENANCE_DUE: 'construct',
   ANNOUNCEMENT: 'megaphone',
+  CHAT_MESSAGE: 'chatbubble-ellipses',
 };
 
 export default function NotificationsTab() {
