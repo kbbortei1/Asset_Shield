@@ -17,5 +17,6 @@ public enum NotificationType {
     AGENT_VERIFIED,
     AGENT_REJECTED,
     MAINTENANCE_DUE,
-    ANNOUNCEMENT
+    ANNOUNCEMENT,
+    CHAT_MESSAGE
 }
