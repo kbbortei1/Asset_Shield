@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
-import { propertiesApi } from '@/lib/api';
+import { propertiesApi, usersApi } from '@/lib/api';
 import { buildFileForm, pickImage } from '@/lib/media/capture';
 import { Button, Card, EvidencePhoto, Header, Input, Loading, Screen, Text, VerifiedBadge, useConfirm, useToast } from '@/components/ui';
 import { colors, spacing } from '@/theme';
@@ -64,22 +64,39 @@ export default function AssetDetail() {
     }
   };
 
+  // Deleting evidence is irreversible → confirm, then re-auth with the password.
   const remove = async () => {
-    const { confirmed } = await confirm({
-      title: 'Delete asset?',
-      message: 'This removes the asset from your records. This cannot be undone.',
-      confirmLabel: 'Delete',
-      destructive: true,
-      icon: 'trash-outline',
-    });
-    if (!confirmed) return;
-    const propertyId = q.data?.propertyId;
-    try {
-      await propertiesApi.removeAsset(assetId);
-      if (propertyId) qc.invalidateQueries({ queryKey: ['assets', propertyId] });
-      router.back();
-    } catch (e: any) {
-      Alert.alert('Could not delete', e?.message ?? 'Try again.');
+    let passwordError: string | undefined;
+    for (;;) {
+      const { confirmed, password } = await confirm({
+        title: 'Delete asset?',
+        message: 'This permanently removes the asset and its evidence from your records. This cannot be undone.',
+        confirmLabel: 'Delete',
+        destructive: true,
+        icon: 'trash-outline',
+        requirePassword: true,
+        passwordError,
+      });
+      if (!confirmed) return;
+      try {
+        const ok = await usersApi.verifyPassword(password ?? '');
+        if (!ok) {
+          passwordError = 'Incorrect password. Please try again.';
+          continue;
+        }
+      } catch {
+        Alert.alert('Could not verify', 'Please check your connection and try again.');
+        return;
+      }
+      const propertyId = q.data?.propertyId;
+      try {
+        await propertiesApi.removeAsset(assetId);
+        if (propertyId) qc.invalidateQueries({ queryKey: ['assets', propertyId] });
+        router.back();
+      } catch (e: any) {
+        Alert.alert('Could not delete', e?.message ?? 'Try again.');
+      }
+      return;
     }
   };
 
