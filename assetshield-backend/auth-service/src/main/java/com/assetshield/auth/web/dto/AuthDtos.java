@@ -1,9 +1,13 @@
 package com.assetshield.auth.web.dto;
 
+import com.assetshield.auth.domain.BroadcastAudience;
+import com.assetshield.auth.domain.ReportCategory;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public final class AuthDtos {
@@ -115,6 +119,44 @@ public final class AuthDtos {
     /** One security audit row; actorUserId is null for unknown-phone failures. */
     public record AuditEventItem(UUID id, UUID actorUserId, String action, String target,
                                  String detail, Instant createdAt) {
+    }
+
+    // ── problem reports (support) ────────────────────────────────────────────
+
+    public record CreateReportRequest(
+            @NotNull ReportCategory category,
+            @NotBlank @Size(min = 5, max = 2000) String message,
+            @Size(max = 200) String context) {
+    }
+
+    public record ReportResponse(UUID id, String status) {
+    }
+
+    /** Admin list row — reporter name/phone resolved from the local users table. */
+    public record ReportItem(UUID id, ReportCategory category, String message, String context,
+                             String status, UUID reporterUserId, String reporterName,
+                             String reporterPhone, Instant createdAt, Instant resolvedAt) {
+    }
+
+    // ── admin broadcasts ─────────────────────────────────────────────────────
+
+    /** Live reach per segment, so the composer can preview before sending. */
+    public record AudienceCountsResponse(long everyone, long owners, long agents) {
+    }
+
+    /** One row in the "specific people" directory picker. */
+    public record AdminUserItem(UUID id, String fullName, String phoneNumber, String role) {
+    }
+
+    /** userIds is required only when audience = SPECIFIC. */
+    public record BroadcastRequest(
+            @NotNull BroadcastAudience audience,
+            List<UUID> userIds,
+            @NotBlank @Size(max = 120) String title,
+            @NotBlank @Size(max = 500) String body) {
+    }
+
+    public record BroadcastResponse(boolean sent, int recipientCount) {
     }
 
     public record InternalUserResponse(UUID id, String fullName, String phoneNumber,
