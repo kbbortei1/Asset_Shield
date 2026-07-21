@@ -24,10 +24,14 @@ export const damageApi = {
   /** Upload a damage photo — multipart. Response is NESTED (photo + pairingSuggestions). */
   uploadPhoto: (reportId: string, form: FormData) =>
     api.upload<DamagePhotoUploadResult>(`/damage-reports/${reportId}/photos`, form),
+  /** Backend wraps the list as { pairingSuggestions: [...] } — unwrap to an array. */
   pairingSuggestions: (reportId: string, photoId: string, radiusM = 25) =>
-    api.get<PairingSuggestion[]>(`/damage-reports/${reportId}/photos/${photoId}/pairing-suggestions`, {
-      query: { radiusM },
-    }),
+    api
+      .get<{ pairingSuggestions: PairingSuggestion[] }>(
+        `/damage-reports/${reportId}/photos/${photoId}/pairing-suggestions`,
+        { query: { radiusM } },
+      )
+      .then((r) => r?.pairingSuggestions ?? []),
   pair: (reportId: string, body: CreatePairRequest) => api.post<Pair>(`/damage-reports/${reportId}/pairs`, body),
   unpair: (reportId: string, pairId: string) => api.del<void>(`/damage-reports/${reportId}/pairs/${pairId}`),
   complete: (reportId: string) => api.put<DamageReport>(`/damage-reports/${reportId}/complete`),
