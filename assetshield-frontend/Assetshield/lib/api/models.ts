@@ -383,7 +383,37 @@ export type NotificationType =
   | 'AGENT_VERIFIED'
   | 'AGENT_REJECTED'
   | 'SUBSCRIPTION_EXPIRY'
-  | 'MAINTENANCE_DUE';
+  | 'MAINTENANCE_DUE'
+  | 'ANNOUNCEMENT';
+
+// ---- support / problem reports ----
+export type ReportCategory = 'BUG' | 'PAYMENT' | 'ACCOUNT' | 'SUGGESTION' | 'OTHER';
+
+export type CreateReportRequest = { category: ReportCategory; message: string; context?: string };
+
+export type ProblemReport = {
+  id: string;
+  category: ReportCategory;
+  message: string;
+  context?: string | null;
+  status: 'OPEN' | 'RESOLVED';
+  reporterUserId?: string;
+  reporterName?: string | null;
+  reporterPhone?: string | null;
+  createdAt: string;
+  resolvedAt?: string | null;
+};
+
+// ---- admin broadcast ----
+export type BroadcastAudience = 'EVERYONE' | 'OWNERS' | 'AGENTS' | 'SPECIFIC';
+export type AudienceCounts = { everyone: number; owners: number; agents: number };
+export type AdminUserItem = { id: string; fullName: string; phoneNumber: string; role: UserRole };
+export type BroadcastRequest = {
+  audience: BroadcastAudience;
+  userIds?: string[];
+  title: string;
+  body: string;
+};
 
 export type AppNotification = {
   id: string;
