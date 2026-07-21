@@ -26,10 +26,11 @@ public final class NotificationDtos {
     public record DeviceTokenDeleteRequest(@NotBlank @Size(max = 512) String fcmToken) {
     }
 
-    public record PreferenceRequest(@NotNull TipsFrequency tipsFrequency) {
+    /** All fields optional — a partial update changes only what's provided. */
+    public record PreferenceRequest(TipsFrequency tipsFrequency, Boolean pushEnabled, Boolean inAppEnabled) {
     }
 
-    public record PreferenceResponse(TipsFrequency tipsFrequency) {
+    public record PreferenceResponse(TipsFrequency tipsFrequency, boolean pushEnabled, boolean inAppEnabled) {
     }
 
     // ── tips ─────────────────────────────────────────────────────────────────
