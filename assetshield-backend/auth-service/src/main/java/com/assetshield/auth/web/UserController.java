@@ -6,6 +6,8 @@ import com.assetshield.auth.web.dto.AuthDtos.GhanaCardResponse;
 import com.assetshield.auth.web.dto.AuthDtos.ProfileResponse;
 import com.assetshield.auth.web.dto.AuthDtos.PurgeResponse;
 import com.assetshield.auth.web.dto.AuthDtos.UpdateProfileRequest;
+import com.assetshield.auth.web.dto.AuthDtos.VerifyPasswordRequest;
+import com.assetshield.auth.web.dto.AuthDtos.VerifyPasswordResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -52,6 +54,22 @@ public class UserController {
                                                           @RequestPart("file") MultipartFile file) {
         return ApiResponse.success(userService.uploadGhanaCard(principal(authentication), file),
                 "Ghana Card uploaded");
+    }
+
+    @Operation(summary = "Upload/replace the profile picture (jpeg/png); returns the updated profile")
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ProfileResponse> uploadAvatar(Authentication authentication,
+                                                     @RequestPart("file") MultipartFile file) {
+        return ApiResponse.success(userService.uploadAvatar(principal(authentication), file),
+                "Profile picture updated");
+    }
+
+    @Operation(summary = "Verify the caller's password (re-auth gate for destructive actions)")
+    @PostMapping("/me/verify-password")
+    public ApiResponse<VerifyPasswordResponse> verifyPassword(Authentication authentication,
+                                                              @Valid @RequestBody VerifyPasswordRequest request) {
+        boolean verified = userService.verifyPassword(principal(authentication), request.password());
+        return ApiResponse.success(new VerifyPasswordResponse(verified), "Password checked");
     }
 
     @Operation(summary = "Request account purge (30-day grace, revokes all sessions)")

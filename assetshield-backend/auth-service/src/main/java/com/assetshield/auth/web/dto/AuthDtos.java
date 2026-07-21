@@ -81,7 +81,8 @@ public final class AuthDtos {
     }
 
     public record ProfileResponse(UUID id, String phoneNumber, String fullName, String role,
-                                  String language, boolean ghanaCardUploaded, Instant createdAt) {
+                                  String language, boolean ghanaCardUploaded, String avatarUrl,
+                                  Instant createdAt) {
     }
 
     public record UpdateProfileRequest(
@@ -93,6 +94,13 @@ public final class AuthDtos {
     }
 
     public record GhanaCardResponse(boolean ghanaCardUploaded) {
+    }
+
+    public record VerifyPasswordRequest(@NotBlank String password) {
+    }
+
+    /** Always 200; `verified` is the answer — never leaks which field was wrong. */
+    public record VerifyPasswordResponse(boolean verified) {
     }
 
     public record CreateAdminRequest(

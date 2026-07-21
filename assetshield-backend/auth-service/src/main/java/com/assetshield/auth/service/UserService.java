@@ -2,6 +2,7 @@ package com.assetshield.auth.service;
 
 import com.assetshield.auth.common.ApiException;
 import com.assetshield.auth.common.ErrorCode;
+import com.assetshield.auth.config.AppProperties;
 import com.assetshield.auth.domain.Role;
 import com.assetshield.auth.domain.User;
 import com.assetshield.auth.domain.UserStatus;
@@ -17,6 +18,7 @@ import com.assetshield.auth.web.dto.AuthDtos.PurgeResponse;
 import com.assetshield.auth.web.dto.AuthDtos.UpdateProfileRequest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
@@ -37,20 +39,31 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final StorageProvider storageProvider;
     private final AuditService auditService;
+    private final Duration signedUrlTtl;
 
     public UserService(UserRepository userRepository, RefreshTokenService refreshTokenService,
                        PasswordEncoder passwordEncoder, StorageProvider storageProvider,
-                       AuditService auditService) {
+                       AuditService auditService, AppProperties properties) {
         this.userRepository = userRepository;
         this.refreshTokenService = refreshTokenService;
         this.passwordEncoder = passwordEncoder;
         this.storageProvider = storageProvider;
         this.auditService = auditService;
+        this.signedUrlTtl = Duration.ofMinutes(properties.storage().signedUrlTtlMinutes());
     }
 
     @Transactional(readOnly = true)
     public ProfileResponse me(UUID userId) {
         return toProfile(requireUser(userId));
+    }
+
+    /** Re-auth gate for destructive actions — does the raw password match this account? */
+    @Transactional(readOnly = true)
+    public boolean verifyPassword(UUID userId, String rawPassword) {
+        if (rawPassword == null || rawPassword.isEmpty()) {
+            return false;
+        }
+        return passwordEncoder.matches(rawPassword, requireUser(userId).getPasswordHash());
     }
 
     @Transactional
@@ -77,14 +90,17 @@ public class UserService {
     public PurgeResponse requestPurge(UUID userId) {
         User user = requireUser(userId);
         Instant now = Instant.now();
-        if (user.getGhanaCardUrl() != null) {
-            try {
-                storageProvider.delete(user.getGhanaCardUrl());
-            } catch (RuntimeException e) {
-                // best-effort: an orphaned image must not block account deletion
+        for (String objectPath : new String[] { user.getGhanaCardUrl(), user.getAvatarUrl() }) {
+            if (objectPath != null) {
+                try {
+                    storageProvider.delete(objectPath);
+                } catch (RuntimeException e) {
+                    // best-effort: an orphaned image must not block account deletion
+                }
             }
-            user.setGhanaCardUrl(null);
         }
+        user.setGhanaCardUrl(null);
+        user.setAvatarUrl(null);
         user.setPurgeRequestedAt(now);
         user.setDeletedAt(now);
         user.setStatus(UserStatus.SUSPENDED);
@@ -101,6 +117,36 @@ public class UserService {
     @Transactional
     public GhanaCardResponse uploadGhanaCard(UUID userId, MultipartFile file) {
         User user = requireUser(userId);
+        byte[] bytes = readImage(file);
+        String extension = MediaType.IMAGE_PNG_VALUE.equalsIgnoreCase(file.getContentType()) ? ".png" : ".jpg";
+        String objectPath = storageProvider.store(bytes, "ghana-cards/" + userId + extension,
+                file.getContentType());
+        user.setGhanaCardUrl(objectPath);
+        userRepository.save(user);
+        return new GhanaCardResponse(true);
+    }
+
+    /** Stores the profile picture at avatars/{userId} and returns the fresh profile. */
+    @Transactional
+    public ProfileResponse uploadAvatar(UUID userId, MultipartFile file) {
+        User user = requireUser(userId);
+        byte[] bytes = readImage(file);
+        String extension = MediaType.IMAGE_PNG_VALUE.equalsIgnoreCase(file.getContentType()) ? ".png" : ".jpg";
+        // remove a prior avatar of the other extension so it can't linger orphaned
+        if (user.getAvatarUrl() != null && !user.getAvatarUrl().endsWith(extension)) {
+            try {
+                storageProvider.delete(user.getAvatarUrl());
+            } catch (RuntimeException ignored) {
+                // best-effort cleanup — never block the new upload
+            }
+        }
+        String objectPath = storageProvider.store(bytes, "avatars/" + userId + extension,
+                file.getContentType());
+        user.setAvatarUrl(objectPath);
+        return toProfile(userRepository.save(user));
+    }
+
+    private byte[] readImage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED, "Uploaded file is empty");
         }
@@ -109,17 +155,11 @@ public class UserService {
             throw new ApiException(ErrorCode.UNSUPPORTED_MEDIA_TYPE,
                     "Only image/jpeg and image/png uploads are accepted");
         }
-        byte[] bytes;
         try {
-            bytes = file.getBytes();
+            return file.getBytes();
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot read uploaded file", e);
         }
-        String extension = MediaType.IMAGE_PNG_VALUE.equalsIgnoreCase(contentType) ? ".png" : ".jpg";
-        String objectPath = storageProvider.store(bytes, "ghana-cards/" + userId + extension, contentType);
-        user.setGhanaCardUrl(objectPath);
-        userRepository.save(user);
-        return new GhanaCardResponse(true);
     }
 
     @Transactional
@@ -157,10 +197,12 @@ public class UserService {
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
     }
 
-    private static ProfileResponse toProfile(User user) {
+    private ProfileResponse toProfile(User user) {
+        String avatarUrl = user.getAvatarUrl() == null ? null
+                : storageProvider.signedUrl(user.getAvatarUrl(), signedUrlTtl);
         return new ProfileResponse(user.getId(), user.getPhoneNumber(), user.getFullName(),
                 user.getRole().name(), user.getLanguage(),
-                user.getGhanaCardUrl() != null, user.getCreatedAt());
+                user.getGhanaCardUrl() != null, avatarUrl, user.getCreatedAt());
     }
 
     private static InternalUserResponse toInternal(User user) {
