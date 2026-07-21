@@ -66,20 +66,23 @@ public class UserSettingsController {
         return ApiResponse.success(Map.of("revoked", true), "Device token revoked");
     }
 
-    @Operation(summary = "Set tips delivery frequency")
+    @Operation(summary = "Update notification preferences (tips frequency, push, in-app — all optional)")
     @PutMapping("/notification-preferences")
     public ApiResponse<PreferenceResponse> updatePreferences(Authentication authentication,
                                                              @Valid @RequestBody PreferenceRequest request) {
-        return ApiResponse.success(new PreferenceResponse(
-                        preferenceService.update(user(authentication).id(), request.tipsFrequency())),
+        PreferenceService.Prefs prefs = preferenceService.update(user(authentication).id(),
+                request.tipsFrequency(), request.pushEnabled(), request.inAppEnabled());
+        return ApiResponse.success(
+                new PreferenceResponse(prefs.tipsFrequency(), prefs.pushEnabled(), prefs.inAppEnabled()),
                 "Preferences updated");
     }
 
-    @Operation(summary = "Current preferences (WEEKLY when never set)")
+    @Operation(summary = "Current preferences (defaults: WEEKLY tips, push + in-app on)")
     @GetMapping("/notification-preferences")
     public ApiResponse<PreferenceResponse> preferences(Authentication authentication) {
-        return ApiResponse.success(new PreferenceResponse(
-                        preferenceService.frequencyFor(user(authentication).id())),
+        PreferenceService.Prefs prefs = preferenceService.get(user(authentication).id());
+        return ApiResponse.success(
+                new PreferenceResponse(prefs.tipsFrequency(), prefs.pushEnabled(), prefs.inAppEnabled()),
                 "Preferences fetched");
     }
 
