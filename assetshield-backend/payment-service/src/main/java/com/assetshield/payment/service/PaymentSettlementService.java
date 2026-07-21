@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The single, idempotent success-handling pipeline — both the webhook and the
@@ -27,13 +28,16 @@ public class PaymentSettlementService {
     private final PaymentRepository paymentRepository;
     private final DamageServiceClient damageServiceClient;
     private final MarketplaceServiceClient marketplaceServiceClient;
+    private final ObjectMapper objectMapper;
 
     public PaymentSettlementService(PaymentRepository paymentRepository,
                                     DamageServiceClient damageServiceClient,
-                                    MarketplaceServiceClient marketplaceServiceClient) {
+                                    MarketplaceServiceClient marketplaceServiceClient,
+                                    ObjectMapper objectMapper) {
         this.paymentRepository = paymentRepository;
         this.damageServiceClient = damageServiceClient;
         this.marketplaceServiceClient = marketplaceServiceClient;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -51,11 +55,30 @@ public class PaymentSettlementService {
 
         payment.setStatus(PaymentStatus.SUCCESS);
         payment.setWebhookReceivedAt(Instant.now());
-        payment.setRawWebhook(rawPayload);
+        payment.setRawWebhook(jsonOrNull(rawPayload));
         paymentRepository.saveAndFlush(payment);
         log.info("Payment {} ({}) settled SUCCESS", reference, payment.getPurpose());
 
         dispatch(payment);
+    }
+
+    /**
+     * raw_webhook is JSONB: a non-JSON payload makes Postgres abort the whole
+     * settle transaction, which would lose a real payment over an audit field.
+     * Money wins — keep the settlement, drop the unparseable blob.
+     */
+    private String jsonOrNull(String rawPayload) {
+        if (rawPayload == null || rawPayload.isBlank()) {
+            return null;
+        }
+        try {
+            objectMapper.readTree(rawPayload);
+            return rawPayload;
+        } catch (Exception e) {
+            log.warn("Provider payload was not valid JSON — settling without the audit blob: {}",
+                    e.getMessage());
+            return null;
+        }
     }
 
     /** Dispatch failures are logged, never thrown — the reconciler picks them up. */
