@@ -5,6 +5,7 @@ import com.assetshield.notification.service.NotificationDispatchService;
 import com.assetshield.notification.service.TipGenerationService;
 import com.assetshield.notification.web.dto.NotificationDtos.AcceptedResponse;
 import com.assetshield.notification.web.dto.NotificationDtos.AssetCapturedRequest;
+import com.assetshield.notification.web.dto.NotificationDtos.BulkSendRequest;
 import com.assetshield.notification.web.dto.NotificationDtos.InternalSendRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -38,6 +39,17 @@ public class InternalNotificationController {
                 request.body(), request.payload());
         return ResponseEntity.status(HttpStatus.ACCEPTED)
                 .body(ApiResponse.success(new AcceptedResponse(true), "Notification accepted"));
+    }
+
+    /** Fan-out for admin broadcasts: one call, many recipients (each async). */
+    @PostMapping("/notifications/send-bulk")
+    public ResponseEntity<ApiResponse<AcceptedResponse>> sendBulk(@Valid @RequestBody BulkSendRequest request) {
+        for (java.util.UUID userId : request.userIds()) {
+            dispatchService.dispatchAsync(userId, request.type(), request.title(),
+                    request.body(), request.payload());
+        }
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(ApiResponse.success(new AcceptedResponse(true), "Broadcast accepted"));
     }
 
     /** property-service asset uploads: debounced tip generation. */

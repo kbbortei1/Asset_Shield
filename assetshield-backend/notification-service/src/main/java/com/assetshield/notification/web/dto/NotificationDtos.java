@@ -4,9 +4,11 @@ import com.assetshield.notification.domain.NotificationType;
 import com.assetshield.notification.domain.Platform;
 import com.assetshield.notification.domain.TipsFrequency;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import tools.jackson.databind.JsonNode;
@@ -53,6 +55,15 @@ public final class NotificationDtos {
 
     public record InternalSendRequest(
             @NotNull UUID userId,
+            @NotNull NotificationType type,
+            @NotBlank @Size(max = 120) String title,
+            @NotBlank @Size(max = 500) String body,
+            Map<String, Object> payload) {
+    }
+
+    /** Fan-out: the same notification to many users (admin broadcasts). */
+    public record BulkSendRequest(
+            @NotEmpty List<UUID> userIds,
             @NotNull NotificationType type,
             @NotBlank @Size(max = 120) String title,
             @NotBlank @Size(max = 500) String body,
