@@ -72,7 +72,8 @@ public class UserController {
         return ApiResponse.success(new VerifyPasswordResponse(verified), "Password checked");
     }
 
-    @Operation(summary = "Request account purge (30-day grace, revokes all sessions)")
+    @Operation(summary = "Delete account: immediate and irreversible "
+            + "(scrubs PII, deletes ID/avatar images, frees the phone number, revokes all sessions)")
     @DeleteMapping("/me")
     public ApiResponse<PurgeResponse> deleteMe(Authentication authentication) {
         return ApiResponse.success(userService.requestPurge(principal(authentication)), "Purge scheduled");
