@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { isApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { validateAuthFields } from '@/lib/auth/validation';
@@ -19,12 +20,17 @@ export default function RegisterAgent() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const submit = async () => {
     setFormError(null);
+    if (!agreed) {
+      setFormError('Please agree to the Terms & Privacy Policy to continue.');
+      return;
+    }
     const clientErrors = validateAuthFields(
       {
         fullName: form.fullName,
@@ -83,8 +89,22 @@ export default function RegisterAgent() {
         </Card>
       </View>
 
+      <Pressable
+        onPress={() => setAgreed((a) => !a)}
+        style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start', marginTop: spacing.md }}
+      >
+        <Ionicons name={agreed ? 'checkbox' : 'square-outline'} size={22} color={agreed ? colors.primary : colors.textMuted} />
+        <Text variant="labelMd" color={colors.textMuted} style={{ flex: 1 }}>
+          I agree to the{' '}
+          <Text variant="labelMd" weight="semibold" color={colors.primary} onPress={() => router.push('/(auth)/terms' as never)}>
+            Terms & Privacy Policy
+          </Text>
+          , including how my photos are stored.
+        </Text>
+      </Pressable>
+
       <View style={{ gap: spacing.md, marginTop: spacing.md }}>
-        <Button title="Send code" loading={loading} onPress={submit} />
+        <Button title="Send code" loading={loading} disabled={!agreed} onPress={submit} />
       </View>
     </Screen>
   );
