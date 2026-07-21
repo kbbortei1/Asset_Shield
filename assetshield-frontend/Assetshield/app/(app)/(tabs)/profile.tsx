@@ -148,10 +148,21 @@ export default function ProfileTab() {
         {role === 'OWNER' || role === 'AGENT' ? (
           <Row icon="star-outline" label={role === 'AGENT' ? 'Subscription' : 'AssetShield PRO'} onPress={() => router.push('/(app)/subscription' as never)} />
         ) : null}
-        <Row icon="receipt-outline" label="Billing history" onPress={() => router.push('/(app)/billing' as never)} />
-        {role === 'ADMIN' ? <Row icon="person-add-outline" label="Create an admin" onPress={() => router.push('/(app)/admin/new' as never)} /> : null}
-        {role === 'ADMIN' ? <Row icon="shield-outline" label="Audit trail" onPress={() => router.push('/(app)/admin/audit' as never)} /> : null}
+        {role !== 'ADMIN' ? <Row icon="receipt-outline" label="Billing history" onPress={() => router.push('/(app)/billing' as never)} /> : null}
+        <Row icon="chatbox-ellipses-outline" label="Report a problem" onPress={() => router.push('/(app)/report-problem' as never)} />
       </View>
+
+      {role === 'ADMIN' ? (
+        <>
+          <SectionHeader title="Admin" />
+          <View style={{ gap: spacing.sm }}>
+            <Row icon="megaphone-outline" label="Broadcast a notification" onPress={() => router.push('/(app)/admin/broadcast' as never)} />
+            <Row icon="chatbox-ellipses-outline" label="Problem reports" onPress={() => router.push('/(app)/admin/reports' as never)} />
+            <Row icon="shield-outline" label="Audit trail" onPress={() => router.push('/(app)/admin/audit' as never)} />
+            <Row icon="person-add-outline" label="Create an admin" onPress={() => router.push('/(app)/admin/new' as never)} />
+          </View>
+        </>
+      ) : null}
 
       <SectionHeader title="Preferences" />
       <Card>
