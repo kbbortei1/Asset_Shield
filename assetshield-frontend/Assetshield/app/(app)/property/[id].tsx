@@ -164,6 +164,18 @@ export default function PropertyDetail() {
               thumbColor={colors.white}
             />
           </View>
+          {p.openToOffers ? (
+            <Pressable
+              onPress={() => router.push('/(app)/(tabs)/market' as never)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.md }}
+            >
+              <Ionicons name="people-outline" size={16} color={colors.primary} />
+              <Text variant="labelMd" weight="semibold" color={colors.primary} style={{ flex: 1 }}>
+                View interested agents
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            </Pressable>
+          ) : null}
         </Card>
       ) : null}
 
