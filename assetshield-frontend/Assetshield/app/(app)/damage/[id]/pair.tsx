@@ -45,7 +45,9 @@ export default function PairPhoto() {
   });
 
   const photo = (report.data?.photos ?? []).find((p) => p.id === photoId);
-  const items = suggestions.data ?? [];
+  // Defensive: never trust the shape enough to call .map on it directly — a
+  // wrapped/!array payload used to crash the whole screen mid-render.
+  const items = Array.isArray(suggestions.data) ? suggestions.data : [];
   const best = items.length > 0 ? items[0] : null;
   const bestPct = matchPercent(best?.distanceMeters);
 
