@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Alert, Pressable, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 import { usersApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { buildFileForm, PermissionError, pickImage } from '@/lib/media/capture';
 import { useOffline } from '@/lib/offline/OfflineProvider';
 import { useTheme } from '@/lib/theme/ThemeProvider';
-import { Button, Card, Screen, SectionHeader, Text, useToast } from '@/components/ui';
+import { Button, Card, RemoteImage, Screen, SectionHeader, Text, useConfirm, useToast } from '@/components/ui';
 import { colors, radius, spacing, ThemeName } from '@/theme';
 
 /** Stitch: "Profile & Settings". */
@@ -16,45 +18,102 @@ const THEME_OPTIONS: { key: ThemeName; label: string; icon: keyof typeof Ionicon
 ];
 
 export default function ProfileTab() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const { theme, setTheme } = useTheme();
   const { failed, retryFailedNow } = useOffline();
   const { show } = useToast();
+  const confirm = useConfirm();
   const role = user?.role ?? 'OWNER';
+  const [avatarBusy, setAvatarBusy] = useState(false);
 
   const onRetryFailed = async () => {
     await retryFailedNow();
     show('Retrying failed uploads…');
   };
 
-  const confirmErasure = () =>
-    Alert.alert(
-      'Delete account?',
-      'Your account is deactivated immediately: your login stops working and your phone number is freed up. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Request deletion',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await usersApi.requestErasure();
-              await logout();
-            } catch {
-              Alert.alert('Could not complete', 'Please try again later.');
-            }
-          },
-        },
-      ],
-    );
+  const uploadAvatar = async (source: 'camera' | 'library') => {
+    if (avatarBusy) return;
+    let img;
+    try {
+      img = await pickImage(source);
+    } catch (e) {
+      if (e instanceof PermissionError) {
+        Alert.alert('Permission needed', `Allow ${e.kind} access to update your photo.`);
+      }
+      return;
+    }
+    if (!img) return;
+    setAvatarBusy(true);
+    try {
+      await usersApi.uploadAvatar(buildFileForm(img));
+      await refreshUser();
+      show('Profile picture updated');
+    } catch (e: any) {
+      Alert.alert('Could not update', e?.message ?? 'Please try again.');
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  // Let the user take a fresh photo OR pick an existing one — their own image
+  // either way (there are no preset avatars).
+  const changeAvatar = () =>
+    Alert.alert('Profile picture', 'Upload a photo of yourself.', [
+      { text: 'Take photo', onPress: () => uploadAvatar('camera') },
+      { text: 'Choose from gallery', onPress: () => uploadAvatar('library') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+
+  const confirmLogout = async () => {
+    const { confirmed } = await confirm({
+      title: 'Log out?',
+      message: 'You’ll need your phone number and password to sign back in.',
+      confirmLabel: 'Log out',
+      icon: 'log-out-outline',
+    });
+    if (confirmed) await logout();
+  };
+
+  const confirmErasure = async () => {
+    const { confirmed } = await confirm({
+      title: 'Delete account?',
+      message:
+        'Your account is deactivated immediately: your login stops working and your phone number is freed up. This cannot be undone.',
+      confirmLabel: 'Request deletion',
+      destructive: true,
+      icon: 'trash-outline',
+    });
+    if (!confirmed) return;
+    try {
+      await usersApi.requestErasure();
+      await logout();
+    } catch {
+      Alert.alert('Could not complete', 'Please try again later.');
+    }
+  };
 
   return (
     <Screen>
       <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
-          <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.tealTint, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="person" size={28} color={colors.primary} />
-          </View>
+          <Pressable onPress={changeAvatar} accessibilityRole="button" accessibilityLabel="Change profile picture">
+            <View style={{ width: 64, height: 64, borderRadius: 32, overflow: 'hidden', backgroundColor: colors.tealTint, alignItems: 'center', justifyContent: 'center' }}>
+              {user?.avatarUrl ? (
+                <RemoteImage uri={user.avatarUrl} width={64} height={64} radius={32} />
+              ) : (
+                <Ionicons name="person" size={30} color={colors.primary} />
+              )}
+              {avatarBusy ? (
+                <View style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' }}>
+                  <ActivityIndicator color={colors.white} />
+                </View>
+              ) : null}
+            </View>
+            {/* camera badge */}
+            <View style={{ position: 'absolute', right: -2, bottom: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.card }}>
+              <Ionicons name="camera" size={12} color={colors.white} />
+            </View>
+          </Pressable>
           <View style={{ flex: 1 }}>
             <Text variant="headlineSm">{user?.fullName ?? 'Your account'}</Text>
             <Text variant="labelMd" color={colors.textMuted}>
@@ -128,7 +187,7 @@ export default function ProfileTab() {
       </Card>
 
       <View style={{ gap: spacing.md, marginTop: spacing.md }}>
-        <Button title="Log out" variant="secondary" onPress={() => logout()} />
+        <Button title="Log out" variant="secondary" onPress={confirmLogout} />
         <Pressable onPress={confirmErasure} style={{ alignItems: 'center', paddingVertical: spacing.sm }}>
           <Text variant="labelMd" color={colors.error}>
             Delete my account
