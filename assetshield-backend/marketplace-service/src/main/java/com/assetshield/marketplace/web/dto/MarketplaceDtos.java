@@ -72,8 +72,8 @@ public final class MarketplaceDtos {
                                     @JsonInclude(JsonInclude.Include.NON_NULL) String ownerFullName) {
     }
 
-    public record SharedDossierItem(UUID dossierId, UUID shareId, String ownerName,
-                                    String propertyName, String disasterType,
+    public record SharedDossierItem(UUID dossierId, UUID shareId, UUID agentInterestId,
+                                    String ownerName, String propertyName, String disasterType,
                                     BigDecimal totalEstimatedLoss, Instant sharedAt) {
     }
 
@@ -142,5 +142,14 @@ public final class MarketplaceDtos {
     }
 
     public record TierResponse(String tier) {
+    }
+
+    // ── owner<->agent chat ───────────────────────────────────────────────────
+
+    public record SendMessageRequest(@NotBlank @Size(max = 2000) String body) {
+    }
+
+    public record MessageItem(UUID id, UUID senderUserId, String senderRole, String body,
+                              Instant createdAt) {
     }
 }
