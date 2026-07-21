@@ -1,5 +1,14 @@
 import { api } from '../client';
-import { AssetAnalytics, AuditEvent, UserProfile } from '../models';
+import {
+  AdminUserItem,
+  AssetAnalytics,
+  AudienceCounts,
+  AuditEvent,
+  BroadcastRequest,
+  CreateReportRequest,
+  ProblemReport,
+  UserProfile,
+} from '../models';
 import { Page, PageParams } from '../types';
 
 export const usersApi = {
@@ -21,4 +30,15 @@ export const usersApi = {
     api.post<UserProfile>('/admin/admins', body),
   auditEvents: (params?: PageParams & { action?: string }) =>
     api.get<Page<AuditEvent>>('/admin/audit-events', { query: params }),
+  // problem reports
+  reportProblem: (body: CreateReportRequest) => api.post<{ id: string; status: string }>('/problem-reports', body),
+  adminReports: (params?: PageParams & { status?: string }) =>
+    api.get<Page<ProblemReport>>('/admin/problem-reports', { query: params }),
+  resolveReport: (id: string) => api.put<void>(`/admin/problem-reports/${id}/resolve`),
+  // admin broadcast
+  audienceCounts: () => api.get<AudienceCounts>('/admin/audience-counts'),
+  adminUsers: (params?: PageParams & { q?: string }) =>
+    api.get<Page<AdminUserItem>>('/admin/users', { query: params }),
+  broadcast: (body: BroadcastRequest) =>
+    api.post<{ sent: boolean; recipientCount: number }>('/admin/broadcast', body),
 };
