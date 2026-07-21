@@ -6,7 +6,8 @@ export const notificationsApi = {
   registerDeviceToken: (body: DeviceTokenRequest) => api.put<void>('/users/me/device-token', body),
   deleteDeviceToken: (fcmToken: string) => api.del<void>('/users/me/device-token', { fcmToken }),
   getPreferences: () => api.get<NotificationPreferences>('/users/me/notification-preferences'),
-  updatePreferences: (body: NotificationPreferences) =>
+  /** Partial update — send only the fields you're changing. */
+  updatePreferences: (body: Partial<NotificationPreferences>) =>
     api.put<NotificationPreferences>('/users/me/notification-preferences', body),
   list: (params?: PageParams) => api.get<Page<AppNotification>>('/users/me/notifications', { query: params }),
 
