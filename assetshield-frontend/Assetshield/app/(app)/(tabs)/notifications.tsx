@@ -22,6 +22,7 @@ const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   AGENT_VERIFIED: 'shield-checkmark',
   AGENT_REJECTED: 'shield',
   SUBSCRIPTION_EXPIRY: 'time',
+  MAINTENANCE_DUE: 'construct',
 };
 
 export default function NotificationsTab() {

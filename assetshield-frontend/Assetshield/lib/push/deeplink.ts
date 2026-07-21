@@ -12,6 +12,9 @@ export function routeForNotification(type: string | undefined, payload?: Record<
       return p.propertyId ? `/(app)/property/${p.propertyId}/tips` : '/(app)/tips';
     case 'REDOC_REMINDER':
       return p.propertyId ? `/(app)/property/${p.propertyId}` : '/(app)/(tabs)/properties';
+    case 'MAINTENANCE_DUE':
+      if (p.assetId) return `/(app)/asset/${p.assetId}`;
+      return p.propertyId ? `/(app)/property/${p.propertyId}` : '/(app)/(tabs)/properties';
     case 'DOSSIER_READY':
       return p.dossierId ? `/(app)/dossier/${p.dossierId}` : '/(app)/(tabs)/activity';
     case 'HOUSEHOLD_INVITE':
