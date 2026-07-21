@@ -23,6 +23,7 @@ const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   AGENT_REJECTED: 'shield',
   SUBSCRIPTION_EXPIRY: 'time',
   MAINTENANCE_DUE: 'construct',
+  ANNOUNCEMENT: 'megaphone',
 };
 
 export default function NotificationsTab() {
