@@ -1,0 +1,7 @@
+-- Admin-sent free-form notifications ("announcements") join the type vocabulary.
+ALTER TABLE notifications DROP CONSTRAINT notifications_type_check;
+ALTER TABLE notifications ADD CONSTRAINT notifications_type_check CHECK (type IN
+  ('TIP','REDOC_REMINDER','DOSSIER_READY','AGENT_INTEREST','INTEREST_RESPONSE',
+   'INTEREST_REVOKED','SHARE_CREATED','SHARE_REVOKED','QUOTE_ISSUED','QUOTE_RESPONSE',
+   'SUBSCRIPTION_EXPIRY','HOUSEHOLD_INVITE','AGENT_VERIFIED','AGENT_REJECTED',
+   'MAINTENANCE_DUE','ANNOUNCEMENT'));

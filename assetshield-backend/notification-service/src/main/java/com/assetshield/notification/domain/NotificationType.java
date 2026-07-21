@@ -16,5 +16,6 @@ public enum NotificationType {
     HOUSEHOLD_INVITE,
     AGENT_VERIFIED,
     AGENT_REJECTED,
-    MAINTENANCE_DUE
+    MAINTENANCE_DUE,
+    ANNOUNCEMENT
 }
