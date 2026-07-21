@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { Alert, View } from 'react-native';
 import { propertiesApi } from '@/lib/api';
 import { buildFileForm, pickImage } from '@/lib/media/capture';
-import { Button, Card, EvidencePhoto, Header, Input, Loading, Screen, Text, VerifiedBadge, useToast } from '@/components/ui';
+import { Button, Card, EvidencePhoto, Header, Input, Loading, Screen, Text, VerifiedBadge, useConfirm, useToast } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 export default function AssetDetail() {
@@ -13,6 +13,7 @@ export default function AssetDetail() {
   const assetId = id!;
   const qc = useQueryClient();
   const { show } = useToast();
+  const confirm = useConfirm();
   const q = useQuery({ queryKey: ['asset', assetId], queryFn: () => propertiesApi.getAsset(assetId) });
 
   const [description, setDescription] = useState('');
@@ -63,24 +64,24 @@ export default function AssetDetail() {
     }
   };
 
-  const remove = () =>
-    Alert.alert('Delete asset?', 'This removes the asset from your records.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          const propertyId = q.data?.propertyId;
-          try {
-            await propertiesApi.removeAsset(assetId);
-            if (propertyId) qc.invalidateQueries({ queryKey: ['assets', propertyId] });
-            router.back();
-          } catch (e: any) {
-            Alert.alert('Could not delete', e?.message ?? 'Try again.');
-          }
-        },
-      },
-    ]);
+  const remove = async () => {
+    const { confirmed } = await confirm({
+      title: 'Delete asset?',
+      message: 'This removes the asset from your records. This cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+      icon: 'trash-outline',
+    });
+    if (!confirmed) return;
+    const propertyId = q.data?.propertyId;
+    try {
+      await propertiesApi.removeAsset(assetId);
+      if (propertyId) qc.invalidateQueries({ queryKey: ['assets', propertyId] });
+      router.back();
+    } catch (e: any) {
+      Alert.alert('Could not delete', e?.message ?? 'Try again.');
+    }
+  };
 
   if (q.isLoading) return <Loading />;
   const a = q.data!;
