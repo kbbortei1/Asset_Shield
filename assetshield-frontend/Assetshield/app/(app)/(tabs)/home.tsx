@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
@@ -7,7 +8,9 @@ import { marketplaceApi, notificationsApi, propertiesApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { PropertyCard } from '@/components/cards/PropertyCard';
 import { AnimatedItem, Button, Card, EmptyState, ErrorState, Hero, ListScreen, ListSkeleton, Loading, Screen, Text, formatCedis } from '@/components/ui';
-import { colors, spacing } from '@/theme';
+import { colors, radius, spacing } from '@/theme';
+
+const EMBLEM = require('@/assets/images/logo-emblem.png');
 
 export default function HomeTab() {
   const { user } = useAuth();
@@ -24,12 +27,40 @@ function timeGreeting(): string {
   return 'Good evening';
 }
 
+/**
+ * App identity bar — the emblem + wordmark sit at the top of every dashboard
+ * (WhatsApp/Facebook style) so the app always announces itself on open.
+ */
+function BrandBar() {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+      <Image source={EMBLEM} style={{ width: 28, height: 28 }} contentFit="contain" />
+      <Text variant="headlineSm" color={colors.primary}>
+        AssetShield
+      </Text>
+      <View
+        style={{
+          paddingHorizontal: 6,
+          paddingVertical: 1,
+          borderRadius: radius.sm,
+          backgroundColor: colors.tealTint,
+        }}
+      >
+        <Text variant="labelMd" weight="semibold" color={colors.primary} style={{ fontSize: 10 }}>
+          GH
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 function Greeting({ subtitle }: { subtitle: string }) {
   const { user } = useAuth();
   const firstName = user?.fullName?.split(' ')[0] ?? 'there';
   return (
     <View style={{ gap: 2 }}>
-      <Text variant="labelMd" color={colors.textMuted}>
+      <BrandBar />
+      <Text variant="labelMd" color={colors.textMuted} style={{ marginTop: spacing.md }}>
         Akwaaba
       </Text>
       <Text variant="headlineLgMobile">
@@ -156,6 +187,56 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+/**
+ * Calm status card for agent state (verification / subscription). A left icon
+ * chip carries the color, keeping the card readable instead of a full-bleed
+ * green/amber block with low-contrast text.
+ */
+function StatusPanel({
+  icon,
+  tone,
+  eyebrow,
+  title,
+  body,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  tone: 'active' | 'pending' | 'danger';
+  eyebrow: string;
+  title: string;
+  body: string;
+}) {
+  const accent = tone === 'active' ? colors.success : tone === 'danger' ? colors.error : colors.cta;
+  const chipBg =
+    tone === 'active' ? 'rgba(27,127,88,0.12)' : tone === 'danger' ? 'rgba(186,26,26,0.12)' : 'rgba(244,169,60,0.16)';
+  return (
+    <Card>
+      <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' }}>
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: chipBg,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name={icon} size={22} color={accent} />
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text variant="labelMd" color={colors.textMuted} style={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            {eyebrow}
+          </Text>
+          <Text variant="headlineSm">{title}</Text>
+          <Text variant="bodyMd" color={colors.textMuted}>
+            {body}
+          </Text>
+        </View>
+      </View>
+    </Card>
+  );
+}
+
 /** Stitch: agent landing (from "Agent Registration & Verification" / leads). */
 function AgentHome() {
   const q = useQuery({ queryKey: ['agent', 'me'], queryFn: () => marketplaceApi.agentMe() });
@@ -171,30 +252,38 @@ function AgentHome() {
       <Greeting subtitle={agent.insurerName ? `${agent.insurerName} agent` : 'Insurance agent'} />
 
       {!verified ? (
-        <Card style={{ backgroundColor: verificationStatus === 'REJECTED' ? colors.error : colors.warning }}>
-          <Text variant="headlineSm" color={colors.white}>
-            {verificationStatus === 'REJECTED' ? 'Application not approved' : 'Awaiting verification'}
-          </Text>
-          <Text variant="bodyMd" color={colors.white}>
-            {verificationStatus === 'REJECTED'
+        <StatusPanel
+          icon={verificationStatus === 'REJECTED' ? 'close-circle' : 'hourglass'}
+          tone={verificationStatus === 'REJECTED' ? 'danger' : 'pending'}
+          eyebrow="Agent account"
+          title={verificationStatus === 'REJECTED' ? 'Application not approved' : 'Awaiting verification'}
+          body={
+            verificationStatus === 'REJECTED'
               ? agent.rejectionReason ?? 'Please contact support for details.'
-              : 'An admin is reviewing your NIC licence. You can browse once approved.'}
-          </Text>
-        </Card>
+              : 'An admin is reviewing your NIC licence. You can browse leads once approved.'
+          }
+        />
       ) : (
-        <Card style={{ backgroundColor: colors.tealTint }}>
-          <Text variant="labelMd" color={colors.primary}>
-            Subscription
-          </Text>
-          <Text variant="headlineSm" color={colors.primary}>
-            {agent.subscription?.status === 'ACTIVE' ? 'Active' : 'Inactive. Subscribe to access leads.'}
-          </Text>
-        </Card>
+        <StatusPanel
+          icon={agent.subscription?.status === 'ACTIVE' ? 'checkmark-circle' : 'lock-closed'}
+          tone={agent.subscription?.status === 'ACTIVE' ? 'active' : 'pending'}
+          eyebrow="Subscription"
+          title={agent.subscription?.status === 'ACTIVE' ? 'Active' : 'Not subscribed'}
+          body={
+            agent.subscription?.status === 'ACTIVE'
+              ? 'You have full access to owner leads and shared dossiers.'
+              : 'Subscribe to unlock owner leads and receive shared dossiers.'
+          }
+        />
       )}
 
       <View style={{ gap: spacing.md }}>
         <Button title="Browse leads" disabled={!verified} onPress={() => router.push('/(app)/(tabs)/market' as never)} />
-        <Button title="Manage subscription" variant="secondary" onPress={() => router.push('/(app)/subscription' as never)} />
+        <Button
+          title={agent.subscription?.status === 'ACTIVE' ? 'Manage subscription' : 'Subscribe'}
+          variant={agent.subscription?.status === 'ACTIVE' ? 'secondary' : 'primary'}
+          onPress={() => router.push('/(app)/subscription' as never)}
+        />
       </View>
     </Screen>
   );
