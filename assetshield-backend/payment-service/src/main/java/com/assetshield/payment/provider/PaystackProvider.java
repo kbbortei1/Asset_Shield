@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * PAYMENTS_MODE=paystack: real checkout against api.paystack.co. Amounts are
@@ -17,6 +18,7 @@ import org.springframework.web.client.RestClient;
 public class PaystackProvider implements PaymentProvider {
 
     private static final Logger log = LoggerFactory.getLogger(PaystackProvider.class);
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final RestClient restClient;
 
@@ -73,10 +75,24 @@ public class PaystackProvider implements PaymentProvider {
                 case "failed", "abandoned", "reversed" -> VerifyStatus.FAILED;
                 default -> VerifyStatus.PENDING;
             };
-            return new VerifyResult(verifyStatus, String.valueOf(body));
+            // Must be real JSON: raw_webhook is a JSONB column, and Map.toString()
+            // ({status=true, data={...}}) makes Postgres reject the whole settle
+            // transaction — which silently left paid dossiers as INITIATED.
+            return new VerifyResult(verifyStatus, toJson(body));
         } catch (Exception e) {
             log.warn("Paystack verify failed for {}: {}", reference, e.getMessage());
             return new VerifyResult(VerifyStatus.PENDING, null);
+        }
+    }
+
+    /** Serialize the provider response for the JSONB audit column. */
+    private static String toJson(Map<String, Object> body) {
+        try {
+            return MAPPER.writeValueAsString(body);
+        } catch (Exception e) {
+            // Never let an audit-trail serialization problem block a settlement.
+            log.warn("Could not serialize Paystack response: {}", e.getMessage());
+            return null;
         }
     }
 }
