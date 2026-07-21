@@ -41,6 +41,9 @@ public class User {
     @Column(name = "ghana_card_url", length = 512)
     private String ghanaCardUrl;
 
+    @Column(name = "avatar_url", length = 512)
+    private String avatarUrl;
+
     @Column(nullable = false, length = 5)
     private String language = "en";
 
@@ -112,6 +115,14 @@ public class User {
 
     public void setGhanaCardUrl(String ghanaCardUrl) {
         this.ghanaCardUrl = ghanaCardUrl;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
     public String getLanguage() {
