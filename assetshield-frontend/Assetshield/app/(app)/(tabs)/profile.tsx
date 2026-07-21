@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { buildFileForm, PermissionError, pickImage } from '@/lib/media/capture';
 import { useOffline } from '@/lib/offline/OfflineProvider';
 import { useTheme } from '@/lib/theme/ThemeProvider';
-import { Button, Card, RemoteImage, Screen, SectionHeader, Text, useConfirm, useToast } from '@/components/ui';
+import { Button, Card, RemoteImage, Screen, SectionHeader, Text, useActionSheet, useConfirm, useToast } from '@/components/ui';
 import { colors, radius, spacing, ThemeName } from '@/theme';
 
 /** Stitch: "Profile & Settings". */
@@ -23,6 +23,7 @@ export default function ProfileTab() {
   const { failed, retryFailedNow } = useOffline();
   const { show } = useToast();
   const confirm = useConfirm();
+  const showActions = useActionSheet();
   const role = user?.role ?? 'OWNER';
   const [avatarBusy, setAvatarBusy] = useState(false);
 
@@ -55,14 +56,19 @@ export default function ProfileTab() {
     }
   };
 
-  // Let the user take a fresh photo OR pick an existing one — their own image
-  // either way (there are no preset avatars).
-  const changeAvatar = () =>
-    Alert.alert('Profile picture', 'Upload a photo of yourself.', [
-      { text: 'Take photo', onPress: () => uploadAvatar('camera') },
-      { text: 'Choose from gallery', onPress: () => uploadAvatar('library') },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+  // Designed chooser (not the generic OS alert): take a fresh photo or pick an
+  // existing one — their own image either way (there are no preset avatars).
+  const changeAvatar = async () => {
+    const choice = await showActions({
+      title: 'Profile picture',
+      message: 'Upload a photo of yourself.',
+      options: [
+        { label: 'Take a photo', value: 'camera', icon: 'camera' },
+        { label: 'Choose from gallery', value: 'library', icon: 'images' },
+      ],
+    });
+    if (choice === 'camera' || choice === 'library') uploadAvatar(choice);
+  };
 
   const confirmLogout = async () => {
     const { confirmed } = await confirm({
@@ -74,21 +80,39 @@ export default function ProfileTab() {
     if (confirmed) await logout();
   };
 
+  // Irreversible → password-gated: confirm → re-auth → delete. A wrong password
+  // re-opens the sheet with an inline error.
   const confirmErasure = async () => {
-    const { confirmed } = await confirm({
-      title: 'Delete account?',
-      message:
-        'Your account is deactivated immediately: your login stops working and your phone number is freed up. This cannot be undone.',
-      confirmLabel: 'Request deletion',
-      destructive: true,
-      icon: 'trash-outline',
-    });
-    if (!confirmed) return;
-    try {
-      await usersApi.requestErasure();
-      await logout();
-    } catch {
-      Alert.alert('Could not complete', 'Please try again later.');
+    let passwordError: string | undefined;
+    for (;;) {
+      const { confirmed, password } = await confirm({
+        title: 'Delete account?',
+        message:
+          'Your account is deactivated immediately: your login stops working and your phone number is freed up. This cannot be undone.',
+        confirmLabel: 'Delete my account',
+        destructive: true,
+        icon: 'trash-outline',
+        requirePassword: true,
+        passwordError,
+      });
+      if (!confirmed) return;
+      try {
+        const ok = await usersApi.verifyPassword(password ?? '');
+        if (!ok) {
+          passwordError = 'Incorrect password. Please try again.';
+          continue;
+        }
+      } catch {
+        Alert.alert('Could not verify', 'Please check your connection and try again.');
+        return;
+      }
+      try {
+        await usersApi.requestErasure();
+        await logout();
+      } catch {
+        Alert.alert('Could not complete', 'Please try again later.');
+      }
+      return;
     }
   };
 
@@ -143,12 +167,14 @@ export default function ProfileTab() {
       <SectionHeader title="Account" />
       <View style={{ gap: spacing.sm }}>
         <Row icon="person-outline" label="Edit profile" onPress={() => router.push('/(app)/profile-edit' as never)} />
-        <Row icon="card-outline" label="Ghana Card (KYC)" onPress={() => router.push('/(app)/kyc' as never)} />
-        <Row icon="notifications-outline" label="Notification preferences" onPress={() => router.push('/(app)/notification-preferences' as never)} />
+        {role !== 'ADMIN' ? <Row icon="card-outline" label="Ghana Card (KYC)" onPress={() => router.push('/(app)/kyc' as never)} /> : null}
+        {/* Admins don't receive user notifications — they broadcast them. */}
+        {role !== 'ADMIN' ? <Row icon="notifications-outline" label="Notification preferences" onPress={() => router.push('/(app)/notification-preferences' as never)} /> : null}
         {role === 'OWNER' || role === 'AGENT' ? (
           <Row icon="star-outline" label={role === 'AGENT' ? 'Subscription' : 'AssetShield PRO'} onPress={() => router.push('/(app)/subscription' as never)} />
         ) : null}
         {role !== 'ADMIN' ? <Row icon="receipt-outline" label="Billing history" onPress={() => router.push('/(app)/billing' as never)} /> : null}
+        <Row icon="lock-closed-outline" label="Privacy & data" onPress={() => router.push('/(app)/privacy' as never)} />
         <Row icon="chatbox-ellipses-outline" label="Report a problem" onPress={() => router.push('/(app)/report-problem' as never)} />
       </View>
 
