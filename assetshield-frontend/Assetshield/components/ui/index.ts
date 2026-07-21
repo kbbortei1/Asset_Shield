@@ -12,6 +12,8 @@ export { ActionTile } from './ActionTile';
 export type { ActionTileProps } from './ActionTile';
 export { ConfirmProvider, useConfirm } from './ConfirmSheet';
 export type { ConfirmOptions } from './ConfirmSheet';
+export { ActionSheetProvider, useActionSheet } from './ActionSheet';
+export type { ActionSheetOptions, ActionOption } from './ActionSheet';
 export { GatedNotice } from './GatedNotice';
 export type { GatedNoticeProps } from './GatedNotice';
 export { Hero } from './Hero';

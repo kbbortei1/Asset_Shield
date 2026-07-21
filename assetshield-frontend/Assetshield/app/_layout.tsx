@@ -16,7 +16,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { ConfirmProvider, ImageViewerProvider, ToastProvider } from '@/components/ui';
+import { ActionSheetProvider, ConfirmProvider, ImageViewerProvider, ToastProvider } from '@/components/ui';
 import { AuthProvider, useAuth } from '@/lib/auth/AuthProvider';
 import { OfflineProvider } from '@/lib/offline/OfflineProvider';
 import { ThemeProvider } from '@/lib/theme/ThemeProvider';
@@ -60,7 +60,9 @@ export default function RootLayout() {
                   <ImageViewerProvider>
                     <ToastProvider>
                       <ConfirmProvider>
-                        <RootNav fontsLoaded={fontsLoaded} />
+                        <ActionSheetProvider>
+                          <RootNav fontsLoaded={fontsLoaded} />
+                        </ActionSheetProvider>
                       </ConfirmProvider>
                     </ToastProvider>
                   </ImageViewerProvider>
