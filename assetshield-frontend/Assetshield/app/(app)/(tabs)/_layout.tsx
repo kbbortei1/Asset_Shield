@@ -57,7 +57,11 @@ export default function TabsLayout() {
           { icon: 'notifications', label: 'Alerts', href: '/(app)/(tabs)/notifications' },
           { icon: 'star', label: 'Subscription', href: '/(app)/subscription' },
         ]
-      : [{ icon: 'person-add', label: 'Create an admin', href: '/(app)/admin/new' }];
+      : [
+          { icon: 'megaphone', label: 'Broadcast', href: '/(app)/admin/broadcast' },
+          { icon: 'chatbox-ellipses', label: 'Problem reports', href: '/(app)/admin/reports' },
+          { icon: 'person-add', label: 'Create an admin', href: '/(app)/admin/new' },
+        ];
 
   return (
     <View style={{ flex: 1 }}>
