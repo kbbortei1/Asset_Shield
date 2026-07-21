@@ -99,7 +99,23 @@ function ConnectionCard({
             <Button title="Accept" onPress={onAccept} loading={busy} />
           </View>
         ) : accepted ? (
-          <Button title="Revoke access" variant="danger" onPress={onRevoke} loading={busy} />
+          <View style={{ gap: spacing.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs }}>
+              <Ionicons name="arrow-forward-circle" size={16} color={colors.primary} style={{ marginTop: 1 }} />
+              <Text variant="labelMd" color={colors.textMuted} style={{ flex: 1 }}>
+                Next: share a damage dossier so they can verify it and send you a quote.
+              </Text>
+            </View>
+            <Button
+              title="Share a dossier"
+              onPress={() =>
+                router.push(
+                  `/(app)/connection/${interest.interestId}?agent=${encodeURIComponent(interest.agentName ?? 'this agent')}` as never,
+                )
+              }
+            />
+            <Button title="Revoke access" variant="danger" onPress={onRevoke} loading={busy} />
+          </View>
         ) : null}
       </View>
     </Card>
