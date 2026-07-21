@@ -74,6 +74,8 @@ public class SecurityConfig {
                         UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, PUBLIC_AUTH_PATHS).permitAll()
+                        // token-gated image reads (avatars) — the token is the authz
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/user-files/**").permitAll()
                         .requestMatchers("/actuator/health/**", "/v3/api-docs/**",
                                 "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")

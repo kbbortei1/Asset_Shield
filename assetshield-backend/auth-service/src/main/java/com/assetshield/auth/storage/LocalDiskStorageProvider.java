@@ -39,7 +39,9 @@ public class LocalDiskStorageProvider implements StorageProvider {
 
     @Override
     public String signedUrl(String objectPath, Duration ttl) {
-        return "/api/v1/public/files/" + tokenStore.issue(objectPath, ttl);
+        // auth-service's own public namespace — /public/files/** is routed to
+        // property-service at the gateway, so auth cannot reuse that path.
+        return "/api/v1/public/user-files/" + tokenStore.issue(objectPath, ttl);
     }
 
     @Override
