@@ -5,6 +5,7 @@ import com.assetshield.notification.config.AppProperties;
 import com.assetshield.notification.domain.MaintenanceReminder;
 import com.assetshield.notification.domain.NotificationType;
 import com.assetshield.notification.domain.RedocReminder;
+import com.assetshield.notification.domain.Season;
 import com.assetshield.notification.domain.Tip;
 import com.assetshield.notification.domain.TipsFrequency;
 import com.assetshield.notification.repo.MaintenanceReminderRepository;
@@ -119,9 +120,7 @@ public class SchedulerService {
                 }
                 dispatchService.dispatch(property.ownerUserId(), NotificationType.REDOC_REMINDER,
                         "Time to refresh your documentation",
-                        "It's been over " + staleDays + " days since you documented "
-                                + property.name()
-                                + " — prices and stock change; update your evidence.",
+                        redocBody(property.name(), staleDays),
                         Map.of("propertyId", property.propertyId().toString()));
                 if (reminder == null) {
                     redocReminderRepository.save(new RedocReminder(property.propertyId(), clock.instant()));
@@ -176,6 +175,25 @@ public class SchedulerService {
                 page++;
             } while (page < duePage.totalPages());
         }
+    }
+
+    /**
+     * The nudge lands harder when it names the risk that is actually coming: in
+     * April-July it is the rains, in November-March the Harmattan fire weeks.
+     * Outside both, fall back to the plain reason to re-document.
+     */
+    private String redocBody(String propertyName, int staleDays) {
+        String where = propertyName.length() > 120 ? propertyName.substring(0, 117) + "..." : propertyName;
+        Season season = Season.forDate(LocalDate.now(clock));
+        String why;
+        if (season == Season.RAINY) {
+            why = " The rains are here, and photos taken before any flooding are what make a water-damage claim succeed.";
+        } else if (season == Season.HARMATTAN) {
+            why = " Harmattan is the fire season, so make sure your evidence is current before the driest weeks.";
+        } else {
+            why = " Prices and stock change, so refresh your evidence.";
+        }
+        return "It's been over " + staleDays + " days since you documented " + where + "." + why;
     }
 
     /** notifications.body is VARCHAR(500) — keep the description contribution bounded. */
