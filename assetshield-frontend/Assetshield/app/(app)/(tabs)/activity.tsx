@@ -14,6 +14,7 @@ import {
   GatedNotice,
   ListScreen,
   ListSkeleton,
+  NotificationBell,
   Screen,
   SectionHeader,
   StatusBadge,
@@ -26,6 +27,16 @@ import { colors, spacing } from '@/theme';
 export default function ActivityTab() {
   const { user } = useAuth();
   return user?.role === 'AGENT' ? <AgentActivity /> : <OwnerActivity />;
+}
+
+/** Screen title row with the always-visible alerts bell on the right. */
+function TitleWithBell({ title }: { title: string }) {
+  return (
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Text variant="headlineLgMobile">{title}</Text>
+      <NotificationBell />
+    </View>
+  );
 }
 
 function dossierBadge(status?: DossierStatus): { status: AssetStatus; label: string } {
@@ -102,7 +113,7 @@ function OwnerActivity() {
       keyExtractor={(d) => d.id}
       refreshing={dossiers.isRefetching}
       onRefresh={() => { dossiers.refetch(); quotes.refetch(); }}
-      header={<Text variant="headlineLgMobile">Dossiers</Text>}
+      header={<TitleWithBell title="Dossiers" />}
       footer={footer}
       renderItem={({ item: d, index }) => {
         const b = dossierBadge(d.status);
@@ -210,10 +221,20 @@ function AgentActivity() {
       keyExtractor={(s) => s.dossierId}
       refreshing={shared.isRefetching}
       onRefresh={() => { shared.refetch(); quotes.refetch(); }}
-      header={<Text variant="headlineLgMobile">Shared dossiers</Text>}
+      header={<TitleWithBell title="Shared dossiers" />}
       footer={footer}
       renderItem={({ item: s }) => (
-        <Card onPress={() => router.push(`/(app)/agent/dossier/${s.dossierId}` as never)}>
+        <Card
+          onPress={() => {
+            const qs = new URLSearchParams({
+              property: s.propertyName ?? 'Dossier',
+              owner: s.ownerName ?? 'Owner',
+              ...(s.disasterType ? { disaster: s.disasterType } : {}),
+              ...(s.totalEstimatedLoss != null ? { loss: String(s.totalEstimatedLoss) } : {}),
+            }).toString();
+            router.push(`/(app)/agent/dossier/${s.dossierId}?${qs}` as never);
+          }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
             <Ionicons name="folder-open" size={26} color={colors.primary} />
             <View style={{ flex: 1 }}>

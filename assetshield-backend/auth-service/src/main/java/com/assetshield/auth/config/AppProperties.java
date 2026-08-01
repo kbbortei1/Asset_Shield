@@ -7,7 +7,6 @@ public record AppProperties(
         Jwt jwt,
         Refresh refresh,
         Otp otp,
-        Sms sms,
         String internalApiKey,
         String marketplaceServiceUri,
         String notificationServiceUri,
@@ -25,10 +24,8 @@ public record AppProperties(
     public record Refresh(long ttlDays) {
     }
 
-    public record Otp(long ttlSeconds, int maxAttempts, long resendIntervalSeconds, String devCode) {
-    }
-
-    public record Sms(String provider) {
+    public record Otp(long ttlSeconds, int maxAttempts, long resendIntervalSeconds, String devCode,
+                      String channel, String fromEmail) {
     }
 
     public record Superadmin(String phone, String password) {

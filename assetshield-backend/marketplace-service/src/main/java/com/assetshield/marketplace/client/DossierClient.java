@@ -35,6 +35,10 @@ public class DossierClient {
                                 int photoCount, List<Mismatch> mismatches) {
     }
 
+    /** Mirror of damage's internal DownloadResponse (signed URL + file name). */
+    public record DossierDownload(String downloadUrl, String fileName) {
+    }
+
     private final RestClient restClient;
     private final Cache<UUID, Optional<DossierMeta>> metaCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofSeconds(60))
@@ -79,6 +83,23 @@ public class DossierClient {
                             ? null : new BigDecimal(String.valueOf(data.get("totalEstimatedLoss"))),
                     data.get("disasterType") == null ? null : String.valueOf(data.get("disasterType")),
                     data.get("generatedAt") == null ? null : String.valueOf(data.get("generatedAt"))));
+        } catch (HttpClientErrorException.NotFound e) {
+            return Optional.empty();
+        }
+    }
+
+    /** Fresh signed download URL for a consented agent. Caller enforces consent. */
+    @SuppressWarnings("unchecked")
+    public Optional<DossierDownload> signedDownload(UUID dossierId) {
+        try {
+            Map<String, Object> body = restClient.get()
+                    .uri("/internal/dossiers/{id}/signed-download", dossierId)
+                    .retrieve()
+                    .body(Map.class);
+            Map<String, Object> data = (Map<String, Object>) body.get("data");
+            return Optional.of(new DossierDownload(
+                    String.valueOf(data.get("downloadUrl")),
+                    String.valueOf(data.get("fileName"))));
         } catch (HttpClientErrorException.NotFound e) {
             return Optional.empty();
         }

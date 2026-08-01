@@ -18,8 +18,7 @@ public final class TestProps {
         return new AppProperties(
                 new AppProperties.Jwt(JWT_SECRET, accessTtlSeconds),
                 new AppProperties.Refresh(14),
-                new AppProperties.Otp(300, 3, 60, DEV_CODE),
-                new AppProperties.Sms("mock"),
+                new AppProperties.Otp(300, 3, 60, DEV_CODE, "log", "test@assetshield.app"),
                 INTERNAL_API_KEY,
                 "http://marketplace-service.invalid",
                 "http://notification-service.invalid",

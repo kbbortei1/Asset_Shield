@@ -28,7 +28,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
         "SUPERADMIN_PHONE=" + TestProps.SUPERADMIN_PHONE,
         "SUPERADMIN_PASSWORD=" + TestProps.SUPERADMIN_PASSWORD,
         "OTP_DEV_CODE=" + TestProps.DEV_CODE,
-        "SMS_PROVIDER=mock",
         "STORAGE_PROVIDER=local",
         "STORAGE_LOCAL_ROOT=target/it-storage-auth-reset"
 })
@@ -52,8 +51,8 @@ class PasswordResetAndPurgeIT {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"phoneNumber":"%s","password":"%s","fullName":"Reset Tester"}
-                                """.formatted(phone, password)))
+                                {"phoneNumber":"%s","email":"r%s@test.app","password":"%s","fullName":"Reset Tester"}
+                                """.formatted(phone, phone.replaceAll("[^0-9]", ""), password)))
                 .andExpect(status().isCreated());
         MvcResult result = mockMvc.perform(post("/api/v1/auth/verify-otp")
                         .contentType(MediaType.APPLICATION_JSON)

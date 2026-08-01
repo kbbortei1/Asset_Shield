@@ -1,0 +1,43 @@
+# Neon override: points each service at its hosted Neon database instead of the
+# local Postgres container. Usage (note the core profile):
+#   docker compose --profile core -f docker-compose.yml -f docker-compose.neon.yml up -d
+# Omit this file to run against the local Postgres container again.
+# SPRING_DATASOURCE_* are standard Spring env names and override application.yml,
+# so no code change is needed. Secrets come from .env (NEON_* vars).
+
+services:
+  auth-service:
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${NEON_DB_HOST}/auth_db?sslmode=require
+      SPRING_DATASOURCE_USERNAME: auth_svc
+      SPRING_DATASOURCE_PASSWORD: ${NEON_AUTH_DB_PASSWORD:?set NEON_AUTH_DB_PASSWORD in .env}
+
+  property-service:
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${NEON_DB_HOST}/property_db?sslmode=require
+      SPRING_DATASOURCE_USERNAME: property_svc
+      SPRING_DATASOURCE_PASSWORD: ${NEON_PROPERTY_DB_PASSWORD:?set NEON_PROPERTY_DB_PASSWORD in .env}
+
+  damage-service:
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${NEON_DB_HOST}/damage_db?sslmode=require
+      SPRING_DATASOURCE_USERNAME: damage_svc
+      SPRING_DATASOURCE_PASSWORD: ${NEON_DAMAGE_DB_PASSWORD:?set NEON_DAMAGE_DB_PASSWORD in .env}
+
+  marketplace-service:
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${NEON_DB_HOST}/marketplace_db?sslmode=require
+      SPRING_DATASOURCE_USERNAME: marketplace_svc
+      SPRING_DATASOURCE_PASSWORD: ${NEON_MARKETPLACE_DB_PASSWORD:?set NEON_MARKETPLACE_DB_PASSWORD in .env}
+
+  notification-service:
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${NEON_DB_HOST}/notification_db?sslmode=require
+      SPRING_DATASOURCE_USERNAME: notification_svc
+      SPRING_DATASOURCE_PASSWORD: ${NEON_NOTIFICATION_DB_PASSWORD:?set NEON_NOTIFICATION_DB_PASSWORD in .env}
+
+  payment-service:
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${NEON_DB_HOST}/payment_db?sslmode=require
+      SPRING_DATASOURCE_USERNAME: payment_svc
+      SPRING_DATASOURCE_PASSWORD: ${NEON_PAYMENT_DB_PASSWORD:?set NEON_PAYMENT_DB_PASSWORD in .env}

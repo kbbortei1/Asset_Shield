@@ -43,20 +43,21 @@ export default function TabsLayout() {
   const marketTitle = isAgent ? 'Leads' : 'Agents';
   const marketIcon = isAgent ? 'pricetags' : 'shield-checkmark';
 
+  // Alerts is intentionally NOT here: the notification bell in every screen's
+  // header carries it now, so the "+" stays focused on actions and shortcuts
+  // rather than doubling as a catch-all navigation drawer.
   const quickActions: QuickAction[] = isOwner
     ? [
         { icon: 'add-circle', label: 'New property', href: '/(app)/property/new' },
         { icon: 'qr-code', label: 'Scan asset label', href: '/(app)/scan' },
         { icon: 'bar-chart', label: 'Analytics', href: '/(app)/analytics' },
         { icon: 'people', label: 'Connections', href: '/(app)/(tabs)/market' },
-        { icon: 'notifications', label: 'Alerts', href: '/(app)/(tabs)/notifications' },
         { icon: 'bulb', label: 'Safety tips', href: '/(app)/tips' },
       ]
     : isAgent
-      ? [
-          { icon: 'notifications', label: 'Alerts', href: '/(app)/(tabs)/notifications' },
-          { icon: 'star', label: 'Subscription', href: '/(app)/subscription' },
-        ]
+      ? // Agents have no "create" actions and reach subscription from their home,
+        // so they get no "+" button at all — a cleaner, less cluttered bar.
+        []
       : [
           { icon: 'megaphone', label: 'Broadcast', href: '/(app)/admin/broadcast' },
           { icon: 'chatbox-ellipses', label: 'Problem reports', href: '/(app)/admin/reports' },

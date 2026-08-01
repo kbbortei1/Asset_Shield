@@ -4,6 +4,7 @@ import com.assetshield.marketplace.common.ApiResponse;
 import com.assetshield.marketplace.security.AuthUser;
 import com.assetshield.marketplace.share.QuoteService;
 import com.assetshield.marketplace.share.ShareService;
+import com.assetshield.marketplace.web.dto.MarketplaceDtos.AgentDownloadView;
 import com.assetshield.marketplace.web.dto.MarketplaceDtos.DossierVerifyView;
 import com.assetshield.marketplace.web.dto.MarketplaceDtos.QuoteCreateRequest;
 import com.assetshield.marketplace.web.dto.MarketplaceDtos.QuoteCreateResponse;
@@ -74,6 +75,14 @@ public class DossierShareController {
                                                  @PathVariable UUID dossierId) {
         return ApiResponse.success(quoteService.verify(user(authentication), dossierId),
                 "Dossier verified");
+    }
+
+    @Operation(summary = "Signed download URL for a shared dossier (agent, active consent required)")
+    @GetMapping("/agent-download")
+    public ApiResponse<AgentDownloadView> agentDownload(Authentication authentication,
+                                                        @PathVariable UUID dossierId) {
+        return ApiResponse.success(shareService.agentDownload(user(authentication), dossierId),
+                "Download link issued");
     }
 
     @Operation(summary = "Issue a policy quote on a shared dossier (agent)")

@@ -101,6 +101,7 @@ public class UserService {
         }
         user.setGhanaCardUrl(null);
         user.setAvatarUrl(null);
+        user.setEmail(null);
         user.setPurgeRequestedAt(now);
         user.setDeletedAt(now);
         user.setStatus(UserStatus.SUSPENDED);

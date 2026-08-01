@@ -13,6 +13,7 @@ export default function Register() {
   const { register } = useAuth();
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('+233');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -25,17 +26,19 @@ export default function Register() {
       setFormError('Please agree to the Terms & Privacy Policy to continue.');
       return;
     }
-    const clientErrors = validateAuthFields({ fullName, phoneNumber, password }, { passwordMinLength: true });
+    const clientErrors = validateAuthFields({ fullName, phoneNumber, email, password }, { passwordMinLength: true });
     setErrors(clientErrors);
     if (Object.keys(clientErrors).length > 0) return;
     setLoading(true);
     try {
-      await register({ fullName, phoneNumber, password });
+      await register({ fullName, phoneNumber, email: email.trim(), password });
       router.push(`/(auth)/otp?phone=${encodeURIComponent(phoneNumber)}` as never);
     } catch (e) {
       if (isApiError(e)) {
         if (e.code === 'PHONE_EXISTS') {
           setFormError('This number already has an account. Please log in.');
+        } else if (e.code === 'EMAIL_EXISTS') {
+          setFormError('This email already has an account. Please log in.');
         } else if (e.fieldErrors) {
           setErrors(e.fieldErrors);
         } else {
@@ -55,7 +58,7 @@ export default function Register() {
       <View style={{ gap: spacing.sm }}>
         <Text variant="headlineLgMobile">Create your account</Text>
         <Text variant="bodyMd" color={colors.textMuted}>
-          We'll send a one-time code to verify your number.
+          We'll email you a one-time code to verify your account.
         </Text>
       </View>
 
@@ -72,6 +75,18 @@ export default function Register() {
           returnKeyType="next"
         />
         <PhoneInput value={phoneNumber} onChangeText={setPhoneNumber} error={errors.phoneNumber} returnKeyType="next" />
+        <Input
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="you@example.com"
+          error={errors.email}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          autoComplete="email"
+          textContentType="emailAddress"
+          returnKeyType="next"
+        />
         <Input
           label="Password"
           value={password}

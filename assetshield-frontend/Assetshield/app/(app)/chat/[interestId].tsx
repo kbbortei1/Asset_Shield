@@ -67,6 +67,8 @@ export default function Chat() {
       <Pressable
         onPress={onSend}
         disabled={!draft.trim() || send.isPending}
+        accessibilityRole="button"
+        accessibilityLabel="Send message"
         style={{
           width: 48,
           height: 48,

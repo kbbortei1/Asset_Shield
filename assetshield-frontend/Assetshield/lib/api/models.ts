@@ -26,7 +26,7 @@ export type TokenPair = { accessToken: string; refreshToken: string };
 export type AuthResult = TokenPair & { expiresInSeconds?: number; user?: UserSummary };
 export type UserSummary = { id: string; fullName: string; role: UserRole; language?: string };
 
-export type RegisterRequest = { phoneNumber: string; password: string; fullName: string };
+export type RegisterRequest = { phoneNumber: string; email: string; password: string; fullName: string };
 export type RegisterAgentRequest = RegisterRequest & { insurerName: string; nicLicenceNo: string };
 export type VerifyOtpRequest = { phoneNumber: string; code: string };
 export type LoginRequest = { phoneNumber: string; password: string };

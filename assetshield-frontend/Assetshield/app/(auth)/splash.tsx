@@ -46,7 +46,7 @@ export default function Splash() {
       <Animated.View style={{ opacity, transform: [{ scale }], alignItems: 'center', gap: spacing.xl }}>
         <Logo size={200} />
         <Text variant="bodyMd" color={colors.textMuted} align="center">
-          Protecting what you&apos;ve built
+          Protect what matters.
         </Text>
       </Animated.View>
     </Pressable>

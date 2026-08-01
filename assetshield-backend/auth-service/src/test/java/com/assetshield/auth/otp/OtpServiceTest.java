@@ -31,12 +31,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class OtpServiceTest {
 
     private static final String PHONE = "+233200000001";
+    private static final String RECIPIENT = "trader@example.com";
 
     @Mock
     OtpCodeRepository repository;
 
     @Mock
-    SmsProvider smsProvider;
+    OtpSender otpSender;
 
     PasswordEncoder encoder = new BCryptPasswordEncoder(4);
 
@@ -44,7 +45,7 @@ class OtpServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new OtpService(repository, smsProvider, encoder, TestProps.appProperties(3600));
+        service = new OtpService(repository, otpSender, encoder, TestProps.appProperties(3600));
     }
 
     private OtpCode activeCode(String code) {
@@ -62,10 +63,10 @@ class OtpServiceTest {
         when(repository.findTopByPhoneNumberAndPurposeAndConsumedAtIsNullOrderByCreatedAtDesc(
                 PHONE, OtpPurpose.REGISTRATION)).thenReturn(Optional.empty());
 
-        service.issue(PHONE, OtpPurpose.REGISTRATION);
+        service.issue(PHONE, OtpPurpose.REGISTRATION, RECIPIENT);
 
         ArgumentCaptor<String> codeCaptor = ArgumentCaptor.forClass(String.class);
-        verify(smsProvider).sendOtp(eq(PHONE), codeCaptor.capture());
+        verify(otpSender).send(eq(RECIPIENT), codeCaptor.capture());
         assertThat(codeCaptor.getValue()).matches("\\d{6}");
 
         ArgumentCaptor<OtpCode> otpCaptor = ArgumentCaptor.forClass(OtpCode.class);
@@ -82,10 +83,10 @@ class OtpServiceTest {
         when(repository.findTopByPhoneNumberAndPurposeAndConsumedAtIsNullOrderByCreatedAtDesc(
                 PHONE, OtpPurpose.REGISTRATION)).thenReturn(Optional.of(recent));
 
-        assertThatThrownBy(() -> service.issue(PHONE, OtpPurpose.REGISTRATION))
+        assertThatThrownBy(() -> service.issue(PHONE, OtpPurpose.REGISTRATION, RECIPIENT))
                 .isInstanceOfSatisfying(ApiException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.OTP_THROTTLED));
-        verify(smsProvider, never()).sendOtp(any(), any());
+        verify(otpSender, never()).send(any(), any());
     }
 
     @Test
@@ -95,9 +96,9 @@ class OtpServiceTest {
         when(repository.findTopByPhoneNumberAndPurposeAndConsumedAtIsNullOrderByCreatedAtDesc(
                 PHONE, OtpPurpose.REGISTRATION)).thenReturn(Optional.of(old));
 
-        assertThatCode(() -> service.issue(PHONE, OtpPurpose.REGISTRATION)).doesNotThrowAnyException();
+        assertThatCode(() -> service.issue(PHONE, OtpPurpose.REGISTRATION, RECIPIENT)).doesNotThrowAnyException();
         verify(repository).consumeAllActive(eq(PHONE), eq(OtpPurpose.REGISTRATION), any());
-        verify(smsProvider).sendOtp(eq(PHONE), any());
+        verify(otpSender).send(eq(RECIPIENT), any());
     }
 
     @Test

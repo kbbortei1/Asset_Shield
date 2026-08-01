@@ -7,6 +7,7 @@ import { isCompleteGhPhone } from '@/components/ui';
  */
 export type AuthFields = {
   phoneNumber?: string;
+  email?: string;
   password?: string;
   fullName?: string;
   insurerName?: string;
@@ -30,6 +31,9 @@ export function validateAuthFields(
   }
   if (fields.fullName !== undefined && fields.fullName.trim().length < 2) {
     errors.fullName = 'Enter your full name.';
+  }
+  if (fields.email !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email.trim())) {
+    errors.email = 'Enter a valid email address.';
   }
   if (fields.insurerName !== undefined && !fields.insurerName.trim()) {
     errors.insurerName = 'Enter your insurer.';

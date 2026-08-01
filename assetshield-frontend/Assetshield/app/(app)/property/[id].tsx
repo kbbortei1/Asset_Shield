@@ -4,10 +4,9 @@ import { File, Paths } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, Switch, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Switch, View } from 'react-native';
 import { Asset, AssetCategory, isApiError, propertiesApi } from '@/lib/api';
 import {
-  ActionTile,
   Button,
   Card,
   EmptyState,
@@ -107,7 +106,7 @@ export default function PropertyDetail() {
 
   const header = (
     <View style={{ gap: spacing.lg }}>
-      <Header title={p.name} right={isOwner ? <Pressable onPress={() => router.push(`/(app)/property/${propertyId}/edit` as never)}><Ionicons name="create-outline" size={22} color={colors.primary} /></Pressable> : undefined} />
+      <Header title={p.name} right={isOwner ? <Pressable accessibilityRole="button" accessibilityLabel="Edit property" hitSlop={8} onPress={() => router.push(`/(app)/property/${propertyId}/edit` as never)}><Ionicons name="create-outline" size={22} color={colors.primary} /></Pressable> : undefined} />
 
       <Hero>
         <Text variant="labelMd" color={colors.tealMuted}>
@@ -126,24 +125,19 @@ export default function PropertyDetail() {
         <Button title="Report damage" variant="secondary" onPress={() => router.push(`/(app)/damage/new?propertyId=${propertyId}` as never)} />
       </View>
 
-      <View style={{ flexDirection: 'row', gap: spacing.md }}>
-        <ActionTile icon="people" label="Household" onPress={() => router.push(`/(app)/property/${propertyId}/invite` as never)} />
-        <ActionTile icon="bulb" label="Safety tips" onPress={() => router.push(`/(app)/property/${propertyId}/tips` as never)} />
-        <ActionTile icon="alert-circle" label="Reports" onPress={() => router.push(`/(app)/damage/list?propertyId=${propertyId}` as never)} />
-      </View>
-
-      <View style={{ flexDirection: 'row', gap: spacing.md }}>
-        <ActionTile icon="time" label="History" onPress={() => router.push(`/(app)/property/${propertyId}/timeline` as never)} />
-        <ActionTile icon="bar-chart" label="Analytics" onPress={() => router.push('/(app)/analytics' as never)} />
+      {/* One compact, scrollable row instead of two tall grids of tiles — the
+          same destinations, a fraction of the vertical space, so the assets
+          the page is named after appear far sooner. */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+        <ActionPill icon="alert-circle" label="Reports" onPress={() => router.push(`/(app)/damage/list?propertyId=${propertyId}` as never)} />
+        <ActionPill icon="people" label="Household" onPress={() => router.push(`/(app)/property/${propertyId}/invite` as never)} />
+        <ActionPill icon="time" label="History" onPress={() => router.push(`/(app)/property/${propertyId}/timeline` as never)} />
+        <ActionPill icon="bar-chart" label="Analytics" onPress={() => router.push('/(app)/analytics' as never)} />
+        <ActionPill icon="bulb" label="Safety tips" onPress={() => router.push(`/(app)/property/${propertyId}/tips` as never)} />
         {canExport ? (
-          <ActionTile
-            icon="download"
-            label={exporting ? 'Exporting…' : 'Export CSV'}
-            muted={exporting}
-            onPress={exportCsv}
-          />
+          <ActionPill icon="download" label={exporting ? 'Exporting…' : 'Export CSV'} muted={exporting} onPress={exportCsv} />
         ) : null}
-      </View>
+      </ScrollView>
 
       {isOwner ? (
         <Card>
@@ -181,53 +175,50 @@ export default function PropertyDetail() {
 
       {items.length > 0 ? <ValueBreakdown assets={items} /> : null}
 
-      <Card>
-        <View style={{ gap: spacing.sm }}>
-          <AuditRow label="Assets logged" value={String(assetCount)} />
-          <AuditRow label="Tamper-evident photos" value={items.length > 0 ? '100% hashed' : '-'} good={items.length > 0} />
-          <AuditRow
-            label="Last documented"
-            value={p.lastDocumentedAt ? new Date(p.lastDocumentedAt).toLocaleDateString() : 'Not yet'}
-          />
-        </View>
-      </Card>
-
       <SectionHeader
         title="Documented assets"
         actionLabel="Capture"
         onAction={() => router.push(`/(app)/property/${propertyId}/capture` as never)}
       />
 
-      <Input
-        placeholder="Search assets by name…"
-        value={search}
-        onChangeText={setSearch}
-        autoCapitalize="none"
-        returnKeyType="search"
-      />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-        {CATEGORIES.map((c) => {
-          const active = category === c;
-          return (
-            <Pressable
-              key={c}
-              onPress={() => setCategory(active ? undefined : c)}
-              style={{
-                paddingHorizontal: spacing.md,
-                paddingVertical: spacing.xs,
-                borderRadius: radius.xl,
-                borderWidth: 1,
-                borderColor: active ? colors.primary : colors.border,
-                backgroundColor: active ? colors.primary : 'transparent',
-              }}
-            >
-              <Text variant="labelMd" weight="semibold" color={active ? colors.onPrimary : colors.textMuted}>
-                {titleCase(c)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      {/* Search and category filters only earn their space once a property has
+          enough assets to need them; small properties go straight to the grid.
+          Keyed off the property's total (not the filtered count) so an active
+          search can't hide its own controls. */}
+      {assetCount > 6 || filtering ? (
+        <>
+          <Input
+            placeholder="Search assets by name…"
+            value={search}
+            onChangeText={setSearch}
+            autoCapitalize="none"
+            returnKeyType="search"
+          />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            {CATEGORIES.map((c) => {
+              const active = category === c;
+              return (
+                <Pressable
+                  key={c}
+                  onPress={() => setCategory(active ? undefined : c)}
+                  style={{
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: spacing.xs,
+                    borderRadius: radius.xl,
+                    borderWidth: 1,
+                    borderColor: active ? colors.primary : colors.border,
+                    backgroundColor: active ? colors.primary : 'transparent',
+                  }}
+                >
+                  <Text variant="labelMd" weight="semibold" color={active ? colors.onPrimary : colors.textMuted}>
+                    {titleCase(c)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      ) : null}
     </View>
   );
 
@@ -316,19 +307,32 @@ export default function PropertyDetail() {
   );
 }
 
-function AuditRow({ label, value, good }: { label: string; value: string; good?: boolean }) {
+/** Compact horizontal-scroll action: icon chip + label, one line, small footprint. */
+function ActionPill({ icon, label, onPress, muted }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; muted?: boolean }) {
+  const tint = muted ? colors.textMuted : colors.primary;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Text variant="labelMd" color={colors.textMuted}>
-        {label}
-      </Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-        {good ? <Ionicons name="checkmark-circle" size={14} color={colors.success} /> : null}
-        <Text variant="bodyMd" weight="semibold">
-          {value}
-        </Text>
-      </View>
-    </View>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
+      {({ pressed }) => (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.xs,
+            paddingVertical: spacing.sm,
+            paddingHorizontal: spacing.md,
+            borderRadius: radius.xl,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: pressed ? colors.tealTint : colors.card,
+          }}
+        >
+          <Ionicons name={icon} size={16} color={tint} />
+          <Text variant="labelMd" weight="semibold" color={colors.textMuted}>
+            {label}
+          </Text>
+        </View>
+      )}
+    </Pressable>
   );
 }
 

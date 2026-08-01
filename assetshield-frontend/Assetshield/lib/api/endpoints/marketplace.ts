@@ -53,6 +53,8 @@ export const marketplaceApi = {
 
   // quotes
   verifyDossier: (dossierId: string) => api.get<DossierVerification>(`/dossiers/${dossierId}/verify`),
+  agentDownloadDossier: (dossierId: string) =>
+    api.get<{ downloadUrl: string; fileName: string }>(`/dossiers/${dossierId}/agent-download`),
   sendQuote: (dossierId: string, body: CreateQuoteRequest) => api.post<Quote>(`/dossiers/${dossierId}/quote`, body),
   myQuotes: (params?: PageParams) => api.get<Page<Quote>>('/users/me/quotes', { query: params }),
   respondQuote: (quoteId: string, accept: boolean) => api.put<Quote>(`/quotes/${quoteId}/respond`, { accept }),

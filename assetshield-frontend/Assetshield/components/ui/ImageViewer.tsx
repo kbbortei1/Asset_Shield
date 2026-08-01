@@ -98,6 +98,8 @@ function ZoomModal({ uri, onClose }: { uri: string | null; onClose: () => void }
         <Pressable
           onPress={close}
           hitSlop={16}
+          accessibilityRole="button"
+          accessibilityLabel="Close image"
           style={{ position: 'absolute', top: insets.top + 8, right: 16, zIndex: 2, padding: 8 }}
         >
           <Ionicons name="close" size={30} color="#FFFFFF" />

@@ -3,13 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, View } from 'react-native';
 import { isApiError, Lead, marketplaceApi } from '@/lib/api';
-import { Button, Card, Header, Screen, Text } from '@/components/ui';
+import { Button, Card, Header, Screen, Text, useToast } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** CONSENT (beat 4, agent): lead detail + express interest. Leads are 5 fields only. */
 export default function LeadDetail() {
   const { propertyId } = useLocalSearchParams<{ propertyId: string }>();
   const qc = useQueryClient();
+  const { show } = useToast();
   const leads = useQuery({ queryKey: ['leads'], queryFn: () => marketplaceApi.leads({ size: 50 }) });
   const lead: Lead | undefined = leads.data?.items.find((l) => l.propertyId === propertyId);
 
@@ -17,9 +18,8 @@ export default function LeadDetail() {
     mutationFn: () => marketplaceApi.expressInterest(propertyId!),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['agent-interests-mine'] });
-      Alert.alert('Interest sent', 'The owner will be notified. You’ll see updates under your interests.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      show('Interest sent — the owner will be notified');
+      router.back();
     },
     onError: (e) => {
       if (isApiError(e)) {

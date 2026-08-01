@@ -24,6 +24,9 @@ public class User {
     @Column(name = "phone_number", nullable = false, length = 16)
     private String phoneNumber;
 
+    @Column(length = 255)
+    private String email;
+
     @Column(name = "password_hash", nullable = false, length = 100)
     private String passwordHash;
 
@@ -75,6 +78,14 @@ public class User {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getPasswordHash() {

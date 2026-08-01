@@ -190,6 +190,28 @@ public class DossierService {
                 fileName);
     }
 
+    /**
+     * Signed download for a consented agent. The caller (marketplace) has
+     * already enforced an active, unrevoked share, so there is no owner check
+     * here — only the READY gate, mirroring {@link #download}. A fresh signed
+     * URL is minted each call, so a revoked agent (who can no longer reach this
+     * path) cannot mint a new one.
+     */
+    @Transactional(readOnly = true)
+    public DownloadResponse signedDownloadForShared(UUID dossierId) {
+        Dossier dossier = dossierRepository.findById(dossierId)
+                .filter(d -> d.getStatus() == DossierStatus.READY)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Dossier not found"));
+        DamageReport report = guard.requireReport(dossier.getDamageReportId());
+        String propertyName = propertyClient.property(report.getPropertyId())
+                .map(PropertyInternalClient.PropertyInfo::name)
+                .orElse("Property");
+        String fileName = "AssetShield_Dossier_" + propertyName.replaceAll("[^A-Za-z0-9]+", "")
+                + "_" + FILE_DATE.format(dossier.getGeneratedAt()) + ".pdf";
+        return new DownloadResponse(storageProvider.signedUrl(dossier.getFileUrl(), signedUrlTtl),
+                fileName);
+    }
+
     /** Public share link: READY only — every other state is an opaque 404. */
     @Transactional(readOnly = true)
     public SharedResponse shared(UUID shareToken) {

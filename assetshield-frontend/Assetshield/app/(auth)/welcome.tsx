@@ -1,39 +1,45 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useRef } from 'react';
-import { Animated, useWindowDimensions, View } from 'react-native';
-import { Logo } from '@/components/brand/Logo';
-import { Button, Screen, Text } from '@/components/ui';
-import { colors, radius, spacing } from '@/theme';
+import { Animated, Pressable, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Button, Text } from '@/components/ui';
+import { spacing } from '@/theme';
 
-type Slide = {
-  key: string;
-  icon?: keyof typeof Ionicons.glyphMap;
-  tint?: string;
-  title: string;
-  body: string;
-  brand?: boolean; // first slide shows the logo instead of an icon
-};
+const EMBLEM = require('@/assets/images/logo-emblem-clean.png');
 
-/** Swipeable intro shown after the splash, before sign-in. */
+/**
+ * Launch onboarding: three illustrated slides (store → prove → recover). The
+ * artwork is a full-bleed image that fades into the cream base; the wordmark,
+ * title, body, dots and buttons are all native so they stay crisp, tappable and
+ * translatable. This screen is deliberately locked to the light brand palette so
+ * the warm illustrations always sit on matching cream, regardless of theme.
+ */
+const CREAM = '#F6F5F1';
+const INK = '#11252B';
+const MUTED = '#5C6B70';
+const TEAL = '#0E5A52';
+const GOLD = '#F4A93C';
+
+type Slide = { key: string; image: number; title: string; body: string };
+
 const SLIDES: Slide[] = [
   {
     key: 'store',
-    brand: true,
+    image: require('@/assets/images/onboarding-1.png'),
     title: 'Your digital safety deposit box',
     body: 'Document what you own: photos, receipts and values, all in one secure place on your phone.',
   },
   {
     key: 'prove',
-    icon: 'shield-checkmark',
-    tint: colors.primary,
+    image: require('@/assets/images/onboarding-2.png'),
     title: 'Prove what you lost',
     body: 'Every photo is hashed into tamper-evident evidence, time-stamped and ready to stand behind a claim.',
   },
   {
     key: 'recover',
-    icon: 'flash',
-    tint: colors.cta,
+    image: require('@/assets/images/onboarding-3.png'),
     title: 'Recover faster',
     body: 'Generate a claim dossier and connect with verified insurers in minutes, not weeks.',
   },
@@ -41,10 +47,11 @@ const SLIDES: Slide[] = [
 
 export default function Welcome() {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const scrollX = useRef(new Animated.Value(0)).current;
 
   return (
-    <Screen scroll={false} padded={false} contentStyle={{ flex: 1, gap: spacing.xl }}>
+    <View style={{ flex: 1, backgroundColor: CREAM }}>
       <Animated.ScrollView
         horizontal
         pagingEnabled
@@ -54,31 +61,23 @@ export default function Welcome() {
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: true })}
       >
         {SLIDES.map((s) => (
-          <View
-            key={s.key}
-            style={{ width, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl, gap: spacing.xl }}
-          >
-            {s.brand ? (
-              <Logo size={96} />
-            ) : (
-              <View
-                style={{
-                  width: 132,
-                  height: 132,
-                  borderRadius: radius.pill,
-                  backgroundColor: colors.tealTint,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Ionicons name={s.icon!} size={60} color={s.tint} />
-              </View>
-            )}
-            <View style={{ gap: spacing.sm }}>
-              <Text variant="headlineLgMobile" align="center">
+          <View key={s.key} style={{ width }}>
+            {/* full-bleed illustration, fading into the cream base */}
+            <View style={{ flex: 5 }}>
+              <Image source={s.image} style={{ width: '100%', height: '100%' }} contentFit="cover" contentPosition="top" />
+              <LinearGradient
+                colors={['rgba(246,245,241,0)', CREAM]}
+                style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '30%' }}
+              />
+            </View>
+
+            {/* native brand lockup + copy */}
+            <View style={{ flex: 4, paddingHorizontal: spacing.xl, gap: spacing.md }}>
+              <BrandLockup />
+              <Text variant="headlineLg" align="center" color={INK} style={{ fontSize: 30, lineHeight: 38 }}>
                 {s.title}
               </Text>
-              <Text variant="bodyLg" color={colors.textMuted} align="center">
+              <Text variant="bodyMd" align="center" color={MUTED}>
                 {s.body}
               </Text>
             </View>
@@ -86,20 +85,61 @@ export default function Welcome() {
         ))}
       </Animated.ScrollView>
 
-      <Dots count={SLIDES.length} width={width} scrollX={scrollX} />
+      {/* skip — sits over the top of the artwork */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Skip introduction"
+        hitSlop={12}
+        onPress={() => router.replace('/(auth)/role' as never)}
+        style={{ position: 'absolute', top: insets.top + spacing.sm, right: spacing.xl, padding: spacing.xs }}
+      >
+        <Text variant="labelMd" weight="semibold" color={MUTED}>
+          Skip
+        </Text>
+      </Pressable>
 
-      <View style={{ gap: spacing.md, paddingHorizontal: spacing.screenPadding }}>
+      {/* shared footer: dots + actions */}
+      <View style={{ paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + spacing.lg, gap: spacing.md }}>
+        <Dots count={SLIDES.length} width={width} scrollX={scrollX} />
         <Button title="Get started" onPress={() => router.push('/(auth)/role' as never)} />
-        <Button title="I already have an account" variant="ghost" onPress={() => router.push('/(auth)/login' as never)} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="I already have an account"
+          onPress={() => router.push('/(auth)/login' as never)}
+          style={{ alignItems: 'center', paddingVertical: spacing.sm }}
+        >
+          <Text variant="bodyMd" weight="semibold" color={TEAL}>
+            I already have an account
+          </Text>
+        </Pressable>
       </View>
-    </Screen>
+    </View>
+  );
+}
+
+/** Emblem + wordmark + tagline, centred — the same lockup on every slide. */
+function BrandLockup() {
+  return (
+    <View style={{ alignItems: 'center', gap: 2 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <Image source={EMBLEM} style={{ width: 30, height: 30 }} contentFit="contain" />
+        <Text variant="headlineSm" color={TEAL}>
+          AssetShield
+        </Text>
+        <Text variant="labelMd" weight="semibold" color={GOLD} style={{ fontSize: 11 }}>
+          GH
+        </Text>
+      </View>
+      <Text variant="labelMd" color={GOLD} style={{ letterSpacing: 1 }}>
+        Protect what matters.
+      </Text>
+    </View>
   );
 }
 
 /**
  * Animated page indicator — the active dot stretches into a pill. Uses scaleX
- * (not width) so it can run on the native driver alongside the scroll value;
- * the native animated module doesn't support animating layout props like width.
+ * (not width) so it runs on the native driver alongside the scroll value.
  */
 function Dots({ count, width, scrollX }: { count: number; width: number; scrollX: Animated.Value }) {
   return (
@@ -107,11 +147,11 @@ function Dots({ count, width, scrollX }: { count: number; width: number; scrollX
       {Array.from({ length: count }).map((_, i) => {
         const inputRange = [(i - 1) * width, i * width, (i + 1) * width];
         const scaleX = scrollX.interpolate({ inputRange, outputRange: [1, 3, 1], extrapolate: 'clamp' });
-        const opacity = scrollX.interpolate({ inputRange, outputRange: [0.35, 1, 0.35], extrapolate: 'clamp' });
+        const opacity = scrollX.interpolate({ inputRange, outputRange: [0.3, 1, 0.3], extrapolate: 'clamp' });
         return (
           <Animated.View
             key={i}
-            style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, opacity, transform: [{ scaleX }] }}
+            style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: TEAL, opacity, transform: [{ scaleX }] }}
           />
         );
       })}

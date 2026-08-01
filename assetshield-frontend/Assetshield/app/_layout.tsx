@@ -31,7 +31,7 @@ SplashScreen.preventAutoHideAsync();
 // them, making this a fast no-op.) Fire-and-forget: failures just mean the
 // old lazy behavior.
 Asset.loadAsync([
-  require('@/assets/images/logo-emblem.png'),
+  require('@/assets/images/logo-emblem-clean.png'),
   require('@/assets/images/background1.jpg'),
   require('@/assets/images/background2.jpg'),
   require('@/assets/images/background3.jpg'),

@@ -16,6 +16,7 @@ import com.assetshield.marketplace.repo.AgentInterestRepository;
 import com.assetshield.marketplace.repo.DossierShareRepository;
 import com.assetshield.marketplace.repo.InsuranceAgentRepository;
 import com.assetshield.marketplace.security.AuthUser;
+import com.assetshield.marketplace.web.dto.MarketplaceDtos;
 import com.assetshield.marketplace.web.dto.MarketplaceDtos.RevokeShareResponse;
 import com.assetshield.marketplace.web.dto.MarketplaceDtos.ShareResponse;
 import com.assetshield.marketplace.web.dto.MarketplaceDtos.SharedDossierItem;
@@ -160,6 +161,22 @@ public class ShareService {
                 meta.map(DossierClient.DossierMeta::disasterType).orElse(null),
                 meta.map(DossierClient.DossierMeta::totalEstimatedLoss).orElse(null),
                 share.getConsentAt());
+    }
+
+    /**
+     * Agent-facing dossier download. Gated by the same active-consent re-check
+     * as every other agent read, then a fresh signed URL is minted by
+     * damage-service per call — so a revoked agent (who 404s at the gate) can
+     * never obtain a new link. This is what lets an agent actually open the
+     * shared dossier PDF, not just its integrity receipt.
+     */
+    @Transactional(readOnly = true)
+    public MarketplaceDtos.AgentDownloadView agentDownload(AuthUser user, UUID dossierId) {
+        requireActiveShare(user, dossierId);
+        DossierClient.DossierDownload dl = dossierClient.signedDownload(dossierId)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,
+                        "Dossier is not available for download"));
+        return new MarketplaceDtos.AgentDownloadView(dl.downloadUrl(), dl.fileName());
     }
 
     /**

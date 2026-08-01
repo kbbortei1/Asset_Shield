@@ -14,6 +14,7 @@ export default function RegisterAgent() {
   const [form, setForm] = useState({
     fullName: '',
     phoneNumber: '+233',
+    email: '',
     password: '',
     insurerName: '',
     nicLicenceNo: '',
@@ -35,6 +36,7 @@ export default function RegisterAgent() {
       {
         fullName: form.fullName,
         phoneNumber: form.phoneNumber,
+        email: form.email,
         password: form.password,
         insurerName: form.insurerName,
         nicLicenceNo: form.nicLicenceNo,
@@ -45,11 +47,12 @@ export default function RegisterAgent() {
     if (Object.keys(clientErrors).length > 0) return;
     setLoading(true);
     try {
-      await registerAgent(form);
+      await registerAgent({ ...form, email: form.email.trim() });
       router.push(`/(auth)/otp?phone=${encodeURIComponent(form.phoneNumber)}` as never);
     } catch (e) {
       if (isApiError(e)) {
         if (e.code === 'PHONE_EXISTS') setFormError('This number already has an account. Please log in.');
+        else if (e.code === 'EMAIL_EXISTS') setFormError('This email already has an account. Please log in.');
         else if (e.code === 'LICENCE_EXISTS') setErrors({ nicLicenceNo: 'This licence number is already registered.' });
         else if (e.fieldErrors) setErrors(e.fieldErrors);
         else setFormError(e.message);
@@ -67,13 +70,14 @@ export default function RegisterAgent() {
       <View style={{ gap: spacing.sm }}>
         <Text variant="headlineLgMobile">Agent registration</Text>
         <Text variant="bodyMd" color={colors.textMuted}>
-          After you verify your phone, an admin reviews your licence before you can access leads.
+          After you verify your email, an admin reviews your licence before you can access leads.
         </Text>
       </View>
 
       <View style={{ gap: spacing.lg, marginTop: spacing.sm }}>
         <Input label="Full name" value={form.fullName} onChangeText={set('fullName')} autoCapitalize="words" error={errors.fullName} />
         <PhoneInput value={form.phoneNumber} onChangeText={set('phoneNumber')} error={errors.phoneNumber} />
+        <Input label="Email" value={form.email} onChangeText={set('email')} placeholder="you@example.com" autoCapitalize="none" keyboardType="email-address" autoComplete="email" textContentType="emailAddress" error={errors.email} />
         <Input label="Password" value={form.password} onChangeText={set('password')} secureTextEntry error={errors.password} />
         <Input label="Insurer" value={form.insurerName} onChangeText={set('insurerName')} placeholder="e.g. Hollard Ghana" error={errors.insurerName} />
         <Input label="NIC licence number" value={form.nicLicenceNo} onChangeText={set('nicLicenceNo')} placeholder="NIC-12345" autoCapitalize="characters" error={errors.nicLicenceNo} />

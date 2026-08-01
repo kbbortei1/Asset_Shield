@@ -83,7 +83,7 @@ spring:
             - id: marketplace-service-dossier-actions
               uri: ${MARKETPLACE_SERVICE_URI:http://marketplace-service:8084}
               predicates:
-                - Path=/api/v1/dossiers/*/share-to-agent/**,/api/v1/dossiers/*/verify,/api/v1/dossiers/*/quote
+                - Path=/api/v1/dossiers/*/share-to-agent/**,/api/v1/dossiers/*/verify,/api/v1/dossiers/*/quote,/api/v1/dossiers/*/agent-download
 
             - id: damage-service-dossiers
               uri: ${DAMAGE_SERVICE_URI:http://damage-service:8083}

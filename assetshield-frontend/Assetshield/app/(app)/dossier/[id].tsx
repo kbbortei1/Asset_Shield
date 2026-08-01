@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Alert, View } from 'react-native';
 import { damageApi, DossierStatus, isApiError, resolveMediaUrl } from '@/lib/api';
 import { runCheckout } from '@/lib/payments/checkout';
-import { Button, Card, ErrorState, Header, Hero, Loading, Screen, Text } from '@/components/ui';
+import { Button, Card, ErrorState, Header, Hero, Loading, Screen, Text, useToast } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** DOSSIER (beat 3) + CONTROL (beat 5): pay → poll → download → share/rotate. */
@@ -16,6 +16,7 @@ export default function DossierScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const dossierId = id!;
   const qc = useQueryClient();
+  const { show } = useToast();
   const [paying, setPaying] = useState(false);
 
   const q = useQuery({
@@ -77,7 +78,7 @@ export default function DossierScreen() {
 
   const rotate = useMutation({
     mutationFn: () => damageApi.rotateShareToken(dossierId),
-    onSuccess: () => Alert.alert('Link rotated', 'Any previously shared public link no longer works.'),
+    onSuccess: () => show('Share link rotated — old links no longer work'),
     onError: (e) => Alert.alert('Could not rotate', isApiError(e) ? e.message : 'Try again.'),
   });
 

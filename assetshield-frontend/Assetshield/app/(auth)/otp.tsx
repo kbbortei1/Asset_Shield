@@ -64,7 +64,7 @@ export default function Otp() {
       <View style={{ gap: spacing.sm }}>
         <Text variant="headlineLgMobile">Enter your code</Text>
         <Text variant="bodyMd" color={colors.textMuted}>
-          We sent a 6-digit code to {phoneNumber || 'your phone'}.
+          We sent a 6-digit code to your email. Enter it below to verify your account.
         </Text>
       </View>
 

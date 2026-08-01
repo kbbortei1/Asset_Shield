@@ -69,8 +69,8 @@ export default function ForgotPassword() {
         <Text variant="headlineLgMobile">Reset your password</Text>
         <Text variant="bodyMd" color={colors.textMuted}>
           {step === 'phone'
-            ? "Enter your phone number and we'll text you a reset code."
-            : `Enter the code we sent to ${phoneNumber} and choose a new password.`}
+            ? "Enter your phone number and we'll email you a reset code."
+            : 'Enter the code we sent to your email and choose a new password.'}
         </Text>
       </View>
 

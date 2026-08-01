@@ -31,7 +31,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
         "SUPERADMIN_PHONE=" + TestProps.SUPERADMIN_PHONE,
         "SUPERADMIN_PASSWORD=" + TestProps.SUPERADMIN_PASSWORD,
         "OTP_DEV_CODE=" + TestProps.DEV_CODE,
-        "SMS_PROVIDER=mock",
         "STORAGE_PROVIDER=local",
         "STORAGE_LOCAL_ROOT=target/it-storage-auth"
 })
@@ -51,12 +50,17 @@ class AuthFlowIT {
 
     // â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+    /** A unique email per phone so the ux_users_email constraint is satisfied. */
+    private static String emailFor(String phone) {
+        return "u" + phone.replaceAll("[^0-9]", "") + "@test.assetshield.app";
+    }
+
     private JsonNode register(String phone, String password, String fullName) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"phoneNumber":"%s","password":"%s","fullName":"%s"}
-                                """.formatted(phone, password, fullName)))
+                                {"phoneNumber":"%s","email":"%s","password":"%s","fullName":"%s"}
+                                """.formatted(phone, emailFor(phone), password, fullName)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.data.userId").isNotEmpty())
@@ -201,8 +205,8 @@ class AuthFlowIT {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"phoneNumber":"%s","password":"Password#1","fullName":"Esi Arthur"}
-                                """.formatted(phone)))
+                                {"phoneNumber":"%s","email":"%s","password":"Password#1","fullName":"Esi Arthur"}
+                                """.formatted(phone, emailFor(phone))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value("error"))
                 .andExpect(jsonPath("$.data.errorCode").value("PHONE_EXISTS"))
@@ -218,8 +222,8 @@ class AuthFlowIT {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"phoneNumber":"%s","password":"Password#2","fullName":"Second Name"}
-                                """.formatted(phone)))
+                                {"phoneNumber":"%s","email":"%s","password":"Password#2","fullName":"Second Name"}
+                                """.formatted(phone, emailFor(phone))))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.data.errorCode").value("OTP_THROTTLED"));
     }

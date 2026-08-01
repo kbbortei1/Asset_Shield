@@ -7,10 +7,10 @@ import { Pressable, View } from 'react-native';
 import { Property, marketplaceApi, notificationsApi, propertiesApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { PropertyCard } from '@/components/cards/PropertyCard';
-import { AnimatedItem, Button, Card, EmptyState, ErrorState, Hero, ListScreen, ListSkeleton, Loading, Screen, Text, formatCedis } from '@/components/ui';
+import { AnimatedItem, Button, Card, EmptyState, ErrorState, Hero, ListScreen, ListSkeleton, Loading, NotificationBell, Screen, Text, formatCedis } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
-const EMBLEM = require('@/assets/images/logo-emblem.png');
+const EMBLEM = require('@/assets/images/logo-emblem-clean.png');
 
 export default function HomeTab() {
   const { user } = useAuth();
@@ -59,7 +59,10 @@ function Greeting({ subtitle }: { subtitle: string }) {
   const firstName = user?.fullName?.split(' ')[0] ?? 'there';
   return (
     <View style={{ gap: 2 }}>
-      <BrandBar />
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <BrandBar />
+        <NotificationBell />
+      </View>
       <Text variant="labelMd" color={colors.textMuted} style={{ marginTop: spacing.md }}>
         Akwaaba
       </Text>
@@ -310,6 +313,43 @@ function StatusPanel({
   );
 }
 
+/**
+ * A tap-through count card for the agent hub. Turns the thin agent landing into
+ * a "what needs me today" dashboard without adding any navigation.
+ */
+function AgentStat({ icon, value, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; value: number; label: string; onPress: () => void }) {
+  const active = value > 0;
+  return (
+    <Pressable onPress={onPress} style={{ flex: 1 }}>
+      <Card style={{ gap: 4, minHeight: 96 }}>
+        <Ionicons name={icon} size={20} color={active ? colors.primary : colors.textMuted} />
+        <Text variant="headlineMd" color={active ? colors.text : colors.textMuted}>
+          {value}
+        </Text>
+        <Text variant="labelMd" color={colors.textMuted} numberOfLines={2}>
+          {label}
+        </Text>
+      </Card>
+    </Pressable>
+  );
+}
+
+/** The "what needs me today" row for a verified, subscribed agent. */
+function AgentDashboard() {
+  const leads = useQuery({ queryKey: ['leads'], queryFn: () => marketplaceApi.leads({ size: 1 }) });
+  const shared = useQuery({ queryKey: ['shared-dossiers'], queryFn: () => marketplaceApi.sharedDossiers({ size: 1 }) });
+  const quotes = useQuery({ queryKey: ['agent-quotes'], queryFn: () => marketplaceApi.myQuotes({ size: 50 }) });
+  const pendingQuotes = (quotes.data?.items ?? []).filter((qt) => qt.status === 'PENDING').length;
+
+  return (
+    <View style={{ flexDirection: 'row', gap: spacing.md }}>
+      <AgentStat icon="pricetags" value={leads.data?.totalElements ?? 0} label="Leads available" onPress={() => router.push('/(app)/(tabs)/market' as never)} />
+      <AgentStat icon="folder-open" value={shared.data?.totalElements ?? 0} label="Dossiers to review" onPress={() => router.push('/(app)/(tabs)/activity' as never)} />
+      <AgentStat icon="cash" value={pendingQuotes} label="Quotes awaiting reply" onPress={() => router.push('/(app)/(tabs)/activity' as never)} />
+    </View>
+  );
+}
+
 /** Stitch: agent landing (from "Agent Registration & Verification" / leads). */
 function AgentHome() {
   const q = useQuery({ queryKey: ['agent', 'me'], queryFn: () => marketplaceApi.agentMe() });
@@ -319,45 +359,53 @@ function AgentHome() {
   const agent = q.data!;
   const verificationStatus = agent.verificationStatus ?? agent.status;
   const verified = verificationStatus === 'VERIFIED';
+  const unlocked = verified && agent.subscription?.status === 'ACTIVE';
 
   return (
     <Screen refreshing={q.isRefetching} onRefresh={q.refetch}>
       <Greeting subtitle={agent.insurerName ? `${agent.insurerName} agent` : 'Insurance agent'} />
 
-      {!verified ? (
-        <StatusPanel
-          icon={verificationStatus === 'REJECTED' ? 'close-circle' : 'hourglass'}
-          tone={verificationStatus === 'REJECTED' ? 'danger' : 'pending'}
-          eyebrow="Agent account"
-          title={verificationStatus === 'REJECTED' ? 'Application not approved' : 'Awaiting verification'}
-          body={
-            verificationStatus === 'REJECTED'
-              ? agent.rejectionReason ?? 'Please contact support for details.'
-              : 'An admin is reviewing your NIC licence. You can browse leads once approved.'
-          }
-        />
+      {unlocked ? (
+        // Active agent: the dashboard IS the status. A slim manage link keeps the
+        // page focused on the work rather than repeating an "Active" banner.
+        <>
+          <AgentDashboard />
+          <Button title="Manage subscription" variant="secondary" onPress={() => router.push('/(app)/subscription' as never)} />
+        </>
       ) : (
-        <StatusPanel
-          icon={agent.subscription?.status === 'ACTIVE' ? 'checkmark-circle' : 'lock-closed'}
-          tone={agent.subscription?.status === 'ACTIVE' ? 'active' : 'pending'}
-          eyebrow="Subscription"
-          title={agent.subscription?.status === 'ACTIVE' ? 'Active' : 'Not subscribed'}
-          body={
-            agent.subscription?.status === 'ACTIVE'
-              ? 'You have full access to owner leads and shared dossiers.'
-              : 'Subscribe to unlock owner leads and receive shared dossiers.'
-          }
-        />
+        <>
+          {!verified ? (
+            <StatusPanel
+              icon={verificationStatus === 'REJECTED' ? 'close-circle' : 'hourglass'}
+              tone={verificationStatus === 'REJECTED' ? 'danger' : 'pending'}
+              eyebrow="Agent account"
+              title={verificationStatus === 'REJECTED' ? 'Application not approved' : 'Awaiting verification'}
+              body={
+                verificationStatus === 'REJECTED'
+                  ? agent.rejectionReason ?? 'Please contact support for details.'
+                  : 'An admin is reviewing your NIC licence. You can browse leads once approved.'
+              }
+            />
+          ) : (
+            <StatusPanel
+              icon="lock-closed"
+              tone="pending"
+              eyebrow="Subscription"
+              title="Not subscribed"
+              body="Subscribe to unlock owner leads and receive shared dossiers."
+            />
+          )}
+          <View style={{ gap: spacing.md }}>
+            <Button title="Browse leads" disabled={!verified} onPress={() => router.push('/(app)/(tabs)/market' as never)} />
+            <Button
+              title="Subscribe"
+              variant="primary"
+              disabled={!verified}
+              onPress={() => router.push('/(app)/subscription' as never)}
+            />
+          </View>
+        </>
       )}
-
-      <View style={{ gap: spacing.md }}>
-        <Button title="Browse leads" disabled={!verified} onPress={() => router.push('/(app)/(tabs)/market' as never)} />
-        <Button
-          title={agent.subscription?.status === 'ACTIVE' ? 'Manage subscription' : 'Subscribe'}
-          variant={agent.subscription?.status === 'ACTIVE' ? 'secondary' : 'primary'}
-          onPress={() => router.push('/(app)/subscription' as never)}
-        />
-      </View>
     </Screen>
   );
 }

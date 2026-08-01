@@ -7,7 +7,7 @@ import { damageApi, DamagePhoto, isApiError, PairingSuggestion } from '@/lib/api
 import { CapturedImage, getLocationFix, LocationFix, PermissionError, pickImage } from '@/lib/media/capture';
 import { uploadDamagePhoto } from '@/lib/media/uploads';
 import { useOffline } from '@/lib/offline/OfflineProvider';
-import { Button, Card, EmptyState, EvidencePhoto, Header, Input, LocationConfirm, RemoteImage, Screen, Text } from '@/components/ui';
+import { Button, Card, EmptyState, EvidencePhoto, Header, Input, LocationConfirm, RemoteImage, Screen, Text, useToast } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 type Phase = 'capture' | 'pairing';
@@ -18,6 +18,7 @@ export default function CaptureDamage() {
   const reportId = id!;
   const qc = useQueryClient();
   const { refreshPending } = useOffline();
+  const { show } = useToast();
 
   const [phase, setPhase] = useState<Phase>('capture');
   const [image, setImage] = useState<CapturedImage | null>(null);
@@ -57,9 +58,11 @@ export default function CaptureDamage() {
       qc.invalidateQueries({ queryKey: ['report', reportId] });
 
       if (outcome.status === 'duplicate') {
-        Alert.alert('Already added', 'This exact photo is already on the report.', [{ text: 'OK', onPress: () => router.back() }]);
+        show('This photo is already on the report');
+        router.back();
       } else if (outcome.status === 'queued') {
-        Alert.alert('Saved offline', 'This photo will sync when you’re back online.', [{ text: 'OK', onPress: () => router.back() }]);
+        show('Saved offline — will sync automatically');
+        router.back();
       } else {
         setPhoto(outcome.data.photo);
         setSuggestions(outcome.data.pairingSuggestions ?? []);

@@ -34,7 +34,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
         "JWT_SECRET=" + TestProps.JWT_SECRET,
         "INTERNAL_API_KEY=" + TestProps.INTERNAL_API_KEY,
         "OTP_DEV_CODE=" + TestProps.DEV_CODE,
-        "SMS_PROVIDER=mock",
         "STORAGE_PROVIDER=local",
         "STORAGE_LOCAL_ROOT=target/it-storage-agent-sync",
         // tests drive repushUnconsumed() directly — keep the scheduler out
@@ -67,9 +66,9 @@ class AgentSyncIT {
         mockMvc.perform(post("/api/v1/auth/register-agent")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"phoneNumber":"%s","password":"secret123","fullName":"Kojo Agent",
+                                {"phoneNumber":"%s","email":"a%s@test.app","password":"secret123","fullName":"Kojo Agent",
                                  "insurerName":"Star Assurance","nicLicenceNo":"%s"}
-                                """.formatted(phone, licence)))
+                                """.formatted(phone, phone.replaceAll("[^0-9]", ""), licence)))
                 .andExpect(status().isCreated());
         return phone;
     }

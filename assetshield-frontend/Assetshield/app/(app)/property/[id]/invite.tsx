@@ -4,7 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Switch, View } from 'react-native';
 import { isApiError, propertiesApi } from '@/lib/api';
-import { Button, Card, EmptyState, Header, Input, Loading, Screen, Text, useConfirm } from '@/components/ui';
+import { Button, Card, EmptyState, Header, Input, Loading, Screen, Text, useConfirm, useToast } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** Household: invite a member + manage existing members. */
@@ -18,12 +18,13 @@ export default function HouseholdInvite() {
   const [canExport, setCanExport] = useState(true);
 
   const members = useQuery({ queryKey: ['members', propertyId], queryFn: () => propertiesApi.members(propertyId) });
+  const { show } = useToast();
 
   const invite = useMutation({
     mutationFn: () => propertiesApi.invite(propertyId, { inviteePhone: phone, canExport }),
     onSuccess: () => {
       setPhone('+233');
-      Alert.alert('Invitation sent', 'They’ll be notified to join the household.');
+      show('Invitation sent — they’ll be notified to join');
     },
     onError: (e) => {
       if (isApiError(e)) {

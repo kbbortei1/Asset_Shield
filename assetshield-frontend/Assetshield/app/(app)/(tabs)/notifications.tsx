@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { AppNotification, notificationsApi } from '@/lib/api';
 import { routeForNotification } from '@/lib/push/deeplink';
+import { useMarkNotificationsSeen } from '@/lib/notifications/unread';
 import { Card, EmptyState, ErrorState, ListScreen, ListSkeleton, Screen, Text } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
@@ -29,11 +31,25 @@ const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 export default function NotificationsTab() {
   const q = useQuery({ queryKey: ['notifications'], queryFn: () => notificationsApi.list({ size: 50 }) });
+  const markSeen = useMarkNotificationsSeen();
+
+  // Opening this screen clears the bell badge: everything up to now is "seen".
+  useEffect(() => {
+    if (q.data) markSeen();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q.data]);
 
   const header = (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
       <Text variant="headlineLgMobile">Alerts</Text>
-      <Ionicons name="bulb-outline" size={24} color={colors.primary} onPress={() => router.push('/(app)/tips' as never)} />
+      <Ionicons
+        name="bulb-outline"
+        size={24}
+        color={colors.primary}
+        accessibilityRole="button"
+        accessibilityLabel="Safety tips"
+        onPress={() => router.push('/(app)/tips' as never)}
+      />
     </View>
   );
 

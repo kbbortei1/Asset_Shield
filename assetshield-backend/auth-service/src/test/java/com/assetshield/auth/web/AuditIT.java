@@ -26,7 +26,6 @@ import tools.jackson.databind.ObjectMapper;
         "SUPERADMIN_PHONE=" + TestProps.SUPERADMIN_PHONE,
         "SUPERADMIN_PASSWORD=" + TestProps.SUPERADMIN_PASSWORD,
         "OTP_DEV_CODE=" + TestProps.DEV_CODE,
-        "SMS_PROVIDER=mock",
         "STORAGE_PROVIDER=local",
         "STORAGE_LOCAL_ROOT=target/it-storage-audit"
 })
@@ -47,7 +46,8 @@ class AuditIT {
     private String activateAndLogin(String phone, String password) throws Exception {
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"phoneNumber\":\"" + phone + "\",\"password\":\"" + password
+                        .content("{\"phoneNumber\":\"" + phone + "\",\"email\":\"a"
+                                + phone.replaceAll("[^0-9]", "") + "@test.app\",\"password\":\"" + password
                                 + "\",\"fullName\":\"Audit Tester\"}"))
                 .andExpect(status().isCreated());
         mockMvc.perform(post("/api/v1/auth/verify-otp")

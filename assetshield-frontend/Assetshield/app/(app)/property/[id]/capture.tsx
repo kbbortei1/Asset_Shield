@@ -7,7 +7,7 @@ import { AssetCategory, isApiError } from '@/lib/api';
 import { CapturedImage, getLocationFix, LocationFix, PermissionError, pickImage } from '@/lib/media/capture';
 import { uploadAssetPhoto } from '@/lib/media/uploads';
 import { useOffline } from '@/lib/offline/OfflineProvider';
-import { Button, Card, EvidencePhoto, Header, Input, LocationConfirm, Screen, Text } from '@/components/ui';
+import { Button, Card, EvidencePhoto, Header, Input, LocationConfirm, Screen, Text, useToast } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 const CATEGORIES: AssetCategory[] = ['ELECTRONICS', 'FURNITURE', 'CLOTHING_STOCK', 'MACHINERY', 'DOCUMENTS', 'OTHER'];
@@ -18,6 +18,7 @@ export default function CaptureAsset() {
   const propertyId = id!;
   const qc = useQueryClient();
   const { refreshPending } = useOffline();
+  const { show } = useToast();
 
   const [image, setImage] = useState<CapturedImage | null>(null);
   const [description, setDescription] = useState('');
@@ -60,18 +61,24 @@ export default function CaptureAsset() {
       qc.invalidateQueries({ queryKey: ['assets', propertyId] });
       qc.invalidateQueries({ queryKey: ['property', propertyId] });
 
-      if (outcome.status === 'duplicate') {
-        Alert.alert('Already documented', 'This exact photo is already on this property.', [{ text: 'OK', onPress: () => router.back() }]);
-      } else if (outcome.status === 'queued') {
-        Alert.alert('Saved offline', 'This asset will sync automatically when you’re back online.', [{ text: 'OK', onPress: () => router.back() }]);
-      } else if (outcome.data?.duplicateWarning) {
-        // fraud signal from the backend: same bytes documented on ANOTHER property
+      if (outcome.status === 'uploaded' && outcome.data?.duplicateWarning) {
+        // Fraud signal (same bytes on ANOTHER property): needs a real acknowledgment,
+        // so this one deliberately stays a modal rather than a passing toast.
         Alert.alert(
           'Duplicate photo detected',
           'This exact photo already documents an asset on another property. It was saved, but duplicate evidence can be rejected by insurers.',
           [{ text: 'Understood', onPress: () => router.back() }],
         );
       } else {
+        // Happy path (saved / queued offline / already on this property): a toast
+        // confirms it and we return straight away, saving the extra "OK" tap.
+        show(
+          outcome.status === 'queued'
+            ? 'Saved offline — will sync automatically'
+            : outcome.status === 'duplicate'
+              ? 'Already documented on this property'
+              : 'Asset saved',
+        );
         router.back();
       }
     } catch (e) {
@@ -88,7 +95,18 @@ export default function CaptureAsset() {
   };
 
   return (
-    <Screen footer={<Button title={image ? 'Save asset' : 'Take a photo first'} loading={loading} disabled={!image || !description.trim()} onPress={submit} />}>
+    <Screen
+      footer={
+        <Button
+          // The label doubles as the reason the button is disabled, so the user
+          // is never staring at a dead "Save" with no idea what's missing.
+          title={!image ? 'Take a photo first' : !description.trim() ? 'Add a description to save' : 'Save asset'}
+          loading={loading}
+          disabled={!image || !description.trim()}
+          onPress={submit}
+        />
+      }
+    >
       <Header title="Capture asset" />
 
       {image ? (
@@ -100,7 +118,7 @@ export default function CaptureAsset() {
             gpsLng={fix?.gpsLng}
             capturedAt={new Date().toISOString()}
           />
-          <Pressable onPress={() => choose('camera')} style={{ position: 'absolute', top: spacing.md, right: spacing.md, backgroundColor: colors.card, borderRadius: radius.pill, padding: spacing.sm }}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Retake photo" onPress={() => choose('camera')} style={{ position: 'absolute', top: spacing.md, right: spacing.md, backgroundColor: colors.card, borderRadius: radius.pill, padding: spacing.sm }}>
             <Ionicons name="camera-reverse" size={22} color={colors.primary} />
           </Pressable>
         </Card>

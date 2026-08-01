@@ -64,9 +64,9 @@ public class AuthService {
 
     @Transactional(noRollbackFor = ApiException.class)
     public RegisterResponse register(RegisterRequest request) {
-        User user = upsertPendingUser(request.phoneNumber(), request.password(),
+        User user = upsertPendingUser(request.phoneNumber(), request.email(), request.password(),
                 request.fullName(), Role.OWNER);
-        otpService.issue(user.getPhoneNumber(), OtpPurpose.REGISTRATION);
+        otpService.issue(user.getPhoneNumber(), OtpPurpose.REGISTRATION, user.getEmail());
         return new RegisterResponse(user.getId(), true, otpService.ttlSeconds());
     }
 
@@ -82,7 +82,7 @@ public class AuthService {
                     throw new ApiException(ErrorCode.LICENCE_EXISTS, "NIC licence number is already registered");
                 });
 
-        User user = upsertPendingUser(request.phoneNumber(), request.password(),
+        User user = upsertPendingUser(request.phoneNumber(), request.email(), request.password(),
                 request.fullName(), Role.AGENT);
 
         PendingAgentDetails details = pendingAgentRepository.findByUserId(user.getId())
@@ -92,28 +92,42 @@ public class AuthService {
         details.setNicLicenceNo(request.nicLicenceNo().trim());
         pendingAgentRepository.save(details);
 
-        otpService.issue(user.getPhoneNumber(), OtpPurpose.REGISTRATION);
+        otpService.issue(user.getPhoneNumber(), OtpPurpose.REGISTRATION, user.getEmail());
         return new RegisterResponse(user.getId(), true, otpService.ttlSeconds());
     }
 
-    private User upsertPendingUser(String phoneNumber, String rawPassword, String fullName, Role role) {
+    private User upsertPendingUser(String phoneNumber, String email, String rawPassword,
+                                   String fullName, Role role) {
+        String normalizedEmail = email.trim().toLowerCase();
         User user = userRepository.findByPhoneNumberAndDeletedAtIsNull(phoneNumber).orElse(null);
+        requireEmailAvailable(normalizedEmail, user == null ? null : user.getId());
         if (user != null) {
             if (user.getStatus() != UserStatus.PENDING_OTP) {
                 throw new ApiException(ErrorCode.PHONE_EXISTS, "Phone number is already registered");
             }
-            // Re-registration before verification: refresh name/password, re-issue OTP.
+            // Re-registration before verification: refresh name/email/password, re-issue OTP.
             user.setFullName(fullName.trim());
+            user.setEmail(normalizedEmail);
             user.setPasswordHash(passwordEncoder.encode(rawPassword));
             return userRepository.save(user);
         }
         User created = new User();
         created.setPhoneNumber(phoneNumber);
+        created.setEmail(normalizedEmail);
         created.setPasswordHash(passwordEncoder.encode(rawPassword));
         created.setFullName(fullName.trim());
         created.setRole(role);
         created.setStatus(UserStatus.PENDING_OTP);
         return userRepository.save(created);
+    }
+
+    /** An email may belong to at most one active account (partial unique index ux_users_email). */
+    private void requireEmailAvailable(String email, UUID sameUserId) {
+        userRepository.findByEmailIgnoreCaseAndDeletedAtIsNull(email)
+                .filter(existing -> !existing.getId().equals(sameUserId))
+                .ifPresent(existing -> {
+                    throw new ApiException(ErrorCode.EMAIL_EXISTS, "Email is already registered");
+                });
     }
 
     @Transactional(noRollbackFor = ApiException.class)
@@ -137,11 +151,11 @@ public class AuthService {
 
     @Transactional(noRollbackFor = ApiException.class)
     public ResendOtpResponse resendOtp(ResendOtpRequest request) {
-        userRepository.findByPhoneNumberAndDeletedAtIsNull(request.phoneNumber())
+        User user = userRepository.findByPhoneNumberAndDeletedAtIsNull(request.phoneNumber())
                 .filter(u -> u.getStatus() == UserStatus.PENDING_OTP)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,
                         "No pending verification for this phone"));
-        otpService.issue(request.phoneNumber(), OtpPurpose.REGISTRATION);
+        otpService.issue(user.getPhoneNumber(), OtpPurpose.REGISTRATION, user.getEmail());
         return new ResendOtpResponse(true, otpService.ttlSeconds());
     }
 
@@ -184,7 +198,8 @@ public class AuthService {
     public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
         userRepository.findByPhoneNumberAndDeletedAtIsNull(request.phoneNumber())
                 .filter(user -> user.getStatus() == UserStatus.ACTIVE)
-                .ifPresent(user -> otpService.issue(user.getPhoneNumber(), OtpPurpose.LOGIN_RECOVERY));
+                .ifPresent(user -> otpService.issue(user.getPhoneNumber(), OtpPurpose.LOGIN_RECOVERY,
+                        user.getEmail()));
         return new ForgotPasswordResponse(true, otpService.ttlSeconds());
     }
 

@@ -2,6 +2,7 @@ package com.assetshield.auth.web.dto;
 
 import com.assetshield.auth.domain.BroadcastAudience;
 import com.assetshield.auth.domain.ReportCategory;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -20,12 +21,14 @@ public final class AuthDtos {
 
     public record RegisterRequest(
             @NotBlank @Pattern(regexp = PHONE_REGEX, message = PHONE_MESSAGE) String phoneNumber,
+            @NotBlank @Email @Size(max = 255) String email,
             @NotBlank @Size(min = 8, max = 72, message = "must be at least 8 characters") String password,
             @NotBlank @Size(min = 2, max = 120) String fullName) {
     }
 
     public record RegisterAgentRequest(
             @NotBlank @Pattern(regexp = PHONE_REGEX, message = PHONE_MESSAGE) String phoneNumber,
+            @NotBlank @Email @Size(max = 255) String email,
             @NotBlank @Size(min = 8, max = 72, message = "must be at least 8 characters") String password,
             @NotBlank @Size(min = 2, max = 120) String fullName,
             @NotBlank @Size(max = 120) String insurerName,

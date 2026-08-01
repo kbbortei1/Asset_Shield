@@ -2,6 +2,7 @@ package com.assetshield.damage.web;
 
 import com.assetshield.damage.common.ApiResponse;
 import com.assetshield.damage.service.DossierService;
+import com.assetshield.damage.web.dto.DossierDtos.DownloadResponse;
 import com.assetshield.damage.web.dto.DossierDtos.MetaResponse;
 import com.assetshield.damage.web.dto.DossierDtos.PaymentConfirmedRequest;
 import com.assetshield.damage.web.dto.DossierDtos.PaymentConfirmedResponse;
@@ -44,5 +45,15 @@ public class InternalDossierController {
     @GetMapping("/{id}/verify")
     public ApiResponse<VerifyResponse> verify(@PathVariable UUID id) {
         return ApiResponse.success(dossierService.verify(id), "Dossier verified");
+    }
+
+    /**
+     * Fresh signed download URL for a dossier the caller has already authorised
+     * (marketplace enforces active agent consent before calling). READY only.
+     */
+    @GetMapping("/{id}/signed-download")
+    public ApiResponse<DownloadResponse> signedDownload(@PathVariable UUID id) {
+        return ApiResponse.success(dossierService.signedDownloadForShared(id),
+                "Download link issued");
     }
 }

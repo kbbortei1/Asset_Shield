@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, View } from 'react-native';
 import { isApiError, usersApi } from '@/lib/api';
-import { Button, Header, Input, Screen, Text } from '@/components/ui';
+import { Button, Header, Input, Screen, Text, useToast } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** Admin: create another admin (MISSING_DESIGN, on-brand). */
@@ -10,6 +10,7 @@ export default function CreateAdmin() {
   const [form, setForm] = useState({ fullName: '', phoneNumber: '+233', password: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const { show } = useToast();
   const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const submit = async () => {
@@ -17,7 +18,8 @@ export default function CreateAdmin() {
     setLoading(true);
     try {
       await usersApi.createAdmin(form);
-      Alert.alert('Admin created', `${form.fullName} can now sign in as an admin.`, [{ text: 'OK', onPress: () => router.back() }]);
+      show(`${form.fullName} can now sign in as an admin`);
+      router.back();
     } catch (e) {
       if (isApiError(e)) {
         if (e.code === 'PHONE_EXISTS') setErrors({ phoneNumber: 'This number already has an account.' });

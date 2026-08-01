@@ -24,17 +24,17 @@ public class OtpService {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final OtpCodeRepository repository;
-    private final SmsProvider smsProvider;
+    private final OtpSender otpSender;
     private final PasswordEncoder passwordEncoder;
     private final long ttlSeconds;
     private final int maxAttempts;
     private final long resendIntervalSeconds;
     private final String devCode;
 
-    public OtpService(OtpCodeRepository repository, SmsProvider smsProvider,
+    public OtpService(OtpCodeRepository repository, OtpSender otpSender,
                       PasswordEncoder passwordEncoder, AppProperties properties) {
         this.repository = repository;
-        this.smsProvider = smsProvider;
+        this.otpSender = otpSender;
         this.passwordEncoder = passwordEncoder;
         this.ttlSeconds = properties.otp().ttlSeconds();
         this.maxAttempts = properties.otp().maxAttempts();
@@ -51,7 +51,7 @@ public class OtpService {
      * not mark the shared transaction rollback-only.
      */
     @Transactional(noRollbackFor = ApiException.class)
-    public void issue(String phoneNumber, OtpPurpose purpose) {
+    public void issue(String phoneNumber, OtpPurpose purpose, String recipient) {
         Instant now = Instant.now();
         repository.findTopByPhoneNumberAndPurposeAndConsumedAtIsNullOrderByCreatedAtDesc(phoneNumber, purpose)
                 .filter(latest -> latest.getCreatedAt() != null
@@ -71,7 +71,7 @@ public class OtpService {
         otp.setExpiresAt(now.plus(Duration.ofSeconds(ttlSeconds)));
         repository.save(otp);
 
-        smsProvider.sendOtp(phoneNumber, code);
+        otpSender.send(recipient, code);
     }
 
     /** Throws on failure; consumes the code on success. */

@@ -1,5 +1,6 @@
 # Secrets
 .env
+secrets.prod.local
 infra/firebase/*.json
 
 # Build output
@@ -22,3 +23,4 @@ e2e/load/.seed.env
 
 # Database dumps written by the postgres-backup sidecar
 backups/
+infra/neon/provision.local.sql

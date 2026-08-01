@@ -1,9 +1,8 @@
 # Production hardening (SPRING_PROFILES_ACTIVE=prod).
 # - dev-code is forced empty: the fixed OTP bypass can never be active in prod.
-# - sms.provider has NO default: startup fails fast unless a provider is set
-#   explicitly (prevents silently shipping the mock).
+# - channel has NO default here: startup fails fast unless a real delivery
+#   channel (email) is set explicitly, so the dev log channel can't ship silently.
 app:
   otp:
     dev-code: ""
-  sms:
-    provider: ${SMS_PROVIDER}
+    channel: ${OTP_CHANNEL}

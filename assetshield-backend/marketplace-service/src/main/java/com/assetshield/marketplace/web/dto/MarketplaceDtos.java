@@ -85,6 +85,9 @@ public final class MarketplaceDtos {
                                     List<MismatchView> mismatches, Instant verifiedAt) {
     }
 
+    public record AgentDownloadView(String downloadUrl, String fileName) {
+    }
+
     public record QuoteCreateRequest(
             @NotNull @DecimalMin(value = "0.01") BigDecimal coverageAmount,
             @NotNull @DecimalMin(value = "0.01") BigDecimal premium,
