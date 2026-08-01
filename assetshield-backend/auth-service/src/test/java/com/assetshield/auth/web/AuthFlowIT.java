@@ -266,7 +266,7 @@ class AuthFlowIT {
         mockMvc.perform(post("/api/v1/auth/register-agent")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"phoneNumber":"+233244000007","password":"Password#1","fullName":"Agent One",
+                                {"phoneNumber":"+233244000007","email":"agent7@test.app","password":"Password#1","fullName":"Agent One",
                                  "insurerName":"Star Assurance","nicLicenceNo":"NIC-001-A"}
                                 """))
                 .andExpect(status().isCreated())
@@ -275,7 +275,7 @@ class AuthFlowIT {
         mockMvc.perform(post("/api/v1/auth/register-agent")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"phoneNumber":"+233244000008","password":"Password#1","fullName":"Agent Two",
+                                {"phoneNumber":"+233244000008","email":"agent8@test.app","password":"Password#1","fullName":"Agent Two",
                                  "insurerName":"Star Assurance","nicLicenceNo":"NIC-001-A"}
                                 """))
                 .andExpect(status().isConflict())
