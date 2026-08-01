@@ -1,0 +1,10 @@
+# Automatic HTTPS for the AssetShield API.
+# Caddy fetches + auto-renews a Let's Encrypt cert for this domain and reverse-
+# proxies to the gateway container. HTTP (80) auto-redirects to HTTPS (443).
+{
+	email officialkingbee2@gmail.com
+}
+
+api.assetshield.me {
+	reverse_proxy gateway:8080
+}

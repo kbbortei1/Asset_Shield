@@ -1,0 +1,23 @@
+# Caddy reverse proxy = automatic HTTPS for api.assetshield.me -> gateway:8080.
+# Only used on the public server (needs a real domain + ports 80/443 open in the
+# cloud firewall). Enable it by appending this file to COMPOSE_FILE on the VM:
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.neon.yml:docker-compose.caddy.yml
+# (Not used locally on Windows.)
+services:
+  caddy:
+    image: caddy:2
+    container_name: assetshield-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - assetshield-net
+
+volumes:
+  caddy_data:
+  caddy_config:
