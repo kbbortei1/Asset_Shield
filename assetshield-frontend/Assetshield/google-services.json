@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "456069290131",
+    "project_id": "asset-shield-4d7da",
+    "storage_bucket": "asset-shield-4d7da.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:456069290131:android:d76d5e2bd17986e5e4d566",
+        "android_client_info": {
+          "package_name": "com.assetshield"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWj751dIl5fE0rDTx630w06P8HwIE3rAQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
