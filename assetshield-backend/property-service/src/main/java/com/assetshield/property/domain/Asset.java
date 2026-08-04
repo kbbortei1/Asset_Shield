@@ -45,10 +45,10 @@ public class Asset {
     @Column(name = "sha256_hash", nullable = false, length = 64, updatable = false)
     private String sha256Hash;
 
-    @Column(name = "gps_lat", nullable = false, precision = 9, scale = 6, updatable = false)
+    @Column(name = "gps_lat", nullable = true, precision = 9, scale = 6, updatable = false)
     private BigDecimal gpsLat;
 
-    @Column(name = "gps_lng", nullable = false, precision = 9, scale = 6, updatable = false)
+    @Column(name = "gps_lng", nullable = true, precision = 9, scale = 6, updatable = false)
     private BigDecimal gpsLng;
 
     @Column(name = "captured_at", nullable = false, updatable = false)
@@ -57,7 +57,7 @@ public class Asset {
     @Column(nullable = false, length = 500)
     private String description;
 
-    @Column(name = "estimated_value", nullable = false, precision = 12, scale = 2)
+    @Column(name = "estimated_value", nullable = true, precision = 12, scale = 2)
     private BigDecimal estimatedValue;
 
     @Enumerated(EnumType.STRING)

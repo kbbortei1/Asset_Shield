@@ -81,11 +81,11 @@ public final class PropertyDtos {
 
     public record AssetMetadata(
             @NotBlank @Pattern(regexp = SHA256_REGEX, message = SHA256_MESSAGE) String sha256Hash,
-            @NotNull @DecimalMin(value = "-90") @DecimalMax(value = "90") BigDecimal gpsLat,
-            @NotNull @DecimalMin(value = "-180") @DecimalMax(value = "180") BigDecimal gpsLng,
+            @DecimalMin(value = "-90") @DecimalMax(value = "90") BigDecimal gpsLat,
+            @DecimalMin(value = "-180") @DecimalMax(value = "180") BigDecimal gpsLng,
             @NotNull Instant capturedAt,
             @NotBlank @Size(max = 500) String description,
-            @NotNull @DecimalMin(value = "0") @DecimalMax(value = MAX_VALUE) BigDecimal estimatedValue,
+            @DecimalMin(value = "0") @DecimalMax(value = MAX_VALUE) BigDecimal estimatedValue,
             @NotNull AssetCategory category,
             LocalDate warrantyExpiresOn,
             LocalDate nextServiceOn) {
