@@ -14,7 +14,7 @@ type Phase = 'capture' | 'pairing';
 
 /** DISASTER (beat 2): capture a damage photo → upload → pair with a documented asset. */
 export default function CaptureDamage() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, assetId, assetName } = useLocalSearchParams<{ id: string; assetId?: string; assetName?: string }>();
   const reportId = id!;
   const qc = useQueryClient();
   const { refreshPending } = useOffline();
@@ -64,7 +64,22 @@ export default function CaptureDamage() {
         show('Saved offline — will sync automatically');
         router.back();
       } else {
-        setPhoto(outcome.data.photo);
+        const uploaded = outcome.data.photo;
+        // Asset-anchored: entered from a specific asset → link straight to it
+        // (a deliberate MANUAL pair, no GPS guessing). Fall back to the
+        // suggestion UI only if that pairing call fails.
+        if (assetId) {
+          try {
+            await damageApi.pair(reportId, { damagePhotoId: uploaded.id, assetId, pairingMethod: 'MANUAL' });
+            qc.invalidateQueries({ queryKey: ['report', reportId] });
+            show(assetName ? `Damage linked to ${assetName}` : 'Damage linked to the asset');
+            router.back();
+            return;
+          } catch {
+            // pairing failed — don't lose the photo; show the suggestion UI
+          }
+        }
+        setPhoto(uploaded);
         setSuggestions(outcome.data.pairingSuggestions ?? []);
         setPhase('pairing');
       }
@@ -139,6 +154,16 @@ export default function CaptureDamage() {
   return (
     <Screen footer={<Button title={image ? 'Upload photo' : 'Take a photo first'} loading={loading} disabled={!image} onPress={upload} />}>
       <Header title="Add damage photo" />
+      {assetName ? (
+        <Card style={{ backgroundColor: colors.tealTint }}>
+          <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
+            <Ionicons name="link" size={18} color={colors.primary} />
+            <Text variant="labelMd" color={colors.primary} style={{ flex: 1 }}>
+              Documenting damage to <Text variant="labelMd" weight="semibold" color={colors.primary}>{assetName}</Text> — this photo links to it automatically.
+            </Text>
+          </View>
+        </Card>
+      ) : null}
       {image ? (
         <Card padded={false} style={{ overflow: 'hidden' }}>
           <EvidencePhoto
@@ -151,10 +176,9 @@ export default function CaptureDamage() {
           />
         </Card>
       ) : (
-        <View style={{ flexDirection: 'row', gap: spacing.md }}>
-          <CaptureTile icon="camera" label="Take photo" onPress={() => choose('camera')} />
-          <CaptureTile icon="images" label="From gallery" onPress={() => choose('library')} />
-        </View>
+        // Camera-only by design: damage evidence must be captured live, not
+        // picked from the gallery (which could be edited/AI images).
+        <CaptureTile icon="camera" label="Take photo" onPress={() => choose('camera')} />
       )}
       {image ? <LocationConfirm fix={fix} onRefresh={refreshFix} /> : null}
       <Input label="Description (optional)" value={description} onChangeText={setDescription} placeholder="e.g. Burnt stock" />

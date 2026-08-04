@@ -194,6 +194,18 @@ export default function AssetDetail() {
           variant="secondary"
           onPress={() => router.push(`/(app)/asset/${assetId}/qr` as never)}
         />
+        {/* Asset-anchored damage: report damage TO this asset — the photo links
+            straight to it, no GPS guessing. */}
+        <Button
+          title="Report damage"
+          variant="secondary"
+          leftIcon={<Ionicons name="alert-circle-outline" size={18} color={colors.primary} />}
+          onPress={() =>
+            router.push(
+              `/(app)/damage/new?propertyId=${a.propertyId}&assetId=${assetId}&assetName=${encodeURIComponent(a.description)}` as never,
+            )
+          }
+        />
         <Button title="Delete asset" variant="danger" onPress={remove} />
       </View>
     </Screen>

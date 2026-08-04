@@ -17,7 +17,7 @@ const TYPES: { type: DisasterType; icon: keyof typeof Ionicons.glyphMap; label: 
 
 /** DISASTER (beat 2): open a damage report. Stitch: "Report Damage - Select Type". */
 export default function NewDamageReport() {
-  const { propertyId } = useLocalSearchParams<{ propertyId: string }>();
+  const { propertyId, assetId, assetName } = useLocalSearchParams<{ propertyId: string; assetId?: string; assetName?: string }>();
   const qc = useQueryClient();
   const [type, setType] = useState<DisasterType>('FIRE');
   const [description, setDescription] = useState('');
@@ -33,7 +33,14 @@ export default function NewDamageReport() {
         occurredAt: new Date().toISOString(),
       });
       qc.invalidateQueries({ queryKey: ['reports', propertyId] });
-      router.replace(`/(app)/damage/${report.id}` as never);
+      // Asset-anchored: go straight to capturing damage for the chosen asset;
+      // otherwise land on the report to add photos however you like.
+      if (assetId) {
+        const qs = `assetId=${assetId}${assetName ? `&assetName=${encodeURIComponent(assetName)}` : ''}`;
+        router.replace(`/(app)/damage/${report.id}/capture?${qs}` as never);
+      } else {
+        router.replace(`/(app)/damage/${report.id}` as never);
+      }
     } catch (e: any) {
       Alert.alert('Could not open report', e?.message ?? 'Try again.');
     } finally {
