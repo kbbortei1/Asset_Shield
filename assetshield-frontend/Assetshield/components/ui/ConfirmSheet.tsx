@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, spacing } from '@/theme';
 import { Button } from './Button';
@@ -71,6 +72,9 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
         animationType="slide"
         onRequestClose={() => settle({ confirmed: false })}
       >
+        {/* Lift the sheet above the keyboard so the password field + buttons
+            are never covered (this sheet gates account/asset deletion). */}
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <Pressable
           style={{ flex: 1, backgroundColor: 'rgba(17,37,43,0.5)' }}
           onPress={() => settle({ confirmed: false })}
@@ -150,6 +154,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
             </View>
           </Pressable>
         </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </ConfirmContext.Provider>
   );
