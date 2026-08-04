@@ -79,28 +79,46 @@ public final class PropertyDtos {
 
     // ── assets ──────────────────────────────────────────────────────────────
 
-    public record AssetMetadata(
+    public static final int MAX_ASSET_PHOTOS = 15;
+
+    /** One photo within a create request — its own hash, gps and timestamp. */
+    public record PhotoInput(
             @NotBlank @Pattern(regexp = SHA256_REGEX, message = SHA256_MESSAGE) String sha256Hash,
             @DecimalMin(value = "-90") @DecimalMax(value = "90") BigDecimal gpsLat,
             @DecimalMin(value = "-180") @DecimalMax(value = "180") BigDecimal gpsLng,
-            @NotNull Instant capturedAt,
+            @NotNull Instant capturedAt) {
+    }
+
+    /**
+     * Create metadata for a multi-photo asset: shared description/value/category
+     * plus a per-photo list. The uploaded `file` parts arrive in the SAME order
+     * as {@code photos}. Photo #0 is the cover.
+     */
+    public record CreateAssetMetadata(
             @NotBlank @Size(max = 500) String description,
             @DecimalMin(value = "0") @DecimalMax(value = MAX_VALUE) BigDecimal estimatedValue,
             @NotNull AssetCategory category,
             LocalDate warrantyExpiresOn,
-            LocalDate nextServiceOn) {
+            LocalDate nextServiceOn,
+            @NotNull @Size(min = 1, max = MAX_ASSET_PHOTOS) @jakarta.validation.Valid List<PhotoInput> photos) {
+    }
+
+    public record AssetPhotoItem(UUID id, String photoUrl, String sha256Hash,
+                                 BigDecimal gpsLat, BigDecimal gpsLng, Instant capturedAt) {
     }
 
     /**
-     * duplicateWarning is only computed on creation (null on reads): true when
-     * the same photo already documents an asset on ANOTHER property — advisory
-     * fraud signal, the upload still succeeds.
+     * The flat photoUrl/sha256/gps/capturedAt are the COVER (photo #0). photoCount
+     * is how many photos the asset holds. duplicateWarning is only computed on
+     * creation (null on reads): true when one of the uploaded photos already
+     * documents an asset on ANOTHER property — advisory fraud signal; the upload
+     * still succeeds.
      */
     public record AssetResponse(UUID id, UUID propertyId, String photoUrl, String sha256Hash,
                                 BigDecimal gpsLat, BigDecimal gpsLng, Instant capturedAt,
                                 String description, BigDecimal estimatedValue, AssetCategory category,
                                 LocalDate warrantyExpiresOn, LocalDate nextServiceOn,
-                                long receiptCount, UUID createdByUserId, Instant createdAt,
+                                long receiptCount, long photoCount, UUID createdByUserId, Instant createdAt,
                                 Boolean duplicateWarning) {
     }
 
@@ -111,7 +129,8 @@ public final class PropertyDtos {
                                       BigDecimal gpsLat, BigDecimal gpsLng, Instant capturedAt,
                                       String description, BigDecimal estimatedValue, AssetCategory category,
                                       LocalDate warrantyExpiresOn, LocalDate nextServiceOn,
-                                      UUID createdByUserId, Instant createdAt, List<ReceiptItem> receipts) {
+                                      UUID createdByUserId, Instant createdAt,
+                                      List<AssetPhotoItem> photos, List<ReceiptItem> receipts) {
     }
 
     public record UpdateAssetRequest(

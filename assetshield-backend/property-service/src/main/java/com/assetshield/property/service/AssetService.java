@@ -9,8 +9,10 @@ import com.assetshield.property.common.PageEnvelope;
 import com.assetshield.property.config.AppProperties;
 import com.assetshield.property.domain.Asset;
 import com.assetshield.property.domain.AssetCategory;
+import com.assetshield.property.domain.AssetPhoto;
 import com.assetshield.property.domain.AssetReceipt;
 import com.assetshield.property.domain.Property;
+import com.assetshield.property.repo.AssetPhotoRepository;
 import com.assetshield.property.repo.AssetReceiptRepository;
 import com.assetshield.property.repo.AssetRepository;
 import com.assetshield.property.repo.PropertyRepository;
@@ -18,9 +20,11 @@ import com.assetshield.property.security.AuthUser;
 import com.assetshield.property.storage.StorageProvider;
 import com.assetshield.property.web.dto.PropertyDtos;
 import com.assetshield.property.web.dto.PropertyDtos.AssetDetailResponse;
-import com.assetshield.property.web.dto.PropertyDtos.AssetMetadata;
+import com.assetshield.property.web.dto.PropertyDtos.AssetPhotoItem;
 import com.assetshield.property.web.dto.PropertyDtos.AssetResponse;
+import com.assetshield.property.web.dto.PropertyDtos.CreateAssetMetadata;
 import com.assetshield.property.web.dto.PropertyDtos.DeleteResponse;
+import com.assetshield.property.web.dto.PropertyDtos.PhotoInput;
 import com.assetshield.property.web.dto.PropertyDtos.ReceiptItem;
 import com.assetshield.property.web.dto.PropertyDtos.ReceiptMetadata;
 import com.assetshield.property.web.dto.PropertyDtos.ReceiptResponse;
@@ -30,6 +34,8 @@ import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,6 +56,7 @@ public class AssetService {
             Set.of(MediaType.IMAGE_JPEG_VALUE, MediaType.IMAGE_PNG_VALUE);
 
     private final AssetRepository assetRepository;
+    private final AssetPhotoRepository assetPhotoRepository;
     private final AssetReceiptRepository receiptRepository;
     private final PropertyRepository propertyRepository;
     private final PropertyAccessService accessService;
@@ -58,11 +65,13 @@ public class AssetService {
     private final EventPublisher eventPublisher;
     private final Duration signedUrlTtl;
 
-    public AssetService(AssetRepository assetRepository, AssetReceiptRepository receiptRepository,
+    public AssetService(AssetRepository assetRepository, AssetPhotoRepository assetPhotoRepository,
+                        AssetReceiptRepository receiptRepository,
                         PropertyRepository propertyRepository, PropertyAccessService accessService,
                         FreeTierGuard freeTierGuard, StorageProvider storageProvider,
                         EventPublisher eventPublisher, AppProperties properties) {
         this.assetRepository = assetRepository;
+        this.assetPhotoRepository = assetPhotoRepository;
         this.receiptRepository = receiptRepository;
         this.propertyRepository = propertyRepository;
         this.accessService = accessService;
@@ -73,51 +82,114 @@ public class AssetService {
     }
 
     /**
-     * Processing order is part of the evidence contract: validate → recompute
-     * SHA-256 over the received bytes (mismatch stores NOTHING) → tier quota →
-     * duplicate check → store object → insert row → bump lastDocumentedAt.
+     * Create ONE asset (e.g. "Kitchen") from 1..15 photos. Shared
+     * description/value/category live on the asset; each photo keeps its own
+     * hash/gps/capturedAt. The {@code files} arrive in the SAME order as
+     * {@code metadata.photos()}; photo #0 becomes the cover (mirrored into the
+     * Asset columns for back-compat with lists, pairing, dossier and CSV).
+     *
+     * Processing order is part of the evidence contract: validate + recompute
+     * SHA-256 over EVERY file (a single mismatch stores NOTHING) → tier quota →
+     * per-photo duplicate check → store objects → insert rows → bump
+     * lastDocumentedAt. Nothing is written until every photo has passed.
      */
     @Transactional
-    public AssetResponse addAsset(AuthUser user, UUID propertyId, MultipartFile file, AssetMetadata metadata) {
+    public AssetResponse addAssets(AuthUser user, UUID propertyId, List<MultipartFile> files,
+                                   CreateAssetMetadata metadata) {
         Property property = accessService.requireMember(propertyId, user.id());
-        byte[] bytes = readImage(file);
-        String hash = metadata.sha256Hash().toLowerCase();
-        if (!Sha256.matches(bytes, hash)) {
-            throw new ApiException(ErrorCode.HASH_MISMATCH,
-                    "Declared SHA-256 does not match the uploaded file");
+        List<PhotoInput> inputs = metadata.photos();
+        if (files == null || files.isEmpty()) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED, "At least one photo is required");
         }
-        freeTierGuard.checkAssetQuota(user.id(),
-                assetRepository.countByPropertyIdAndDeletedAtIsNull(propertyId));
-        if (assetRepository.existsByPropertyIdAndSha256HashAndDeletedAtIsNull(propertyId, hash)) {
-            throw new ApiException(ErrorCode.DUPLICATE_ASSET_HASH,
-                    "An identical photo already exists on this property");
+        if (files.size() != inputs.size()) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED,
+                    "Number of files does not match the photos metadata");
         }
-        // fraud signal, computed BEFORE the insert: the same-property case was
-        // rejected above, so any remaining match lives on another property
-        boolean duplicateElsewhere = assetRepository.countBySha256HashAndDeletedAtIsNull(hash) > 0;
-        String objectPath = storageProvider.store(bytes,
-                "assets/" + propertyId + "/" + hash + extensionFor(file), file.getContentType());
+        if (files.size() > PropertyDtos.MAX_ASSET_PHOTOS) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED,
+                    "An asset can hold at most " + PropertyDtos.MAX_ASSET_PHOTOS + " photos");
+        }
+        freeTierGuard.checkPhotoQuota(user.id(),
+                assetPhotoRepository.countByPropertyIdAndDeletedAtIsNull(propertyId), files.size());
+
+        // Validate ALL photos before storing anything: hash match, no repeat
+        // within this batch, and no per-property duplicate.
+        List<byte[]> allBytes = new ArrayList<>(files.size());
+        Set<String> batchHashes = new HashSet<>();
+        boolean duplicateElsewhere = false;
+        for (int i = 0; i < files.size(); i++) {
+            byte[] bytes = readImage(files.get(i));
+            String hash = inputs.get(i).sha256Hash().toLowerCase();
+            if (!Sha256.matches(bytes, hash)) {
+                throw new ApiException(ErrorCode.HASH_MISMATCH,
+                        "Declared SHA-256 does not match the uploaded file");
+            }
+            if (!batchHashes.add(hash)) {
+                throw new ApiException(ErrorCode.DUPLICATE_ASSET_HASH,
+                        "The same photo was included twice in this upload");
+            }
+            if (assetPhotoRepository.existsByPropertyIdAndSha256HashAndDeletedAtIsNull(propertyId, hash)) {
+                throw new ApiException(ErrorCode.DUPLICATE_ASSET_HASH,
+                        "An identical photo already exists on this property");
+            }
+            // fraud signal: same-property was rejected above, so any remaining
+            // match lives on ANOTHER property
+            if (assetPhotoRepository.countBySha256HashAndDeletedAtIsNull(hash) > 0) {
+                duplicateElsewhere = true;
+            }
+            allBytes.add(bytes);
+        }
+
+        // Store objects, then persist the asset (cover = #0) and its photo rows.
+        PhotoInput cover = inputs.get(0);
+        String coverPath = storageProvider.store(allBytes.get(0),
+                "assets/" + propertyId + "/" + cover.sha256Hash().toLowerCase() + extensionFor(files.get(0)),
+                files.get(0).getContentType());
 
         Asset asset = new Asset();
         asset.setPropertyId(propertyId);
         asset.setCreatedByUserId(user.id());
-        asset.setPhotoUrl(objectPath);
-        asset.setSha256Hash(hash);
-        asset.setGpsLat(metadata.gpsLat());
-        asset.setGpsLng(metadata.gpsLng());
-        asset.setCapturedAt(metadata.capturedAt());
+        asset.setPhotoUrl(coverPath);
+        asset.setSha256Hash(cover.sha256Hash().toLowerCase());
+        asset.setGpsLat(cover.gpsLat());
+        asset.setGpsLng(cover.gpsLng());
+        asset.setCapturedAt(cover.capturedAt());
         asset.setDescription(metadata.description().trim());
         asset.setEstimatedValue(metadata.estimatedValue());
         asset.setCategory(metadata.category());
         asset.setWarrantyExpiresOn(metadata.warrantyExpiresOn());
         asset.setNextServiceOn(metadata.nextServiceOn());
-        // flush so @CreationTimestamp is populated before the DTO is built
         Asset saved = assetRepository.saveAndFlush(asset);
+
+        List<AssetPhoto> rows = new ArrayList<>(files.size());
+        rows.add(assetPhotoRow(saved.getId(), propertyId, coverPath, cover, 0));
+        for (int i = 1; i < files.size(); i++) {
+            PhotoInput in = inputs.get(i);
+            String path = storageProvider.store(allBytes.get(i),
+                    "assets/" + propertyId + "/" + in.sha256Hash().toLowerCase() + extensionFor(files.get(i)),
+                    files.get(i).getContentType());
+            rows.add(assetPhotoRow(saved.getId(), propertyId, path, in, i));
+        }
+        assetPhotoRepository.saveAll(rows);
 
         property.setLastDocumentedAt(Instant.now());
         propertyRepository.save(property);
         eventPublisher.assetCaptured(user.id(), propertyId);
-        return toResponse(saved, 0, duplicateElsewhere);
+        return toResponse(saved, 0, files.size(), duplicateElsewhere);
+    }
+
+    private static AssetPhoto assetPhotoRow(UUID assetId, UUID propertyId, String objectPath,
+                                            PhotoInput in, int position) {
+        AssetPhoto photo = new AssetPhoto();
+        photo.setAssetId(assetId);
+        photo.setPropertyId(propertyId);
+        photo.setPhotoUrl(objectPath);
+        photo.setSha256Hash(in.sha256Hash().toLowerCase());
+        photo.setGpsLat(in.gpsLat());
+        photo.setGpsLng(in.gpsLng());
+        photo.setCapturedAt(in.capturedAt());
+        photo.setPosition(position);
+        return photo;
     }
 
     @Transactional(readOnly = true)
@@ -142,8 +214,13 @@ public class AssetService {
                 : receiptRepository.countsByAsset(ids).stream()
                         .collect(Collectors.toMap(AssetReceiptRepository.ReceiptCount::getAssetId,
                                 AssetReceiptRepository.ReceiptCount::getReceiptCount));
+        Map<UUID, Long> photoCounts = ids.isEmpty() ? Map.of()
+                : assetPhotoRepository.countsByAsset(ids).stream()
+                        .collect(Collectors.toMap(AssetPhotoRepository.PhotoCount::getAssetId,
+                                AssetPhotoRepository.PhotoCount::getPhotoCount));
         return PageEnvelope.of(assets.map(a ->
-                toResponse(a, receiptCounts.getOrDefault(a.getId(), 0L))));
+                toResponse(a, receiptCounts.getOrDefault(a.getId(), 0L),
+                        photoCounts.getOrDefault(a.getId(), 1L))));
     }
 
     @Transactional(readOnly = true)
@@ -155,11 +232,24 @@ public class AssetService {
                 .map(r -> new ReceiptItem(r.getId(),
                         storageProvider.signedUrl(r.getReceiptUrl(), signedUrlTtl), r.getCreatedAt()))
                 .toList();
+        List<AssetPhotoItem> photos = assetPhotoRepository
+                .findByAssetIdAndDeletedAtIsNullOrderByPositionAsc(assetId).stream()
+                .map(p -> new AssetPhotoItem(p.getId(),
+                        storageProvider.signedUrl(p.getPhotoUrl(), signedUrlTtl), p.getSha256Hash(),
+                        p.getGpsLat(), p.getGpsLng(), p.getCapturedAt()))
+                .toList();
+        // Pre-multi-photo assets have no rows yet in the (backfilled) table only
+        // if something went wrong; fall back to the cover so detail never blanks.
+        if (photos.isEmpty()) {
+            photos = List.of(new AssetPhotoItem(asset.getId(),
+                    storageProvider.signedUrl(asset.getPhotoUrl(), signedUrlTtl), asset.getSha256Hash(),
+                    asset.getGpsLat(), asset.getGpsLng(), asset.getCapturedAt()));
+        }
         return new AssetDetailResponse(asset.getId(), asset.getPropertyId(),
                 storageProvider.signedUrl(asset.getPhotoUrl(), signedUrlTtl), asset.getSha256Hash(),
                 asset.getGpsLat(), asset.getGpsLng(), asset.getCapturedAt(), asset.getDescription(),
                 asset.getEstimatedValue(), asset.getCategory(), asset.getWarrantyExpiresOn(),
-                asset.getNextServiceOn(), asset.getCreatedByUserId(), asset.getCreatedAt(), receipts);
+                asset.getNextServiceOn(), asset.getCreatedByUserId(), asset.getCreatedAt(), photos, receipts);
     }
 
     /** Only description, value and category — photo, hash, GPS, capturedAt are immutable evidence. */
@@ -190,6 +280,7 @@ public class AssetService {
         Asset asset = requireEditable(user, assetId);
         Instant now = Instant.now();
         receiptRepository.softDeleteByAsset(assetId, now);
+        assetPhotoRepository.softDeleteByAsset(assetId, now);
         asset.setDeletedAt(now);
         assetRepository.save(asset);
         return new DeleteResponse(true);
@@ -238,16 +329,16 @@ public class AssetService {
         return asset;
     }
 
-    AssetResponse toResponse(Asset asset, long receiptCount) {
-        return toResponse(asset, receiptCount, null);
+    AssetResponse toResponse(Asset asset, long receiptCount, long photoCount) {
+        return toResponse(asset, receiptCount, photoCount, null);
     }
 
-    AssetResponse toResponse(Asset asset, long receiptCount, Boolean duplicateWarning) {
+    AssetResponse toResponse(Asset asset, long receiptCount, long photoCount, Boolean duplicateWarning) {
         return new AssetResponse(asset.getId(), asset.getPropertyId(),
                 storageProvider.signedUrl(asset.getPhotoUrl(), signedUrlTtl), asset.getSha256Hash(),
                 asset.getGpsLat(), asset.getGpsLng(), asset.getCapturedAt(), asset.getDescription(),
                 asset.getEstimatedValue(), asset.getCategory(), asset.getWarrantyExpiresOn(),
-                asset.getNextServiceOn(), receiptCount, asset.getCreatedByUserId(),
+                asset.getNextServiceOn(), receiptCount, photoCount, asset.getCreatedByUserId(),
                 asset.getCreatedAt(), duplicateWarning);
     }
 

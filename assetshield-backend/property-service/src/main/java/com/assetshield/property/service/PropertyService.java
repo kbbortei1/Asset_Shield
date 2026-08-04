@@ -5,6 +5,7 @@ import com.assetshield.property.access.PropertyAccessService;
 import com.assetshield.property.client.MarketplaceEventsClient;
 import com.assetshield.property.common.PageEnvelope;
 import com.assetshield.property.domain.Property;
+import com.assetshield.property.repo.AssetPhotoRepository;
 import com.assetshield.property.repo.AssetReceiptRepository;
 import com.assetshield.property.repo.AssetRepository;
 import com.assetshield.property.repo.PropertyRepository;
@@ -36,16 +37,19 @@ public class PropertyService {
 
     private final PropertyRepository propertyRepository;
     private final AssetRepository assetRepository;
+    private final AssetPhotoRepository assetPhotoRepository;
     private final AssetReceiptRepository receiptRepository;
     private final PropertyAccessService accessService;
     private final FreeTierGuard freeTierGuard;
     private final MarketplaceEventsClient marketplaceEvents;
 
     public PropertyService(PropertyRepository propertyRepository, AssetRepository assetRepository,
+                           AssetPhotoRepository assetPhotoRepository,
                            AssetReceiptRepository receiptRepository, PropertyAccessService accessService,
                            FreeTierGuard freeTierGuard, MarketplaceEventsClient marketplaceEvents) {
         this.propertyRepository = propertyRepository;
         this.assetRepository = assetRepository;
+        this.assetPhotoRepository = assetPhotoRepository;
         this.receiptRepository = receiptRepository;
         this.accessService = accessService;
         this.freeTierGuard = freeTierGuard;
@@ -137,6 +141,7 @@ public class PropertyService {
         Instant now = Instant.now();
         // Receipts first: the asset subquery must still see live asset rows.
         receiptRepository.softDeleteByProperty(propertyId, now);
+        assetPhotoRepository.softDeleteByProperty(propertyId, now);
         assetRepository.softDeleteByProperty(propertyId, now);
         propertyRepository.softDelete(propertyId, now);
         return new DeleteResponse(true);

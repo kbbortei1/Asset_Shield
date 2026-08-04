@@ -8,8 +8,8 @@ import com.assetshield.property.service.AssetInsightsService;
 import com.assetshield.property.service.AssetService;
 import com.assetshield.property.service.InvitationService;
 import com.assetshield.property.service.PropertyService;
-import com.assetshield.property.web.dto.PropertyDtos.AssetMetadata;
 import com.assetshield.property.web.dto.PropertyDtos.AssetResponse;
+import com.assetshield.property.web.dto.PropertyDtos.CreateAssetMetadata;
 import com.assetshield.property.web.dto.PropertyDtos.CreatePropertyRequest;
 import com.assetshield.property.web.dto.PropertyDtos.DeleteResponse;
 import com.assetshield.property.web.dto.PropertyDtos.InviteRequest;
@@ -116,16 +116,16 @@ public class PropertyController {
                 "Opt-in updated");
     }
 
-    @Operation(summary = "Upload an evidence photo (multipart: file + metadata JSON)")
+    @Operation(summary = "Create an asset from 1..15 photos (multipart: repeated file parts + metadata JSON)")
     @PostMapping(value = "/{id}/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<AssetResponse>> addAsset(Authentication authentication,
                                                                @PathVariable UUID id,
-                                                               @RequestPart("file") MultipartFile file,
+                                                               @RequestParam("file") List<MultipartFile> files,
                                                                @RequestPart("metadata") String metadata) {
-        AssetMetadata parsed = metadataParser.parse(metadata, AssetMetadata.class);
+        CreateAssetMetadata parsed = metadataParser.parse(metadata, CreateAssetMetadata.class);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(
-                        assetService.addAsset(principal(authentication), id, file, parsed),
+                        assetService.addAssets(principal(authentication), id, files, parsed),
                         "Asset captured"));
     }
 

@@ -27,8 +27,13 @@ public class FreeTierGuard {
         }
     }
 
-    public void checkAssetQuota(UUID userId, long currentPropertyAssets) {
-        if (tierClient.isFree(userId) && currentPropertyAssets >= limits.freeMaxAssetsPerProperty()) {
+    /**
+     * Quota is measured in PHOTOS per property. Adding a multi-photo asset must
+     * not push the property past the cap, so we check the post-add total.
+     */
+    public void checkPhotoQuota(UUID userId, long currentPropertyPhotos, int adding) {
+        if (tierClient.isFree(userId)
+                && currentPropertyPhotos + adding > limits.freeMaxAssetsPerProperty()) {
             throw new ApiException(ErrorCode.FREE_TIER_LIMIT,
                     "Free tier allows up to " + limits.freeMaxAssetsPerProperty()
                             + " photos per property; upgrade to PRO to add more");
