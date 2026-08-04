@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { AssetMetadata, DamagePhotoMetadata } from '@/lib/api';
+import { CreateAssetMetadata, DamagePhotoMetadata } from '@/lib/api';
 
 export type CapturedImage = { uri: string; name: string; type: 'image/jpeg' | 'image/png' };
 
@@ -95,10 +95,15 @@ export async function getLocationFix(): Promise<LocationFix> {
   }
 }
 
-/** Build the multipart body for an asset upload: `file` + `metadata` JSON parts. */
-export function buildAssetForm(image: CapturedImage, metadata: AssetMetadata): FormData {
+/**
+ * Build the multipart body for a multi-photo asset: one repeated `file` part
+ * per image (SAME order as metadata.photos) + one `metadata` JSON part.
+ */
+export function buildAssetMultiForm(images: CapturedImage[], metadata: CreateAssetMetadata): FormData {
   const form = new FormData();
-  form.append('file', { uri: image.uri, name: image.name, type: image.type } as any);
+  for (const image of images) {
+    form.append('file', { uri: image.uri, name: image.name, type: image.type } as any);
+  }
   form.append('metadata', JSON.stringify(metadata));
   return form;
 }

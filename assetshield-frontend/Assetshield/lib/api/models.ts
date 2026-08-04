@@ -78,13 +78,23 @@ export type CreatePropertyRequest = {
 
 export type AssetReceipt = { id: string; receiptUrl: string; createdAt?: string };
 
+/** One photo of an asset — its own signed URL, hash, gps and timestamp. */
+export type AssetPhoto = {
+  id: string;
+  photoUrl?: string; // signed, ~15min TTL
+  sha256Hash: string;
+  gpsLat?: number;
+  gpsLng?: number;
+  capturedAt?: string;
+};
+
 export type Asset = {
   id: string;
   propertyId: string;
   description: string;
   category?: AssetCategory;
   estimatedValue?: number;
-  photoUrl?: string; // signed, ~15min TTL
+  photoUrl?: string; // COVER (photo #0), signed ~15min TTL
   sha256Hash: string;
   gpsLat?: number;
   gpsLng?: number;
@@ -93,23 +103,34 @@ export type Asset = {
   nextServiceOn?: string | null; // YYYY-MM-DD
   receiptCount?: number; // list/flat response
   receipts?: AssetReceipt[]; // detail response
+  photoCount?: number; // number of photos on the asset (list/flat)
+  photos?: AssetPhoto[]; // detail response — all photos, cover first
   createdByUserId?: string;
   createdAt?: string;
-  /** Create response only: same photo already documents another property. */
+  /** Create response only: one uploaded photo already documents another property. */
   duplicateWarning?: boolean | null;
 };
 
-/** Metadata JSON part sent alongside the `file` part for an asset upload. */
-export type AssetMetadata = {
+/** One photo within a create request — its own hash, gps and timestamp. */
+export type AssetPhotoInput = {
   sha256Hash: string;
   gpsLat?: number;
   gpsLng?: number;
   capturedAt: string;
+};
+
+/**
+ * Metadata JSON part for creating a multi-photo asset: shared
+ * description/value/category plus a per-photo list (same order as the `file`
+ * parts). Photo #0 is the cover.
+ */
+export type CreateAssetMetadata = {
   description: string;
   estimatedValue?: number;
   category?: AssetCategory;
   warrantyExpiresOn?: string; // YYYY-MM-DD
   nextServiceOn?: string; // YYYY-MM-DD
+  photos: AssetPhotoInput[];
 };
 
 /** ?q= / ?category= / value-range filters for the asset list (smart search). */

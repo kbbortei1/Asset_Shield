@@ -65,7 +65,15 @@ export function Screen({
         )}
         {footer ? (
           <KeyboardStickyView>
-            <View onLayout={onFooterLayout} style={[{ paddingVertical: spacing.md, backgroundColor: 'transparent' }, pad]}>{footer}</View>
+            {/* Opaque bar with a top divider: when the keyboard lifts this above
+                the content, the field beneath it must NOT bleed through (that was
+                the "Save button overlapping the input" bug). */}
+            <View
+              onLayout={onFooterLayout}
+              style={[{ paddingVertical: spacing.md, backgroundColor: colors.background, borderTopWidth: 1, borderTopColor: colors.border }, pad]}
+            >
+              {footer}
+            </View>
           </KeyboardStickyView>
         ) : null}
       </SafeAreaView>

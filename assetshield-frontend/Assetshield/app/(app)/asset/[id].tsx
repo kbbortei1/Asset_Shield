@@ -2,11 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, View } from 'react-native';
-import { propertiesApi, usersApi } from '@/lib/api';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { AssetPhoto, propertiesApi, usersApi } from '@/lib/api';
 import { buildFileForm, pickImage } from '@/lib/media/capture';
-import { Button, Card, EvidencePhoto, Header, Input, Loading, Screen, Text, VerifiedBadge, useConfirm, useToast } from '@/components/ui';
-import { colors, spacing } from '@/theme';
+import { Button, Card, EvidencePhoto, Header, Input, Loading, RemoteImage, Screen, Text, VerifiedBadge, useConfirm, useToast } from '@/components/ui';
+import { colors, radius, spacing } from '@/theme';
 
 export default function AssetDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -20,6 +20,7 @@ export default function AssetDetail() {
   const [value, setValue] = useState('');
   const [warranty, setWarranty] = useState('');
   const [service, setService] = useState('');
+  const [selIdx, setSelIdx] = useState(0); // which photo of the asset is shown
 
   useEffect(() => {
     if (q.data) {
@@ -103,31 +104,55 @@ export default function AssetDetail() {
   if (q.isLoading) return <Loading />;
   const a = q.data!;
 
+  // Gallery: all photos of the asset (cover first). Pre-multi-photo assets and
+  // the flat list response have no photos[] → fall back to the cover fields.
+  const gallery: AssetPhoto[] = a.photos?.length
+    ? a.photos
+    : [{ id: a.id, photoUrl: a.photoUrl, sha256Hash: a.sha256Hash, gpsLat: a.gpsLat, gpsLng: a.gpsLng, capturedAt: a.capturedAt }];
+  const sel = gallery[Math.min(selIdx, gallery.length - 1)];
+
   return (
     <Screen>
       <Header title="Asset" />
       <Card padded={false} style={{ overflow: 'hidden' }}>
         <EvidencePhoto
-          uri={a.photoUrl}
+          uri={sel.photoUrl}
           height={260}
-          gpsLat={a.gpsLat}
-          gpsLng={a.gpsLng}
-          capturedAt={a.capturedAt}
-          verified={a.sha256Hash}
+          gpsLat={sel.gpsLat}
+          gpsLng={sel.gpsLng}
+          capturedAt={sel.capturedAt}
+          verified={sel.sha256Hash}
           zoomable
         />
       </Card>
 
-      <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
-        <VerifiedBadge hash={a.sha256Hash} />
-        {a.capturedAt ? (
+      {gallery.length > 1 ? (
+        <View style={{ gap: spacing.xs }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingHorizontal: 2 }}>
+            {gallery.map((p, i) => (
+              <Pressable key={p.id} onPress={() => setSelIdx(i)} accessibilityRole="button">
+                <View style={{ borderRadius: radius.md, overflow: 'hidden', borderWidth: i === selIdx ? 2 : 1, borderColor: i === selIdx ? colors.primary : colors.border }}>
+                  <RemoteImage uri={p.photoUrl} width={60} height={60} radius={radius.md} />
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
           <Text variant="labelMd" color={colors.textMuted}>
-            <Ionicons name="time-outline" size={12} /> {new Date(a.capturedAt).toLocaleDateString()}
+            Photo {Math.min(selIdx, gallery.length - 1) + 1} of {gallery.length}
+          </Text>
+        </View>
+      ) : null}
+
+      <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
+        <VerifiedBadge hash={sel.sha256Hash} />
+        {sel.capturedAt ? (
+          <Text variant="labelMd" color={colors.textMuted}>
+            <Ionicons name="time-outline" size={12} /> {new Date(sel.capturedAt).toLocaleDateString()}
           </Text>
         ) : null}
-        {a.gpsLat && a.gpsLng ? (
+        {sel.gpsLat && sel.gpsLng ? (
           <Text variant="labelMd" color={colors.textMuted}>
-            <Ionicons name="location-outline" size={12} /> {a.gpsLat.toFixed(4)}, {a.gpsLng.toFixed(4)}
+            <Ionicons name="location-outline" size={12} /> {sel.gpsLat.toFixed(4)}, {sel.gpsLng.toFixed(4)}
           </Text>
         ) : null}
       </View>
