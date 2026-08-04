@@ -12,15 +12,23 @@ import { damageApi, DossierStatus, marketplaceApi, PaymentHandle } from '@/lib/a
  */
 /** Settlement is asynchronous, so verify is polled rather than asked once. */
 const VERIFY_TIMEOUT_MS = 25_000;
-const VERIFY_INTERVAL_MS = 1500;
+const VERIFY_INTERVAL_MS = 1200;
+/**
+ * Must match payment-service's PAYSTACK_CALLBACK_URL. When Paystack redirects
+ * here after payment, openAuthSessionAsync auto-closes the browser and returns
+ * to the app — no manual "close the tab" step.
+ */
+const RETURN_URL = 'assetshield://payment-callback';
 
 export async function runCheckout(payment: PaymentHandle): Promise<'success' | 'failed' | 'pending'> {
   const url = payment.authorizationUrl;
   if (url && /^https?:\/\//i.test(url)) {
     try {
-      await WebBrowser.openBrowserAsync(url); // resolves when the user returns
+      // Auth session watches for the RETURN_URL redirect and dismisses the
+      // browser itself the instant Paystack sends the user back.
+      await WebBrowser.openAuthSessionAsync(url, RETURN_URL, { showInRecents: false });
     } catch {
-      // ignore — proceed to verify regardless (mock/stub)
+      // ignore — proceed to verify regardless (mock/stub or manual close)
     }
   }
   // A single immediate verify races the settlement: mock mode only settles
