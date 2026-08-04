@@ -33,6 +33,8 @@ export default function Broadcast() {
   const [selected, setSelected] = useState<Record<string, AdminUserItem>>({});
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
+  const [inApp, setInApp] = useState(true);
+  const [push, setPush] = useState(true);
   const q = useDebounced(search.trim(), 300);
 
   const counts = useQuery({ queryKey: ['audience-counts'], queryFn: () => usersApi.audienceCounts() });
@@ -53,7 +55,7 @@ export default function Broadcast() {
           ? counts.data?.agents ?? 0
           : counts.data?.everyone ?? 0;
 
-  const ready = title.trim().length > 0 && body.trim().length > 0 && reach > 0;
+  const ready = title.trim().length > 0 && body.trim().length > 0 && reach > 0 && (inApp || push);
 
   const toggle = (u: AdminUserItem) =>
     setSelected((prev) => {
@@ -72,6 +74,8 @@ export default function Broadcast() {
         userIds: audience === 'SPECIFIC' ? selectedIds : undefined,
         title: title.trim(),
         body: body.trim(),
+        inApp,
+        push,
       });
       show(`Sent to ${res.recipientCount} ${res.recipientCount === 1 ? 'person' : 'people'}`);
       router.back();
@@ -198,6 +202,18 @@ export default function Broadcast() {
         />
       </View>
 
+      {/* delivery channels — admin picks in-app, push, or both */}
+      <View style={{ gap: spacing.xs }}>
+        <Text variant="labelMd" color={colors.textMuted}>Deliver via</Text>
+        <View style={{ flexDirection: 'row', gap: spacing.md }}>
+          <ChannelChip icon="notifications-outline" label="In-app alert" active={inApp} onPress={() => setInApp((v) => !v)} />
+          <ChannelChip icon="phone-portrait-outline" label="Push to phone" active={push} onPress={() => setPush((v) => !v)} />
+        </View>
+        {!inApp && !push ? (
+          <Text variant="labelMd" color={colors.error}>Pick at least one channel.</Text>
+        ) : null}
+      </View>
+
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, justifyContent: 'center' }}>
         <Ionicons name="megaphone-outline" size={16} color={colors.textMuted} />
         <Text variant="labelMd" color={colors.textMuted}>
@@ -205,5 +221,29 @@ export default function Broadcast() {
         </Text>
       </View>
     </Screen>
+  );
+}
+
+function ChannelChip({ icon, label, active, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={{ flex: 1 }} accessibilityRole="button" accessibilityState={{ selected: active }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          padding: spacing.md,
+          borderRadius: radius.lg,
+          borderWidth: active ? 2 : 1,
+          borderColor: active ? colors.primary : colors.border,
+          backgroundColor: active ? colors.tealTint : colors.card,
+        }}
+      >
+        <Ionicons name={active ? 'checkmark-circle' : icon} size={20} color={active ? colors.primary : colors.textMuted} />
+        <Text variant="labelMd" weight="semibold" color={active ? colors.primary : colors.textMuted} style={{ flex: 1 }}>
+          {label}
+        </Text>
+      </View>
+    </Pressable>
   );
 }

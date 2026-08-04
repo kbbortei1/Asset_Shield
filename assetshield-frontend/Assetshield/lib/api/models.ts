@@ -444,6 +444,9 @@ export type BroadcastRequest = {
   userIds?: string[];
   title: string;
   body: string;
+  /** Channels to deliver on (default both). Intersected with each user's prefs. */
+  inApp?: boolean;
+  push?: boolean;
 };
 
 export type AppNotification = {
