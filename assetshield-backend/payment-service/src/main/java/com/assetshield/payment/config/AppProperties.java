@@ -14,6 +14,6 @@ public record AppProperties(
     }
 
     public record Payments(String mode, String paystackSecretKey, String paystackBaseUrl,
-                           long mockAutoSettleMs, boolean reconcileEnabled) {
+                           String callbackUrl, long mockAutoSettleMs, boolean reconcileEnabled) {
     }
 }

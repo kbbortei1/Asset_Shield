@@ -17,7 +17,8 @@ public class PaymentConfig {
                                            ObjectProvider<PaymentSettlementService> settlementService) {
         AppProperties.Payments payments = properties.payments();
         return switch (payments.mode()) {
-            case "paystack" -> new PaystackProvider(payments.paystackBaseUrl(), payments.paystackSecretKey());
+            case "paystack" -> new PaystackProvider(payments.paystackBaseUrl(), payments.paystackSecretKey(),
+                    payments.callbackUrl());
             case "mock" -> new MockProvider(settlementService, payments.mockAutoSettleMs());
             default -> throw new IllegalStateException(
                     "Unknown PAYMENTS_MODE '" + payments.mode() + "' (expected paystack|mock)");

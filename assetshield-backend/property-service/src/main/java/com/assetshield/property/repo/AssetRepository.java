@@ -64,7 +64,7 @@ public interface AssetRepository extends JpaRepository<Asset, UUID> {
             select a from Asset a
             where a.propertyId = :propertyId and a.deletedAt is null
               and lower(a.description) like lower(concat('%', :q, '%'))
-              and a.estimatedValue between :minValue and :maxValue
+              and (a.estimatedValue is null or a.estimatedValue between :minValue and :maxValue)
             order by a.createdAt desc
             """)
     Page<Asset> search(@Param("propertyId") UUID propertyId, @Param("q") String q,
@@ -76,7 +76,7 @@ public interface AssetRepository extends JpaRepository<Asset, UUID> {
             where a.propertyId = :propertyId and a.deletedAt is null
               and a.category = :category
               and lower(a.description) like lower(concat('%', :q, '%'))
-              and a.estimatedValue between :minValue and :maxValue
+              and (a.estimatedValue is null or a.estimatedValue between :minValue and :maxValue)
             order by a.createdAt desc
             """)
     Page<Asset> searchByCategory(@Param("propertyId") UUID propertyId,

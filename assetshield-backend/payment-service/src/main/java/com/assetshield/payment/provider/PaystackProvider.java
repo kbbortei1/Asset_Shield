@@ -3,6 +3,7 @@ package com.assetshield.payment.provider;
 import com.assetshield.payment.common.ApiException;
 import com.assetshield.payment.common.ErrorCode;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -21,11 +22,13 @@ public class PaystackProvider implements PaymentProvider {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final RestClient restClient;
+    private final String callbackUrl;
 
-    public PaystackProvider(String baseUrl, String secretKey) {
+    public PaystackProvider(String baseUrl, String secretKey, String callbackUrl) {
         if (secretKey == null || secretKey.isBlank()) {
             throw new IllegalStateException("PAYMENTS_MODE=paystack but PAYSTACK_SECRET_KEY is empty");
         }
+        this.callbackUrl = callbackUrl;
         this.restClient = RestClient.builder()
                 .requestFactory(com.assetshield.payment.client.InternalHttp.externalRequestFactory())
                 .baseUrl(baseUrl)
@@ -38,16 +41,21 @@ public class PaystackProvider implements PaymentProvider {
     public InitResult initialize(String reference, BigDecimal amountGhs, String email,
                                  Map<String, Object> metadata) {
         try {
+            Map<String, Object> request = new HashMap<>();
+            request.put("amount", PaymentProvider.toPesewas(amountGhs));
+            request.put("currency", "GHS");
+            request.put("reference", reference);
+            request.put("email", email);
+            request.put("metadata", metadata);
+            request.put("channels", List.of("mobile_money", "card"));
+            // Redirect back to the app after payment so the browser auto-closes.
+            if (callbackUrl != null && !callbackUrl.isBlank()) {
+                request.put("callback_url", callbackUrl);
+            }
             Map<String, Object> body = restClient.post()
                     .uri("/transaction/initialize")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(Map.of(
-                            "amount", PaymentProvider.toPesewas(amountGhs),
-                            "currency", "GHS",
-                            "reference", reference,
-                            "email", email,
-                            "metadata", metadata,
-                            "channels", List.of("mobile_money", "card")))
+                    .body(request)
                     .retrieve()
                     .body(Map.class);
             Map<String, Object> data = (Map<String, Object>) body.get("data");
