@@ -67,7 +67,10 @@ public final class NotificationDtos {
             @NotNull NotificationType type,
             @NotBlank @Size(max = 120) String title,
             @NotBlank @Size(max = 500) String body,
-            Map<String, Object> payload) {
+            Map<String, Object> payload,
+            /** Admin-chosen channels; null → true. Still intersected with each user's prefs. */
+            Boolean inApp,
+            Boolean push) {
     }
 
     public record AssetCapturedRequest(@NotNull UUID userId, @NotNull UUID propertyId) {

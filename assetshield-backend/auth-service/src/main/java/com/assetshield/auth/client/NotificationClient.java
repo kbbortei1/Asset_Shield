@@ -28,7 +28,7 @@ public class NotificationClient {
     }
 
     /** Fan-out an announcement to many users in one call. */
-    public void broadcast(List<UUID> userIds, String title, String body) {
+    public void broadcast(List<UUID> userIds, String title, String body, boolean inApp, boolean push) {
         restClient.post()
                 .uri("/internal/notifications/send-bulk")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -36,7 +36,9 @@ public class NotificationClient {
                         "userIds", userIds.stream().map(UUID::toString).toList(),
                         "type", "ANNOUNCEMENT",
                         "title", title,
-                        "body", body))
+                        "body", body,
+                        "inApp", inApp,
+                        "push", push))
                 .retrieve()
                 .toBodilessEntity();
     }

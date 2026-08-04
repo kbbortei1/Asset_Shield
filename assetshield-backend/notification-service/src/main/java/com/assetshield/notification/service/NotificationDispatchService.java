@@ -51,8 +51,16 @@ public class NotificationDispatchService {
     @Transactional
     public void dispatchAsync(UUID userId, NotificationType type, String title, String body,
                               Map<String, Object> payload) {
+        dispatchAsync(userId, type, title, body, payload, true, true);
+    }
+
+    /** Channel-aware fire-and-forget (admin broadcasts pick in-app and/or push). */
+    @Async("dispatchExecutor")
+    @Transactional
+    public void dispatchAsync(UUID userId, NotificationType type, String title, String body,
+                              Map<String, Object> payload, boolean adminInApp, boolean adminPush) {
         try {
-            doDispatch(userId, type, title, body, payload);
+            doDispatch(userId, type, title, body, payload, adminInApp, adminPush);
         } catch (Exception e) {
             // an async failure has no caller to bubble to — log loudly
             log.error("Notification dispatch failed for user {} ({}): {}", userId, type, e.getMessage());
@@ -63,16 +71,19 @@ public class NotificationDispatchService {
     @Transactional
     public AppNotification dispatch(UUID userId, NotificationType type, String title, String body,
                                     Map<String, Object> payload) {
-        return doDispatch(userId, type, title, body, payload);
+        return doDispatch(userId, type, title, body, payload, true, true);
     }
 
     private AppNotification doDispatch(UUID userId, NotificationType type, String title, String body,
-                                       Map<String, Object> payload) {
+                                       Map<String, Object> payload, boolean adminInApp, boolean adminPush) {
         PreferenceService.Channels channels = preferenceService.channelsFor(userId);
+        // Effective channels = what the admin asked for ∩ what the user allows.
+        boolean useInApp = adminInApp && channels.inAppEnabled();
+        boolean usePush = adminPush && channels.pushEnabled();
 
         // In-app history (the Alerts tab): only recorded when in-app is enabled.
         AppNotification notification = null;
-        if (channels.inAppEnabled()) {
+        if (useInApp) {
             notification = new AppNotification();
             notification.setUserId(userId);
             notification.setType(type);
@@ -85,7 +96,7 @@ public class NotificationDispatchService {
 
         // Push banners: only when the user has push on. When off (or no devices),
         // nothing is sent and the in-app row — if any — is simply SENT.
-        List<DeviceToken> devices = channels.pushEnabled()
+        List<DeviceToken> devices = usePush
                 ? deviceTokenRepository.findByUserIdAndRevokedAtIsNull(userId)
                 : List.of();
         if (devices.isEmpty()) {

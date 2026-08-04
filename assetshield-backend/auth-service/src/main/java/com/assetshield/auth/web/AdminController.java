@@ -104,7 +104,7 @@ public class AdminController {
     @PostMapping("/broadcast")
     public ApiResponse<BroadcastResponse> broadcast(@Valid @RequestBody BroadcastRequest request) {
         int reach = broadcastService.broadcast(request.audience(), request.userIds(),
-                request.title(), request.body());
+                request.title(), request.body(), request.inApp(), request.push());
         return ApiResponse.success(new BroadcastResponse(true, reach), "Broadcast sent");
     }
 }

@@ -44,9 +44,11 @@ public class InternalNotificationController {
     /** Fan-out for admin broadcasts: one call, many recipients (each async). */
     @PostMapping("/notifications/send-bulk")
     public ResponseEntity<ApiResponse<AcceptedResponse>> sendBulk(@Valid @RequestBody BulkSendRequest request) {
+        boolean inApp = request.inApp() == null || request.inApp();
+        boolean push = request.push() == null || request.push();
         for (java.util.UUID userId : request.userIds()) {
             dispatchService.dispatchAsync(userId, request.type(), request.title(),
-                    request.body(), request.payload());
+                    request.body(), request.payload(), inApp, push);
         }
         return ResponseEntity.status(HttpStatus.ACCEPTED)
                 .body(ApiResponse.success(new AcceptedResponse(true), "Broadcast accepted"));

@@ -156,7 +156,10 @@ public final class AuthDtos {
             @NotNull BroadcastAudience audience,
             List<UUID> userIds,
             @NotBlank @Size(max = 120) String title,
-            @NotBlank @Size(max = 500) String body) {
+            @NotBlank @Size(max = 500) String body,
+            /** Channels the admin chose; null → true (both). At least one must be on. */
+            Boolean inApp,
+            Boolean push) {
     }
 
     public record BroadcastResponse(boolean sent, int recipientCount) {

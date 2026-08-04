@@ -56,7 +56,15 @@ public class AdminBroadcastService {
 
     /** Resolves the audience to recipient ids and dispatches. Returns the reach. */
     @Transactional(readOnly = true)
-    public int broadcast(BroadcastAudience audience, List<UUID> userIds, String title, String body) {
+    public int broadcast(BroadcastAudience audience, List<UUID> userIds, String title, String body,
+                         Boolean inApp, Boolean push) {
+        // null → on; the admin can turn either channel off, but not both.
+        boolean wantInApp = inApp == null || inApp;
+        boolean wantPush = push == null || push;
+        if (!wantInApp && !wantPush) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED,
+                    "Choose at least one channel (in-app or push)");
+        }
         List<UUID> recipients = switch (audience) {
             case EVERYONE -> userRepository.idsByStatusAndRoles(UserStatus.ACTIVE, AUDIENCE_ROLES);
             case OWNERS -> userRepository.idsByStatusAndRoles(UserStatus.ACTIVE, List.of(Role.OWNER));
@@ -66,7 +74,7 @@ public class AdminBroadcastService {
         if (recipients.isEmpty()) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED, "This broadcast has no recipients");
         }
-        notificationClient.broadcast(recipients, title.trim(), body.trim());
+        notificationClient.broadcast(recipients, title.trim(), body.trim(), wantInApp, wantPush);
         return recipients.size();
     }
 }
