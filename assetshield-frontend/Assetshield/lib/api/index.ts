@@ -11,6 +11,8 @@ export {
   setTokens,
   clearTokens,
   hasSession,
+  cacheProfile,
+  getCachedProfile,
 } from './tokens';
 
 export { authApi } from './endpoints/auth';

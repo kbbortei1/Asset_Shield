@@ -2,9 +2,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
   authApi,
+  cacheProfile,
   clearTokens,
+  getCachedProfile,
   getRefreshToken,
   hasSession,
+  isApiError,
   loadTokens,
   LoginRequest,
   RegisterAgentRequest,
@@ -46,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const onAuthenticated = useCallback(async (profile: UserProfile) => {
     setUser(profile);
     setStatus('authenticated');
+    cacheProfile(profile); // remember it for the next cold start
     // Push lifecycle: register the FCM token + listen for rotation.
     registerPushToken();
     tokenRotationUnsub.current?.();
@@ -60,23 +64,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     qc.clear();
   }, [qc]);
 
-  // Boot: restore tokens, fetch profile.
+  // Boot: restore the session. We optimistically sign the user in from the
+  // cached profile, then validate against the server. A network error (offline,
+  // bad URL, blip) must NEVER log the user out — only a genuine auth failure
+  // (dead/rotated session) does. This fixes "have to sign in again every time
+  // I reopen the app".
   useEffect(() => {
     (async () => {
       await loadTokens();
-      if (await hasSession()) {
-        try {
-          const profile = await usersApi.me();
-          await onAuthenticated(profile);
-        } catch {
-          await clearTokens();
-          setStatus('unauthenticated');
-        }
-      } else {
+      if (!(await hasSession())) {
         setStatus('unauthenticated');
+        return;
+      }
+      const cached = await getCachedProfile<UserProfile>();
+      if (cached) {
+        await onAuthenticated(cached); // land straight in the app
+      }
+      try {
+        const profile = await usersApi.me();
+        await onAuthenticated(profile); // refresh with the live profile
+      } catch (e) {
+        // httpStatus 0 = network/URL error → keep the session, stay signed in.
+        if (isApiError(e) && e.httpStatus === 0) {
+          if (!cached) setStatus('authenticated'); // trust the stored token
+        } else {
+          // real auth failure — the session is dead.
+          await clearTokens();
+          await goUnauthenticated();
+        }
       }
     })();
-  }, [onAuthenticated]);
+  }, [onAuthenticated, goUnauthenticated]);
 
   // Force re-login when the interceptor reports a dead session.
   useEffect(() => {

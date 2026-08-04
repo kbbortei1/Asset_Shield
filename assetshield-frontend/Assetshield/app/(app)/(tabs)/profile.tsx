@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import * as Updates from 'expo-updates';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 import { usersApi } from '@/lib/api';
@@ -30,6 +31,28 @@ export default function ProfileTab() {
   const onRetryFailed = async () => {
     await retryFailedNow();
     show('Retrying failed uploads…');
+  };
+
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const checkForUpdates = async () => {
+    if (checkingUpdate) return;
+    setCheckingUpdate(true);
+    try {
+      const result = await Updates.checkForUpdateAsync();
+      if (result.isAvailable) {
+        show('Update found — downloading…');
+        await Updates.fetchUpdateAsync();
+        // reloadAsync restarts the app on the just-downloaded version
+        await Updates.reloadAsync();
+      } else {
+        show("You're on the latest version");
+      }
+    } catch {
+      // In dev/Expo Go there's no updater; treat as "up to date" rather than error.
+      show(__DEV__ ? 'Updates are disabled in development' : 'Could not check right now — try again');
+    } finally {
+      setCheckingUpdate(false);
+    }
   };
 
   const uploadAvatar = async (source: 'camera' | 'library') => {
@@ -176,6 +199,7 @@ export default function ProfileTab() {
         {role !== 'ADMIN' ? <Row icon="receipt-outline" label="Billing history" onPress={() => router.push('/(app)/billing' as never)} /> : null}
         <Row icon="lock-closed-outline" label="Privacy & data" onPress={() => router.push('/(app)/privacy' as never)} />
         <Row icon="chatbox-ellipses-outline" label="Report a problem" onPress={() => router.push('/(app)/report-problem' as never)} />
+        <Row icon="cloud-download-outline" label={checkingUpdate ? 'Checking for updates…' : 'Check for updates'} onPress={checkForUpdates} />
       </View>
 
       {role === 'ADMIN' ? (
