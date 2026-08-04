@@ -75,8 +75,10 @@ export default function DossierScreen() {
     enabled: ready && !!damageReportId,
   });
 
-  const pairs = report.data?.pairs ?? [];
-  const photos = report.data?.photos ?? [];
+  // Memoise so the `?? []` fallbacks don't produce a new array every render
+  // (which would churn the useMemo/useQuery deps below).
+  const pairs = useMemo(() => report.data?.pairs ?? [], [report.data]);
+  const photos = useMemo(() => report.data?.photos ?? [], [report.data]);
   const assetIds = useMemo(() => Array.from(new Set(pairs.map((p) => p.assetId))), [pairs]);
 
   // Resolve the paired ASSET photos so each incident photo shows the documented
