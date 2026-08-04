@@ -1,9 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { File, Paths } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import * as Sharing from 'expo-sharing';
 import * as WebBrowser from 'expo-web-browser';
 import { Alert, View } from 'react-native';
 import { isApiError, marketplaceApi, resolveMediaUrl } from '@/lib/api';
@@ -32,18 +30,17 @@ export default function SharedDossierViewer() {
   const openPdf = async () => {
     setOpening(true);
     try {
-      const { downloadUrl, fileName } = await marketplaceApi.agentDownloadDossier(dossierId);
+      const { downloadUrl } = await marketplaceApi.agentDownloadDossier(dossierId); // fresh signed URL
       const url = resolveMediaUrl(downloadUrl);
       if (!url) throw new Error('No download URL');
-      const name = /\.pdf$/i.test(fileName ?? '') ? fileName : `${fileName || `dossier-${dossierId}`}.pdf`;
-      const dest = new File(Paths.cache, name);
-      if (dest.exists) dest.delete();
-      const file = await File.downloadFileAsync(url, dest);
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(file.uri, { mimeType: 'application/pdf', dialogTitle: name, UTI: 'com.adobe.pdf' });
-      } else {
-        await WebBrowser.openBrowserAsync(url);
-      }
+      // Render the pages inline in an in-app browser tab (Android downloads a
+      // raw PDF URL otherwise) — same in-app experience the owner gets.
+      const inline = `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(url)}`;
+      await WebBrowser.openBrowserAsync(inline, {
+        toolbarColor: colors.primary,
+        controlsColor: colors.onPrimary,
+        enableBarCollapsing: true,
+      });
     } catch (e) {
       Alert.alert(
         'Could not open the dossier',
