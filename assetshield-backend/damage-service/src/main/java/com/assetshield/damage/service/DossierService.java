@@ -364,7 +364,12 @@ public class DossierService {
     private Dossier requireAccessible(AuthUser user, UUID dossierId) {
         Dossier dossier = requireDossier(dossierId);
         DamageReport report = guard.requireReport(dossier.getDamageReportId());
-        guard.requireMutate(report.getPropertyId(), user.id());
+        // The dossier owner (the person who filed the report) can always view and
+        // manage it — a dossier is a permanent, sealed record that must survive
+        // the property being deleted. Others still need live property access.
+        if (!report.getCreatedByUserId().equals(user.id())) {
+            guard.requireMutate(report.getPropertyId(), user.id());
+        }
         return dossier;
     }
 

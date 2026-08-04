@@ -114,7 +114,12 @@ public class DamageReportService {
     @Transactional(readOnly = true)
     public ReportDetailResponse detail(AuthUser user, UUID reportId) {
         DamageReport report = guard.requireReport(reportId);
-        guard.requireView(report.getPropertyId(), user.id());
+        // The report's author can always view it — even after the property was
+        // deleted — so their dossier evidence remains accessible. Others need
+        // live property view access.
+        if (!report.getCreatedByUserId().equals(user.id())) {
+            guard.requireView(report.getPropertyId(), user.id());
+        }
 
         List<PhotoPair> pairs = pairRepository.findByDamageReportIdOrderByCreatedAtAsc(reportId);
         Set<UUID> pairedPhotoIds = pairs.stream().map(PhotoPair::getDamagePhotoId)
