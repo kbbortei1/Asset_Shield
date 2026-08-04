@@ -123,10 +123,10 @@ export default function CaptureAsset() {
           </Pressable>
         </Card>
       ) : (
-        <View style={{ flexDirection: 'row', gap: spacing.md }}>
-          <CaptureTile icon="camera" label="Take photo" onPress={() => choose('camera')} />
-          <CaptureTile icon="images" label="From gallery" onPress={() => choose('library')} />
-        </View>
+        // Camera-only by design: gallery uploads would let people submit photos
+        // they didn't take (incl. AI-generated/edited), defeating the whole
+        // tamper-evidence promise. Evidence must be captured live, in-app.
+        <CaptureTile icon="camera" label="Take photo" onPress={() => choose('camera')} />
       )}
 
       {image ? <LocationConfirm fix={fix} onRefresh={refreshFix} /> : null}

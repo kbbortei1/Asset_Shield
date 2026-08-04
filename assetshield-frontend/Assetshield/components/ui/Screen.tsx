@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
-import { StyleProp, View, ViewStyle, RefreshControl } from 'react-native';
+import { ReactNode, useState } from 'react';
+import { LayoutChangeEvent, StyleProp, View, ViewStyle, RefreshControl } from 'react-native';
 import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import { SafeAreaView, Edge } from 'react-native-safe-area-context';
 import { colors, spacing } from '@/theme';
@@ -34,6 +34,11 @@ export function Screen({
   footer,
 }: ScreenProps) {
   const pad: ViewStyle = padded ? { paddingHorizontal: spacing.screenPadding } : {};
+  // Lift a focused input above BOTH the keyboard and the sticky footer, so the
+  // Save button never overlaps the field being typed into. Measured, not
+  // guessed, so it's correct for any footer height.
+  const [footerHeight, setFooterHeight] = useState(0);
+  const onFooterLayout = (e: LayoutChangeEvent) => setFooterHeight(e.nativeEvent.layout.height);
 
   return (
     <View style={{ flex: 1 }}>
@@ -44,7 +49,7 @@ export function Screen({
         {scroll ? (
           <KeyboardAwareScrollView
             style={{ flex: 1 }}
-            bottomOffset={24}
+            bottomOffset={(footer ? footerHeight : 0) + 24}
             contentContainerStyle={[{ paddingVertical: spacing.lg, gap: spacing.lg }, pad, contentStyle]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
@@ -60,7 +65,7 @@ export function Screen({
         )}
         {footer ? (
           <KeyboardStickyView>
-            <View style={[{ paddingVertical: spacing.md, backgroundColor: 'transparent' }, pad]}>{footer}</View>
+            <View onLayout={onFooterLayout} style={[{ paddingVertical: spacing.md, backgroundColor: 'transparent' }, pad]}>{footer}</View>
           </KeyboardStickyView>
         ) : null}
       </SafeAreaView>
