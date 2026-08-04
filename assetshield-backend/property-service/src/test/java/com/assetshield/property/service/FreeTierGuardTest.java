@@ -38,8 +38,14 @@ class FreeTierGuardTest {
     @Test
     void freeBlocksThe31stPhoto() {
         FreeTierGuard guard = guard("FREE");
-        assertThatCode(() -> guard.checkAssetQuota(USER, 29)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> guard.checkAssetQuota(USER, 30))
+        // 29 existing + 1 new = 30 → still within the cap
+        assertThatCode(() -> guard.checkPhotoQuota(USER, 29, 1)).doesNotThrowAnyException();
+        // 30 existing + 1 new = 31 → over the cap
+        assertThatThrownBy(() -> guard.checkPhotoQuota(USER, 30, 1))
+                .isInstanceOfSatisfying(ApiException.class,
+                        e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.FREE_TIER_LIMIT));
+        // a multi-photo batch that would cross the cap is blocked too
+        assertThatThrownBy(() -> guard.checkPhotoQuota(USER, 25, 10))
                 .isInstanceOfSatisfying(ApiException.class,
                         e -> assertThat(e.errorCode()).isEqualTo(ErrorCode.FREE_TIER_LIMIT));
     }
@@ -49,7 +55,7 @@ class FreeTierGuardTest {
         FreeTierGuard guard = guard("PRO");
         assertThatCode(() -> guard.checkPropertyQuota(USER, 1)).doesNotThrowAnyException();
         assertThatCode(() -> guard.checkPropertyQuota(USER, 500)).doesNotThrowAnyException();
-        assertThatCode(() -> guard.checkAssetQuota(USER, 30)).doesNotThrowAnyException();
-        assertThatCode(() -> guard.checkAssetQuota(USER, 10_000)).doesNotThrowAnyException();
+        assertThatCode(() -> guard.checkPhotoQuota(USER, 30, 1)).doesNotThrowAnyException();
+        assertThatCode(() -> guard.checkPhotoQuota(USER, 10_000, 15)).doesNotThrowAnyException();
     }
 }
