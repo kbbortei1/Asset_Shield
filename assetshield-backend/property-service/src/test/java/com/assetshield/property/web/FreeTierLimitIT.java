@@ -10,6 +10,8 @@ import com.assetshield.property.TestTokens;
 import com.assetshield.property.client.AuthUserClient;
 import com.assetshield.property.domain.Asset;
 import com.assetshield.property.domain.AssetCategory;
+import com.assetshield.property.domain.AssetPhoto;
+import com.assetshield.property.repo.AssetPhotoRepository;
 import com.assetshield.property.repo.AssetRepository;
 import com.assetshield.property.service.Sha256;
 import java.math.BigDecimal;
@@ -59,6 +61,9 @@ class FreeTierLimitIT {
 
     @Autowired
     AssetRepository assetRepository;
+
+    @Autowired
+    AssetPhotoRepository assetPhotoRepository;
 
     @MockitoBean
     AuthUserClient authUserClient;
@@ -117,7 +122,18 @@ class FreeTierLimitIT {
             a.setDescription("Seed " + i);
             a.setEstimatedValue(new BigDecimal("10.00"));
             a.setCategory(AssetCategory.OTHER);
-            assetRepository.save(a);
+            Asset saved = assetRepository.save(a);
+            // quota counts asset_photos now, so each seeded asset needs a photo row
+            AssetPhoto ph = new AssetPhoto();
+            ph.setAssetId(saved.getId());
+            ph.setPropertyId(propertyId);
+            ph.setPhotoUrl(saved.getPhotoUrl());
+            ph.setSha256Hash(saved.getSha256Hash());
+            ph.setGpsLat(saved.getGpsLat());
+            ph.setGpsLng(saved.getGpsLng());
+            ph.setCapturedAt(saved.getCapturedAt());
+            ph.setPosition(0);
+            assetPhotoRepository.save(ph);
         }
 
         byte[] bytes = "photo-31".getBytes(StandardCharsets.UTF_8);
@@ -125,9 +141,9 @@ class FreeTierLimitIT {
                         .file(new MockMultipartFile("file", "p.jpg", "image/jpeg", bytes))
                         .file(new MockMultipartFile("metadata", "metadata", "application/json",
                                 """
-                                {"sha256Hash":"%s","gpsLat":5.6037,"gpsLng":-0.1870,
-                                 "capturedAt":"2026-06-10T10:00:00Z","description":"31st",
-                                 "estimatedValue":10,"category":"OTHER"}
+                                {"description":"31st","estimatedValue":10,"category":"OTHER",
+                                 "photos":[{"sha256Hash":"%s","gpsLat":5.6037,"gpsLng":-0.1870,
+                                            "capturedAt":"2026-06-10T10:00:00Z"}]}
                                 """.formatted(Sha256.hex(bytes)).getBytes(StandardCharsets.UTF_8)))
                         .header(HttpHeaders.AUTHORIZATION, bearer))
                 .andExpect(status().is(422))

@@ -103,13 +103,13 @@ class AssetInsightsIT {
     private static String metadata(String hash, String description, String category, String value,
                                    LocalDate warrantyExpiresOn, LocalDate nextServiceOn) {
         return """
-                {"sha256Hash":"%s","gpsLat":5.6037,"gpsLng":-0.1870,
-                 "capturedAt":"2026-06-10T10:00:00Z","description":%s,
-                 "estimatedValue":%s,"category":"%s",
-                 "warrantyExpiresOn":%s,"nextServiceOn":%s}
-                """.formatted(hash, quote(description), value, category,
+                {"description":%s,"estimatedValue":%s,"category":"%s",
+                 "warrantyExpiresOn":%s,"nextServiceOn":%s,
+                 "photos":[{"sha256Hash":"%s","gpsLat":5.6037,"gpsLng":-0.1870,
+                            "capturedAt":"2026-06-10T10:00:00Z"}]}
+                """.formatted(quote(description), value, category,
                 warrantyExpiresOn == null ? "null" : "\"" + warrantyExpiresOn + "\"",
-                nextServiceOn == null ? "null" : "\"" + nextServiceOn + "\"");
+                nextServiceOn == null ? "null" : "\"" + nextServiceOn + "\"", hash);
     }
 
     private static String quote(String raw) {

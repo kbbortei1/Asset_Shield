@@ -86,9 +86,9 @@ class NotificationResilienceIT {
                         .file(new MockMultipartFile("file", "p.jpg", "image/jpeg", bytes))
                         .file(new MockMultipartFile("metadata", "metadata", "application/json",
                                 """
-                                {"sha256Hash":"%s","gpsLat":5.5461,"gpsLng":-0.2117,
-                                 "capturedAt":"2026-06-12T10:00:00Z","description":"Stock shelf",
-                                 "estimatedValue":150,"category":"CLOTHING_STOCK"}
+                                {"description":"Stock shelf","estimatedValue":150,"category":"CLOTHING_STOCK",
+                                 "photos":[{"sha256Hash":"%s","gpsLat":5.5461,"gpsLng":-0.2117,
+                                            "capturedAt":"2026-06-12T10:00:00Z"}]}
                                 """.formatted(Sha256.hex(bytes)).getBytes(StandardCharsets.UTF_8)))
                         .header(HttpHeaders.AUTHORIZATION, bearer))
                 .andExpect(status().isCreated())
