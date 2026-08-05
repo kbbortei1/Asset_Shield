@@ -198,6 +198,7 @@ export default function ProfileTab() {
         ) : null}
         {role !== 'ADMIN' ? <Row icon="receipt-outline" label="Billing history" onPress={() => router.push('/(app)/billing' as never)} /> : null}
         <Row icon="lock-closed-outline" label="Privacy & data" onPress={() => router.push('/(app)/privacy' as never)} />
+        {role !== 'ADMIN' ? <Row icon="help-circle-outline" label="Help centre & FAQs" onPress={() => router.push('/(app)/help' as never)} /> : null}
         <Row icon="chatbox-ellipses-outline" label="Report a problem" onPress={() => router.push('/(app)/report-problem' as never)} />
         <Row icon="cloud-download-outline" label={checkingUpdate ? 'Checking for updates…' : 'Check for updates'} onPress={checkForUpdates} />
       </View>
