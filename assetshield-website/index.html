@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AssetShield: Tamper-evident proof for your belongings</title>
+  <meta name="description" content="AssetShield lets you photograph and permanently fingerprint your belongings, so if disaster strikes you have trusted, tamper-proof evidence for an insurance claim. Built for Ghana." />
+  <meta name="theme-color" content="#0E5A52" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="AssetShield: Proof before you ever need it" />
+  <meta property="og:description" content="Photograph and permanently fingerprint your belongings. Tamper-evident evidence insurers can trust. Built for Ghana." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://assetshield.me" />
+  <meta property="og:image" content="assets/og-cover.png" />
+
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="apple-touch-icon" href="assets/logo.png" />
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+
+  <!-- Fonts: Sora (headings) + Inter (body); same as the app -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ============ NAV ============ -->
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a href="#top" class="brand" aria-label="AssetShield home">
+        <img class="brand__logo" src="assets/logo.png" alt="" width="36" height="36" />
+        <span class="brand__name">Asset<span>Shield</span></span>
+        <span class="brand__gh">GH</span>
+      </a>
+
+      <nav class="nav__links" id="navLinks">
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#audiences">For you</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+        <a href="#download" class="btn btn--primary btn--sm">Get the app</a>
+      </nav>
+
+      <button class="nav__toggle" id="navToggle" aria-label="Menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <main id="top">
+    <section class="hero">
+      <div class="container hero__grid">
+        <div class="hero__copy reveal">
+          <span class="eyebrow eyebrow--flag">
+            <svg class="flag-gh" viewBox="0 0 30 20" width="20" height="13" role="img" aria-label="Ghana">
+              <rect width="30" height="20" fill="#FCD116"/>
+              <rect width="30" height="6.667" fill="#CE1126"/>
+              <rect width="30" height="6.667" y="13.333" fill="#006B3F"/>
+              <path fill="#111" d="M15 6.6 15.794 8.908 18.234 8.95 16.284 10.417 16.999 12.751 15 11.35 13.001 12.751 13.716 10.417 11.766 8.95 14.206 8.908Z"/>
+            </svg>
+            Protect what matters.
+          </span>
+          <h1 class="hero__title">Your digital safety<br>deposit box.</h1>
+          <p class="hero__sub">
+            AssetShield turns your phone into a vault of tamper-evident evidence.
+            Document what you own (photos, receipts and values) and we permanently
+            fingerprint every image, so when disaster strikes your insurance claim is
+            backed by proof no one can dispute.
+          </p>
+          <div class="hero__cta">
+            <a href="#download" class="btn btn--primary btn--lg">Download the app</a>
+            <a href="#how" class="btn btn--ghost btn--lg">See how it works</a>
+          </div>
+          <ul class="hero__badges">
+            <li><svg class="i" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V5l-8-3Z"/><path class="chk" d="m8.5 12 2.3 2.3 4.7-4.9"/></svg> Tamper-evident</li>
+            <li><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 0 0-8-8Z" class="pin"/></svg> GPS-stamped</li>
+            <li><svg class="i" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2" class="pin"/><path d="M8 10V7a4 4 0 0 1 8 0v3" class="chk"/></svg> SHA-256 sealed</li>
+          </ul>
+        </div>
+
+        <div class="hero__art reveal">
+          <div class="phone phone--front">
+            <img class="shot" decoding="async" src="assets/screenshots/home.jpg" alt="AssetShield home: total protected value and your properties"
+                 onerror="this.closest('.phone').classList.add('phone--empty')" />
+            <div class="phone__ph"><span>home.jpg</span></div>
+          </div>
+          <div class="phone phone--back">
+            <img class="shot" decoding="async" src="assets/screenshots/dossier.jpg" alt="A signed, cryptographically sealed AssetShield dossier"
+                 onerror="this.closest('.phone').classList.add('phone--empty')" />
+            <div class="phone__ph"><span>dossier.jpg</span></div>
+          </div>
+          <div class="hero__glow" aria-hidden="true"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ TRUST STRIP (marquee) ============ -->
+    <section class="strip" aria-label="How every photo is sealed">
+      <div class="marquee">
+        <div class="marquee__track">
+          <span class="marquee__item"><b>SHA-256</b> cryptographic hash</span><i class="marquee__dot"></i>
+          <span class="marquee__item"><b>GPS</b> location tag</span><i class="marquee__dot"></i>
+          <span class="marquee__item"><b>Timestamp</b> at capture</span><i class="marquee__dot"></i>
+          <span class="marquee__item"><b>Camera-only</b>, no gallery uploads</span><i class="marquee__dot"></i>
+          <span class="marquee__item"><b>Sealed</b> the moment you shoot</span><i class="marquee__dot"></i>
+          <span class="marquee__item" aria-hidden="true"><b>SHA-256</b> cryptographic hash</span><i class="marquee__dot" aria-hidden="true"></i>
+          <span class="marquee__item" aria-hidden="true"><b>GPS</b> location tag</span><i class="marquee__dot" aria-hidden="true"></i>
+          <span class="marquee__item" aria-hidden="true"><b>Timestamp</b> at capture</span><i class="marquee__dot" aria-hidden="true"></i>
+          <span class="marquee__item" aria-hidden="true"><b>Camera-only</b>, no gallery uploads</span><i class="marquee__dot" aria-hidden="true"></i>
+          <span class="marquee__item" aria-hidden="true"><b>Sealed</b> the moment you shoot</span><i class="marquee__dot" aria-hidden="true"></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PROBLEM ============ -->
+    <section class="problem">
+      <div class="container problem__inner reveal">
+        <h2 class="section__title">When you lose everything,<br>proof is everything.</h2>
+        <p class="section__lead">
+          Fire, floods, theft, storms: in the moment that matters, insurers ask a hard question:
+          <em>can you prove what you owned, and what it was worth?</em>
+          Receipts get lost. Photos on your gallery can be edited or faked.
+          AssetShield gives you evidence that stands up, captured before the loss and sealed so it can't be altered.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ HOW IT WORKS ============ -->
+    <section class="how" id="how">
+      <div class="container">
+        <div class="section__head reveal">
+          <span class="eyebrow eyebrow--center">How it works</span>
+          <h2 class="section__title">From photo to payout, in four steps.</h2>
+        </div>
+        <ol class="steps">
+          <li class="step reveal">
+            <span class="step__num">1</span>
+            <h3>Document your assets</h3>
+            <p>Open a property (your home or shop) and photograph each item live in the app. Up to 15 photos per asset, with one shared description and value.</p>
+          </li>
+          <li class="step reveal">
+            <span class="step__num">2</span>
+            <h3>Every shot gets sealed</h3>
+            <p>The instant you capture, we compute a SHA-256 fingerprint plus GPS and timestamp. That's your tamper-evident proof, locked forever.</p>
+          </li>
+          <li class="step reveal">
+            <span class="step__num">3</span>
+            <h3>Report damage if it happens</h3>
+            <p>When disaster strikes, photograph the damage against the asset you already documented, for clean before-and-after evidence in one dossier.</p>
+          </li>
+          <li class="step reveal">
+            <span class="step__num">4</span>
+            <h3>Generate a trusted dossier</h3>
+            <p>Bundle it into a signed PDF an insurer can verify hasn't been altered, then share it and chat with agents right in the app.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ============ FEATURES ============ -->
+    <section class="features" id="features">
+      <div class="container">
+        <div class="section__head reveal">
+          <span class="eyebrow eyebrow--center">Features</span>
+          <h2 class="section__title">Everything you need to be believed.</h2>
+        </div>
+        <div class="feature-grid">
+          <article class="feature reveal">
+            <div class="feature__icon"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V5l-8-3Z"/><path class="a" d="m8.5 12 2.3 2.3 4.7-4.9"/></svg></div>
+            <h3>Tamper-evident by design</h3>
+            <p>A SHA-256 hash of every image means any edit, even one pixel, is instantly detectable. Insurers verify authenticity in a tap.</p>
+          </article>
+          <article class="feature reveal">
+            <div class="feature__icon"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.4" class="a"/><path d="M8 6l1.5-2h5L16 6"/></svg></div>
+            <h3>Live camera capture</h3>
+            <p>Evidence is taken inside the app and never uploaded from your gallery, so it can't be an old, edited, or AI-generated image.</p>
+          </article>
+          <article class="feature reveal">
+            <div class="feature__icon"><svg viewBox="0 0 24 24"><path d="M12 2a8 8 0 0 0-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 0 0-8-8Z"/><circle cx="12" cy="10" r="3" class="a"/></svg></div>
+            <h3>GPS &amp; time stamped</h3>
+            <p>Each photo carries where and when it was taken, and auto-pairs damage to the right asset for airtight before-and-after evidence.</p>
+          </article>
+          <article class="feature reveal">
+            <div class="feature__icon"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path class="a" d="M9 13h6M9 17h6M9 9h2"/></svg></div>
+            <h3>Signed dossiers</h3>
+            <p>Bundle assets and damage into one tamper-evident PDF: a claim-ready pack insurers trust, that stays yours even if you delete the property.</p>
+          </article>
+          <article class="feature reveal">
+            <div class="feature__icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H7l-3 3V5Z"/><path class="a" d="M8 9h8M8 12h5"/></svg></div>
+            <h3>Talk to insurers in-app</h3>
+            <p>Share a dossier and chat directly with verified agents. Owners and agents see all their conversations in one place.</p>
+          </article>
+          <article class="feature reveal">
+            <div class="feature__icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path class="a" d="M12 7v5l3 2"/></svg></div>
+            <h3>Works when you're offline</h3>
+            <p>Capture and queue evidence with no signal; it seals locally and syncs the moment you're back online. Nothing gets lost.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ AUDIENCES ============ -->
+    <section class="audiences" id="audiences">
+      <div class="container">
+        <div class="section__head reveal">
+          <span class="eyebrow eyebrow--center">For owners &amp; insurers</span>
+          <h2 class="section__title">Two sides, one source of truth.</h2>
+        </div>
+        <div class="aud-grid">
+          <article class="aud aud--owner reveal">
+            <h3><span class="aud__tag">For owners</span></h3>
+            <p class="aud__lead">Protect what you've worked for.</p>
+            <ul class="ticks">
+              <li>Document your home or shop in minutes</li>
+              <li>Keep tamper-proof proof of what you own</li>
+              <li>File damage with rock-solid evidence</li>
+              <li>Get quotes from verified insurers</li>
+            </ul>
+          </article>
+          <article class="aud aud--agent reveal">
+            <h3><span class="aud__tag aud__tag--gold">For insurers</span></h3>
+            <p class="aud__lead">Underwrite with confidence.</p>
+            <ul class="ticks">
+              <li>Receive dossiers you can cryptographically verify</li>
+              <li>Instantly flag any tampering or fraud</li>
+              <li>Discover owner leads in your area</li>
+              <li>Chat and send quotes without leaving the app</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="showcase reveal">
+          <p class="showcase__lead">A look inside the app <span>swipe to explore</span></p>
+          <div class="showcase__viewport">
+            <div class="showcase__track" id="showTrack">
+              <figure class="shotcard">
+                <div class="phone phone--sm">
+                  <img class="shot" loading="lazy" decoding="async" src="assets/screenshots/assets.jpg" alt="Documented assets, each VERIFIED with a hash and GPS"
+                       onerror="this.closest('.phone').classList.add('phone--empty')" />
+                  <div class="phone__ph"><span>assets.jpg</span></div>
+                </div>
+                <figcaption>Every asset <b>VERIFIED</b> &amp; hashed</figcaption>
+              </figure>
+              <figure class="shotcard">
+                <div class="phone phone--sm">
+                  <img class="shot" loading="lazy" decoding="async" src="assets/screenshots/property.jpg" alt="Property detail: capture asset, report damage, open to insurance offers"
+                       onerror="this.closest('.phone').classList.add('phone--empty')" />
+                  <div class="phone__ph"><span>property.jpg</span></div>
+                </div>
+                <figcaption>Capture, report damage &amp; open to offers</figcaption>
+              </figure>
+              <figure class="shotcard">
+                <div class="phone phone--sm">
+                  <img class="shot" loading="lazy" decoding="async" src="assets/screenshots/onboarding.jpg" alt="AssetShield onboarding: your digital safety deposit box"
+                       onerror="this.closest('.phone').classList.add('phone--empty')" />
+                  <div class="phone__ph"><span>onboarding.jpg</span></div>
+                </div>
+                <figcaption>Set up in minutes</figcaption>
+              </figure>
+              <figure class="shotcard">
+                <div class="phone phone--sm">
+                  <img class="shot" loading="lazy" decoding="async" src="assets/screenshots/agent-home.jpg" alt="Insurer dashboard: leads available, dossiers to review, quotes"
+                       onerror="this.closest('.phone').classList.add('phone--empty')" />
+                  <div class="phone__ph"><span>agent-home.jpg</span></div>
+                </div>
+                <figcaption>Insurers: leads, dossiers &amp; quotes</figcaption>
+              </figure>
+              <figure class="shotcard">
+                <div class="phone phone--sm">
+                  <img class="shot" loading="lazy" decoding="async" src="assets/screenshots/shared-dossier.jpg" alt="Insurer view: Tamper-evident verified, manifest hash matches"
+                       onerror="this.closest('.phone').classList.add('phone--empty')" />
+                  <div class="phone__ph"><span>shared-dossier.jpg</span></div>
+                </div>
+                <figcaption><b>Tamper-evident: verified</b></figcaption>
+              </figure>
+              <figure class="shotcard">
+                <div class="phone phone--sm">
+                  <img class="shot" loading="lazy" decoding="async" src="assets/screenshots/alerts.jpg" alt="Alerts: quote accepted, new message, dossier shared"
+                       onerror="this.closest('.phone').classList.add('phone--empty')" />
+                  <div class="phone__ph"><span>alerts.jpg</span></div>
+                </div>
+                <figcaption>Real-time alerts &amp; messages</figcaption>
+              </figure>
+            </div>
+          </div>
+          <div class="showcase__ctrl">
+            <button class="showcase__btn" id="showPrev" type="button" aria-label="Previous screens">
+              <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="showcase__btn" id="showNext" type="button" aria-label="Next screens">
+              <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECURITY (dark) ============ -->
+    <section class="security">
+      <div class="container security__inner reveal">
+        <div class="security__copy">
+          <span class="eyebrow eyebrow--light">Why insurers trust it</span>
+          <h2 class="section__title section__title--light">Evidence that can't be argued with.</h2>
+          <p class="section__lead section__lead--light">
+            The moment you press the shutter, AssetShield hashes the exact image with SHA-256 and binds it to
+            your location and the time. That fingerprint travels with the photo into a signed dossier.
+            When an insurer opens it, we recompute the manifest, and one altered byte makes the seal break visibly.
+          </p>
+          <div class="security__stats">
+            <div><b>SHA-256</b><span>cryptographic image seal</span></div>
+            <div><b>Manifest</b><span>verified end-to-end</span></div>
+            <div><b>Camera-only</b><span>no gallery, no fakes</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PRICING ============ -->
+    <section class="pricing" id="pricing">
+      <div class="container">
+        <div class="section__head reveal">
+          <span class="eyebrow eyebrow--center">Pricing</span>
+          <h2 class="section__title">Start free. Upgrade when you grow.</h2>
+        </div>
+        <div class="price-grid">
+          <article class="price reveal">
+            <h3 class="price__name">Free</h3>
+            <p class="price__amt">₵0<span>/forever</span></p>
+            <ul class="ticks">
+              <li>One property</li>
+              <li>Up to 30 sealed photos</li>
+              <li>Tamper-evident dossiers</li>
+              <li>Chat with insurers</li>
+            </ul>
+            <a href="#download" class="btn btn--ghost btn--full">Get started</a>
+          </article>
+          <article class="price price--pro reveal">
+            <span class="price__flag">Most popular</span>
+            <h3 class="price__name">AssetShield PRO</h3>
+            <p class="price__amt">₵100<span>/month</span></p>
+            <ul class="ticks">
+              <li>Unlimited properties</li>
+              <li>Unlimited sealed photos</li>
+              <li>Priority dossier generation</li>
+              <li>Marketplace offers from agents</li>
+            </ul>
+            <a href="#download" class="btn btn--primary btn--full">Go PRO</a>
+          </article>
+          <article class="price reveal">
+            <h3 class="price__name">Insurers</h3>
+            <p class="price__amt">₵100<span>/month</span></p>
+            <ul class="ticks">
+              <li>Unlock owner leads in your area</li>
+              <li>Receive &amp; verify shared dossiers</li>
+              <li>Send quotes in-app</li>
+              <li>Verified agent badge</li>
+            </ul>
+            <a href="#download" class="btn btn--ghost btn--full">Apply as an insurer</a>
+          </article>
+        </div>
+        <p class="price__note">Payments are handled securely by Paystack, via mobile money or card.</p>
+      </div>
+    </section>
+
+    <!-- ============ FAQ ============ -->
+    <section class="faq" id="faq">
+      <div class="container faq__inner">
+        <div class="section__head reveal">
+          <span class="eyebrow eyebrow--center">FAQ</span>
+          <h2 class="section__title">Questions, answered.</h2>
+        </div>
+        <div class="faq__list reveal">
+          <details class="qa">
+            <summary>What exactly is AssetShield?<i></i></summary>
+            <p>AssetShield lets you photograph and permanently fingerprint your belongings, so if disaster strikes you have trusted, tamper-proof evidence for an insurance claim.</p>
+          </details>
+          <details class="qa">
+            <summary>Why can't I upload photos from my gallery?<i></i></summary>
+            <p>Evidence must be captured live in the app. Gallery uploads could be edited or AI-generated, which would break the tamper-evidence guarantee insurers rely on.</p>
+          </details>
+          <details class="qa">
+            <summary>What does the "VERIFIED" fingerprint mean?<i></i></summary>
+            <p>When you take a photo we compute a SHA-256 hash of the exact image, plus its GPS and timestamp. That fingerprint proves the photo has not been altered.</p>
+          </details>
+          <details class="qa">
+            <summary>What is a dossier?<i></i></summary>
+            <p>A dossier is a tamper-evident PDF that bundles your evidence (assets plus any damage) into a signed pack an insurer can trust has not been altered.</p>
+          </details>
+          <details class="qa">
+            <summary>If I delete a property, do I lose my dossiers?<i></i></summary>
+            <p>No. Deleting a property removes it and its assets, but any dossiers you already generated stay available in the app.</p>
+          </details>
+          <details class="qa">
+            <summary>How do insurers know a dossier is genuine?<i></i></summary>
+            <p>When an agent opens a dossier, we recompute the manifest hash and show a "Tamper-evident: verified" badge if nothing was altered. Any mismatch is flagged so it can be treated with caution.</p>
+          </details>
+          <details class="qa">
+            <summary>How do payments work?<i></i></summary>
+            <p>Payments run through Paystack, via mobile money or card. After paying, you confirm in the app and your dossier or subscription is activated.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DOWNLOAD / CTA ============ -->
+    <section class="cta" id="download">
+      <div class="container cta__inner reveal">
+        <h2 class="cta__title">Your proof is one photo away.</h2>
+        <p class="cta__sub">Download AssetShield and start documenting what matters, before you ever need to.</p>
+        <div class="cta__actions">
+          <a href="https://expo.dev/artifacts/eas/t7smntQIBat5vbltxcPur-1QAqAL73N43PhTg9Jrl24.apk" class="btn btn--gold btn--lg" id="downloadBtn" data-fallback="Download coming soon">
+            <svg viewBox="0 0 24 24" width="20" height="20" style="margin-right:.5rem"><path d="M12 3v10m0 0 4-4m-4 4-4-4M5 20h14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Download for Android
+          </a>
+          <a href="#top" class="btn btn--ghost-light btn--lg">Back to top</a>
+        </div>
+        <p class="cta__fine">Android APK · version 1.0.0 · installs in seconds · no Play Store account needed</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="footer__brand">
+        <span class="footer__lockup">
+          <img class="brand__logo" src="assets/logo.png" alt="" width="34" height="34" />
+          <span class="brand__name">Asset<span>Shield</span></span>
+          <span class="brand__gh brand__gh--dark">GH</span>
+        </span>
+        <p>Protect what matters. Tamper-evident proof for your belongings, built for Ghana.</p>
+      </div>
+      <nav class="footer__cols">
+        <div>
+          <h4>Product</h4>
+          <a href="#how">How it works</a>
+          <a href="#features">Features</a>
+          <a href="#pricing">Pricing</a>
+        </div>
+        <div>
+          <h4>Company</h4>
+          <a href="#audiences">For insurers</a>
+          <a href="#faq">FAQ</a>
+          <a href="#download">Get the app</a>
+        </div>
+      </nav>
+    </div>
+    <div class="footer__base">
+      <div class="container footer__base-inner">
+        <span>© <span id="year"></span> AssetShield. All rights reserved.</span>
+        <span class="made-gh">Made in Ghana
+          <svg class="flag-gh" viewBox="0 0 30 20" width="18" height="12" role="img" aria-label="Ghana">
+            <rect width="30" height="20" fill="#FCD116"/>
+            <rect width="30" height="6.667" fill="#CE1126"/>
+            <rect width="30" height="6.667" y="13.333" fill="#006B3F"/>
+            <path fill="#111" d="M15 6.6 15.794 8.908 18.234 8.95 16.284 10.417 16.999 12.751 15 11.35 13.001 12.751 13.716 10.417 11.766 8.95 14.206 8.908Z"/>
+          </svg>
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

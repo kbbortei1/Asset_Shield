@@ -1,0 +1,42 @@
+name: deploy-website
+
+# Publishes the static marketing site (assetshield-website/) to GitHub Pages.
+# configure-pages enables Pages (source = GitHub Actions) on first run, and the
+# CNAME file in the artifact attaches the custom domain assetshield.me.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'assetshield-website/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: assetshield-website
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
