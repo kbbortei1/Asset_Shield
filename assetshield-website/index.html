@@ -3,16 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AssetShield: Tamper-evident proof for your belongings</title>
-  <meta name="description" content="AssetShield lets you photograph and permanently fingerprint your belongings, so if disaster strikes you have trusted, tamper-proof evidence for an insurance claim. Built for Ghana." />
+  <title>AssetShield GH · Tamper-evident proof for your belongings</title>
+  <meta name="description" content="AssetShield GH lets you photograph and permanently fingerprint your belongings, so if disaster strikes you have trusted, tamper-proof evidence for an insurance claim. Built for Ghana." />
+  <meta name="keywords" content="AssetShield, AssetShield GH, asset documentation, insurance evidence Ghana, tamper-evident, insurtech Ghana, damage dossier, digital safety deposit box" />
+  <meta name="author" content="AssetShield GH" />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
   <meta name="theme-color" content="#0E5A52" />
+  <link rel="canonical" href="https://assetshield.me/" />
 
-  <!-- Open Graph -->
-  <meta property="og:title" content="AssetShield: Proof before you ever need it" />
+  <!-- Open Graph + Twitter -->
+  <meta property="og:site_name" content="AssetShield GH" />
+  <meta property="og:title" content="AssetShield GH · Proof, before you ever need it" />
   <meta property="og:description" content="Photograph and permanently fingerprint your belongings. Tamper-evident evidence insurers can trust. Built for Ghana." />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://assetshield.me" />
-  <meta property="og:image" content="assets/og-cover.png" />
+  <meta property="og:url" content="https://assetshield.me/" />
+  <meta property="og:image" content="https://assetshield.me/assets/og-cover.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="en_GH" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="AssetShield GH · Proof, before you ever need it" />
+  <meta name="twitter:description" content="Photograph and permanently fingerprint your belongings. Tamper-evident evidence insurers can trust. Built for Ghana." />
+  <meta name="twitter:image" content="https://assetshield.me/assets/og-cover.png" />
 
   <link rel="icon" type="image/png" href="assets/logo.png" />
   <link rel="apple-touch-icon" href="assets/logo.png" />
@@ -24,6 +36,63 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- Structured data: helps search engines recognise the AssetShield GH brand -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://assetshield.me/#organization",
+        "name": "AssetShield GH",
+        "alternateName": ["AssetShield", "AssetShield Ghana"],
+        "url": "https://assetshield.me/",
+        "logo": "https://assetshield.me/assets/logo.png",
+        "image": "https://assetshield.me/assets/og-cover.png",
+        "description": "AssetShield GH lets you photograph and permanently fingerprint your belongings, so if disaster strikes you have trusted, tamper-proof evidence for an insurance claim.",
+        "areaServed": "GH",
+        "slogan": "Protect what matters."
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://assetshield.me/#website",
+        "url": "https://assetshield.me/",
+        "name": "AssetShield GH",
+        "publisher": { "@id": "https://assetshield.me/#organization" },
+        "inLanguage": "en"
+      },
+      {
+        "@type": "MobileApplication",
+        "name": "AssetShield GH",
+        "operatingSystem": "Android",
+        "applicationCategory": "FinanceApplication",
+        "description": "Turn your phone into a vault of tamper-evident evidence. Document what you own and generate signed dossiers insurers can trust.",
+        "url": "https://assetshield.me/",
+        "downloadUrl": "https://expo.dev/artifacts/eas/t7smntQIBat5vbltxcPur-1QAqAL73N43PhTg9Jrl24.apk",
+        "screenshot": [
+          "https://assetshield.me/assets/screenshots/home.jpg",
+          "https://assetshield.me/assets/screenshots/dossier.jpg",
+          "https://assetshield.me/assets/screenshots/shared-dossier.jpg"
+        ],
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GHS" },
+        "publisher": { "@id": "https://assetshield.me/#organization" }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "What exactly is AssetShield?", "acceptedAnswer": { "@type": "Answer", "text": "AssetShield lets you photograph and permanently fingerprint your belongings, so if disaster strikes you have trusted, tamper-proof evidence for an insurance claim." } },
+          { "@type": "Question", "name": "Why can't I upload photos from my gallery?", "acceptedAnswer": { "@type": "Answer", "text": "Evidence must be captured live in the app. Gallery uploads could be edited or AI-generated, which would break the tamper-evidence guarantee insurers rely on." } },
+          { "@type": "Question", "name": "What does the VERIFIED fingerprint mean?", "acceptedAnswer": { "@type": "Answer", "text": "When you take a photo we compute a SHA-256 hash of the exact image, plus its GPS and timestamp. That fingerprint proves the photo has not been altered." } },
+          { "@type": "Question", "name": "What is a dossier?", "acceptedAnswer": { "@type": "Answer", "text": "A dossier is a tamper-evident PDF that bundles your evidence, assets plus any damage, into a signed pack an insurer can trust has not been altered." } },
+          { "@type": "Question", "name": "If I delete a property, do I lose my dossiers?", "acceptedAnswer": { "@type": "Answer", "text": "No. Deleting a property removes it and its assets, but any dossiers you already generated stay available in the app." } },
+          { "@type": "Question", "name": "How do insurers know a dossier is genuine?", "acceptedAnswer": { "@type": "Answer", "text": "When an agent opens a dossier, we recompute the manifest hash and show a Tamper-evident: verified badge if nothing was altered. Any mismatch is flagged." } },
+          { "@type": "Question", "name": "How do payments work?", "acceptedAnswer": { "@type": "Answer", "text": "Payments run through Paystack, via mobile money or card. After paying, you confirm in the app and your dossier or subscription is activated." } }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
 
