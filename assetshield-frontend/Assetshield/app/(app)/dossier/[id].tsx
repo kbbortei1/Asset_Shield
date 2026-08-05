@@ -16,7 +16,7 @@ import {
   propertiesApi,
   resolveMediaUrl,
 } from '@/lib/api';
-import { runCheckout } from '@/lib/payments/checkout';
+import { runCheckout, verifyPaymentUntilSettled } from '@/lib/payments/checkout';
 import { Button, Card, ErrorState, EvidencePhoto, Header, Hero, Loading, Screen, SectionHeader, Text, useToast } from '@/components/ui';
 import type { EvidencePhotoProps } from '@/components/ui/EvidencePhoto';
 import { colors, radius, spacing } from '@/theme';
@@ -45,6 +45,8 @@ export default function DossierScreen() {
   const qc = useQueryClient();
   const { show } = useToast();
   const [paying, setPaying] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [paymentRef, setPaymentRef] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [viewing, setViewing] = useState(false);
 
@@ -107,17 +109,33 @@ export default function DossierScreen() {
     setPaying(true);
     try {
       const handle = await damageApi.dossierPay(dossierId);
-      const result = await runCheckout({
-        reference: handle.payment?.reference ?? '',
-        authorizationUrl: handle.payment?.authorizationUrl ?? '',
-      });
+      const reference = handle.payment?.reference ?? '';
+      setPaymentRef(reference || null); // keep it so "Confirm payment" can re-verify
+      const result = await runCheckout({ reference, authorizationUrl: handle.payment?.authorizationUrl ?? '' });
       if (result === 'failed') Alert.alert('Payment failed', 'Please try again.');
-      else if (result === 'pending') Alert.alert('Payment not completed', 'No charge was made. You can tap Pay again any time.');
+      else if (result === 'pending') {
+        Alert.alert('Almost there', 'If you completed the payment, tap "Confirm payment" to finish.');
+      }
       qc.invalidateQueries({ queryKey: ['dossier-status', dossierId] });
     } catch (e) {
       Alert.alert('Could not start payment', isApiError(e) ? e.message : 'Please try again.');
     } finally {
       setPaying(false);
+    }
+  };
+
+  // Reliable fallback: after paying in the browser, tap this to verify + settle.
+  const confirmPayment = async () => {
+    if (!paymentRef) return;
+    setConfirming(true);
+    try {
+      const result = await verifyPaymentUntilSettled(paymentRef);
+      qc.invalidateQueries({ queryKey: ['dossier-status', dossierId] });
+      if (result === 'success') show('Payment confirmed — generating your dossier');
+      else if (result === 'failed') Alert.alert('Payment failed', 'That payment did not go through.');
+      else Alert.alert('Still confirming', "We couldn't confirm it yet. If you've paid, wait a moment and tap again.");
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -206,7 +224,14 @@ export default function DossierScreen() {
         <StatusCard status={status} />
       )}
 
-      {status === 'PENDING_PAYMENT' ? <Button title="Pay & generate dossier" loading={paying} onPress={pay} /> : null}
+      {status === 'PENDING_PAYMENT' ? (
+        <View style={{ gap: spacing.md }}>
+          <Button title="Pay & generate dossier" loading={paying} onPress={pay} />
+          {paymentRef ? (
+            <Button title="Confirm payment" variant="secondary" loading={confirming} onPress={confirmPayment} />
+          ) : null}
+        </View>
+      ) : null}
 
       {status === 'GENERATING' ? (
         <Card>
