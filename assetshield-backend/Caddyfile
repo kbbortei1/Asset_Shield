@@ -6,5 +6,16 @@
 }
 
 api.assetshield.me {
-	reverse_proxy gateway:8080
+	# Paystack redirects the mobile browser here after payment (its callback_url).
+	# Paystack won't redirect straight to a custom app scheme, so this small HTTPS
+	# page bounces into the app's deep link, which the in-app browser (auth
+	# session) catches and auto-closes. Returns the user to AssetShield instantly.
+	handle /pay/return* {
+		header Content-Type "text/html; charset=utf-8"
+		respond `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=assetshield://payment-callback"><title>Returning to AssetShield</title></head><body style="font-family:system-ui,sans-serif;text-align:center;padding:80px 24px;color:#11252B"><p style="font-size:18px">Payment complete. Returning to AssetShield…</p><script>try{location.replace("assetshield://payment-callback"+(location.search||""))}catch(e){}</script><p><a href="assetshield://payment-callback" style="color:#1F8A70;font-weight:600">Tap here to return to the app</a></p></body></html>` 200
+	}
+
+	handle {
+		reverse_proxy gateway:8080
+	}
 }

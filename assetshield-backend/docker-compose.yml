@@ -274,6 +274,8 @@ services:
       MARKETPLACE_SERVICE_URL: http://marketplace-service:8084
       PAYMENTS_MODE: ${PAYMENTS_MODE:-mock}
       PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY:-}
+      # HTTPS return page that deep-links back into the app after Paystack payment.
+      PAYSTACK_CALLBACK_URL: ${PAYSTACK_CALLBACK_URL:-https://api.assetshield.me/pay/return}
       MOCK_AUTO_SETTLE_MS: ${MOCK_AUTO_SETTLE_MS:-2000}
       JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
     depends_on:

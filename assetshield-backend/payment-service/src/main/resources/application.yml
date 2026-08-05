@@ -22,9 +22,10 @@ app:
     mode: ${PAYMENTS_MODE:mock}
     paystack-secret-key: ${PAYSTACK_SECRET_KEY:}
     paystack-base-url: ${PAYSTACK_BASE_URL:https://api.paystack.co}
-    # After payment, Paystack redirects the browser here; the app's deep link
-    # makes the in-app browser auto-close and return to AssetShield.
-    callback-url: ${PAYSTACK_CALLBACK_URL:assetshield://payment-callback}
+    # After payment, Paystack redirects the browser to this HTTPS page (Paystack
+    # won't redirect to a custom scheme), which then deep-links into the app so
+    # the in-app browser auto-closes and returns to AssetShield.
+    callback-url: ${PAYSTACK_CALLBACK_URL:https://api.assetshield.me/pay/return}
     # mock mode: auto-settle delay simulating instant MoMo confirmation; <0 disables
     mock-auto-settle-ms: ${MOCK_AUTO_SETTLE_MS:2000}
     reconcile-enabled: ${PAYMENTS_RECONCILE_ENABLED:true}
