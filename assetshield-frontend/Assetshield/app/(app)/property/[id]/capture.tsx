@@ -2,12 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, View } from 'react-native';
+import { Image, Pressable, ScrollView, View } from 'react-native';
 import { AssetCategory, isApiError } from '@/lib/api';
 import { CapturedImage, getLocationFix, LocationFix, PermissionError, pickImage } from '@/lib/media/capture';
 import { uploadAssetMulti } from '@/lib/media/uploads';
 import { useOffline } from '@/lib/offline/OfflineProvider';
-import { Button, Card, EvidencePhoto, Header, Input, LocationConfirm, Screen, Text, useToast } from '@/components/ui';
+import { Button, Card, EvidencePhoto, Header, Input, LocationConfirm, Screen, Text, useToast, showAlert } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 const CATEGORIES: AssetCategory[] = ['ELECTRONICS', 'FURNITURE', 'CLOTHING_STOCK', 'MACHINERY', 'DOCUMENTS', 'OTHER'];
@@ -67,7 +67,7 @@ export default function CaptureAsset() {
       grabFix(pid);
     } catch (e) {
       if (e instanceof PermissionError) {
-        Alert.alert('Permission needed', 'Please allow camera access in settings to capture assets.');
+        showAlert('Permission needed', 'Please allow camera access in settings to capture assets.');
       }
     }
   };
@@ -79,7 +79,7 @@ export default function CaptureAsset() {
       patch(pid, { image: img, capturedAt: new Date().toISOString() });
       grabFix(pid);
     } catch (e) {
-      if (e instanceof PermissionError) Alert.alert('Permission needed', 'Please allow camera access in settings.');
+      if (e instanceof PermissionError) showAlert('Permission needed', 'Please allow camera access in settings.');
     }
   };
 
@@ -107,7 +107,7 @@ export default function CaptureAsset() {
       );
 
       if (outcome.status === 'needs-online') {
-        Alert.alert('Connection needed', 'Saving multiple photos as one asset needs an internet connection. Reconnect and try again.');
+        showAlert('Connection needed', 'Saving multiple photos as one asset needs an internet connection. Reconnect and try again.');
         return;
       }
       await refreshPending();
@@ -115,7 +115,7 @@ export default function CaptureAsset() {
       qc.invalidateQueries({ queryKey: ['property', propertyId] });
 
       if (outcome.status === 'uploaded' && outcome.data?.duplicateWarning) {
-        Alert.alert(
+        showAlert(
           'Duplicate photo detected',
           'One of these photos already documents an asset on another property. It was saved, but duplicate evidence can be rejected by insurers.',
           [{ text: 'Understood', onPress: () => router.back() }],
@@ -132,12 +132,12 @@ export default function CaptureAsset() {
       }
     } catch (e) {
       if (isApiError(e)) {
-        if (e.code === 'HASH_MISMATCH') Alert.alert('Verification failed', 'Please retake the photo and try again.');
-        else if (e.code === 'FREE_TIER_LIMIT') Alert.alert('Upgrade required', e.message);
-        else if (e.code === 'DUPLICATE_ASSET_HASH') Alert.alert('Duplicate photo', e.message);
-        else Alert.alert('Upload failed', e.message);
+        if (e.code === 'HASH_MISMATCH') showAlert('Verification failed', 'Please retake the photo and try again.');
+        else if (e.code === 'FREE_TIER_LIMIT') showAlert('Upgrade required', e.message);
+        else if (e.code === 'DUPLICATE_ASSET_HASH') showAlert('Duplicate photo', e.message);
+        else showAlert('Upload failed', e.message);
       } else {
-        Alert.alert('Upload failed', 'Please try again.');
+        showAlert('Upload failed', 'Please try again.');
       }
     } finally {
       setSaving(false);

@@ -2,9 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView } from 'react-native';
+import { Pressable, ScrollView } from 'react-native';
 import { damageApi, DisasterType } from '@/lib/api';
-import { Button, Header, Input, Screen, Text } from '@/components/ui';
+import { Button, Header, Input, Screen, Text, showAlert } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 const TYPES: { type: DisasterType; icon: keyof typeof Ionicons.glyphMap; label: string }[] = [
@@ -42,7 +42,7 @@ export default function NewDamageReport() {
         router.replace(`/(app)/damage/${report.id}` as never);
       }
     } catch (e: any) {
-      Alert.alert('Could not open report', e?.message ?? 'Try again.');
+      showAlert('Could not open report', e?.message ?? 'Try again.');
     } finally {
       setLoading(false);
     }

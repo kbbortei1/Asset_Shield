@@ -4,26 +4,10 @@ import { File, Paths } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, Switch, View } from 'react-native';
+import { Pressable, ScrollView, Switch, View } from 'react-native';
+
 import { Asset, AssetCategory, isApiError, propertiesApi } from '@/lib/api';
-import {
-  Button,
-  Card,
-  EmptyState,
-  ErrorState,
-  EvidencePhoto,
-  Header,
-  Hero,
-  Input,
-  ListScreen,
-  Loading,
-  SectionHeader,
-  Text,
-  VerifiedBadge,
-  ValuePill,
-  formatCedis,
-  useToast,
-} from '@/components/ui';
+import { Button, Card, EmptyState, ErrorState, EvidencePhoto, Header, Hero, Input, ListScreen, Loading, SectionHeader, Text, VerifiedBadge, ValuePill, formatCedis, useToast, showAlert } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 /** Sentinel row appended to the asset grid: the dashed "log new asset" tile. */
@@ -82,7 +66,7 @@ export default function PropertyDetail() {
         show('Sharing is not available on this device');
       }
     } catch (e) {
-      Alert.alert('Could not export', isApiError(e) ? e.message : 'Please try again.');
+      showAlert('Could not export', isApiError(e) ? e.message : 'Please try again.');
     } finally {
       setExporting(false);
     }

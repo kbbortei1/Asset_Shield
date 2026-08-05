@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
+
 import { isApiError, propertiesApi } from '@/lib/api';
-import { Button, Card, EmptyState, Header, Input, Loading, Screen, Text, useConfirm, useToast } from '@/components/ui';
+import { Button, Card, EmptyState, Header, Input, Loading, Screen, Text, useConfirm, useToast, showAlert } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** Household: invite a member + manage existing members. */
@@ -28,9 +29,9 @@ export default function HouseholdInvite() {
     },
     onError: (e) => {
       if (isApiError(e)) {
-        if (e.code === 'DUPLICATE_PENDING_INVITE') Alert.alert('Already invited', 'An invite is already pending for this number.');
-        else if (e.code === 'ALREADY_MEMBER') Alert.alert('Already a member', 'This person is already in the household.');
-        else Alert.alert('Could not invite', e.message);
+        if (e.code === 'DUPLICATE_PENDING_INVITE') showAlert('Already invited', 'An invite is already pending for this number.');
+        else if (e.code === 'ALREADY_MEMBER') showAlert('Already a member', 'This person is already in the household.');
+        else showAlert('Could not invite', e.message);
       }
     },
   });

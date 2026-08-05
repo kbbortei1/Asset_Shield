@@ -2,9 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { isApiError, marketplaceApi } from '@/lib/api';
-import { Button, Card, ErrorState, Header, Input, Loading, Screen, Text } from '@/components/ui';
+import { Button, Card, ErrorState, Header, Input, Loading, Screen, Text, showAlert } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** Admin: review an agent's NIC licence and approve or reject (MISSING_DESIGN). */
@@ -28,7 +28,7 @@ export default function AgentReview() {
       qc.invalidateQueries({ queryKey: ['admin', 'agents', 'PENDING_VERIFICATION'] });
       router.back();
     },
-    onError: (e) => Alert.alert('Could not update', isApiError(e) ? e.message : 'Try again.'),
+    onError: (e) => showAlert('Could not update', isApiError(e) ? e.message : 'Try again.'),
   });
 
   if (q.isLoading) return <Loading />;

@@ -2,11 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { isApiError, usersApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { buildFileForm, CapturedImage, pickImage } from '@/lib/media/capture';
-import { Button, Card, Header, Screen, Text } from '@/components/ui';
+import { Button, Card, Header, Screen, Text, showAlert } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** Ghana Card (KYC) upload — used both from Profile and as an onboarding step. */
@@ -37,10 +37,10 @@ export default function Kyc() {
     try {
       await usersApi.uploadGhanaCard(buildFileForm(image));
       await refreshUser();
-      Alert.alert('Submitted', 'Your Ghana Card was uploaded for verification.', [{ text: 'OK', onPress: finish }]);
+      showAlert('Submitted', 'Your Ghana Card was uploaded for verification.', [{ text: 'OK', onPress: finish }]);
     } catch (e) {
-      if (isApiError(e) && e.code === 'UNSUPPORTED_MEDIA_TYPE') Alert.alert('Unsupported file', 'Please use a JPEG or PNG image.');
-      else Alert.alert('Upload failed', isApiError(e) ? e.message : 'Try again.');
+      if (isApiError(e) && e.code === 'UNSUPPORTED_MEDIA_TYPE') showAlert('Unsupported file', 'Please use a JPEG or PNG image.');
+      else showAlert('Upload failed', isApiError(e) ? e.message : 'Try again.');
     } finally {
       setLoading(false);
     }

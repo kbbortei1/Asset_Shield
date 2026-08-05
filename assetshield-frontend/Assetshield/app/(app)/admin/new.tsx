@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
+
 import { isApiError, usersApi } from '@/lib/api';
-import { Button, Header, Input, Screen, Text, useToast } from '@/components/ui';
+import { Button, Header, Input, Screen, Text, useToast, showAlert } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** Admin: create another admin (MISSING_DESIGN, on-brand). */
@@ -24,7 +25,7 @@ export default function CreateAdmin() {
       if (isApiError(e)) {
         if (e.code === 'PHONE_EXISTS') setErrors({ phoneNumber: 'This number already has an account.' });
         else if (e.fieldErrors) setErrors(e.fieldErrors);
-        else Alert.alert('Could not create', e.message);
+        else showAlert('Could not create', e.message);
       }
     } finally {
       setLoading(false);

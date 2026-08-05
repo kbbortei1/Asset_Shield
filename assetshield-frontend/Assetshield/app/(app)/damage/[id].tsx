@@ -1,21 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { damageApi, isApiError } from '@/lib/api';
-import {
-  Button,
-  Card,
-  EmptyState,
-  ErrorState,
-  EvidencePhoto,
-  Header,
-  Loading,
-  Screen,
-  StatusBadge,
-  Text,
-  VerifiedBadge,
-  formatCedis,
-} from '@/components/ui';
+import { Button, Card, EmptyState, ErrorState, EvidencePhoto, Header, Loading, Screen, StatusBadge, Text, VerifiedBadge, formatCedis, showAlert } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /**
@@ -76,8 +63,8 @@ export default function DamageReportDetail() {
     mutationFn: () => damageApi.complete(reportId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['report', reportId] }),
     onError: (e) => {
-      if (isApiError(e) && e.code === 'EMPTY_REPORT') Alert.alert('Add a photo first', 'A report needs at least one photo before completing.');
-      else Alert.alert('Could not complete', isApiError(e) ? e.message : 'Try again.');
+      if (isApiError(e) && e.code === 'EMPTY_REPORT') showAlert('Add a photo first', 'A report needs at least one photo before completing.');
+      else showAlert('Could not complete', isApiError(e) ? e.message : 'Try again.');
     },
   });
 
@@ -93,8 +80,8 @@ export default function DamageReportDetail() {
           router.push(`/(app)/dossier/${existingId}` as never);
           return;
         }
-        Alert.alert('Dossier exists', 'A dossier already exists for this report. Find it under Dossiers.');
-      } else Alert.alert('Could not start', isApiError(e) ? e.message : 'Try again.');
+        showAlert('Dossier exists', 'A dossier already exists for this report. Find it under Dossiers.');
+      } else showAlert('Could not start', isApiError(e) ? e.message : 'Try again.');
     },
   });
 
@@ -118,7 +105,7 @@ export default function DamageReportDetail() {
             disabled={photos.length === 0}
             onPress={() => {
               const paired = photos.filter((ph) => ph.paired).length;
-              Alert.alert(
+              showAlert(
                 'Complete this report?',
                 `${photos.length} photo${photos.length === 1 ? '' : 's'} (${paired} paired with documented assets).\n\n` +
                   'Once completed, the report is sealed as immutable evidence: no photos can be added or changed, and the estimated loss is computed.',

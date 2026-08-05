@@ -1,9 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { isApiError, marketplaceApi } from '@/lib/api';
-import { Button, Header, Input, Screen, Text, formatCedis, useToast } from '@/components/ui';
+import { Button, Header, Input, Screen, Text, formatCedis, useToast, showAlert } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** CONSENT (beat 4, agent): issue a quote against a shared dossier. Stitch: "Issue Quote". */
@@ -28,7 +28,7 @@ export default function IssueQuote() {
       show('Quote sent');
       router.back();
     } catch (e) {
-      Alert.alert('Could not send', isApiError(e) ? e.message : 'Try again.');
+      showAlert('Could not send', isApiError(e) ? e.message : 'Try again.');
     } finally {
       setLoading(false);
     }

@@ -2,10 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { isApiError, propertiesApi, PropertyType } from '@/lib/api';
 import { getCurrentCoords } from '@/lib/media/capture';
-import { Button, Card, Header, Input, Screen, Text } from '@/components/ui';
+import { Button, Card, Header, Input, Screen, Text, showAlert } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 /** DOCUMENT (beat 1): create a property. */
@@ -28,14 +28,14 @@ export default function NewProperty() {
     } catch (e) {
       if (isApiError(e)) {
         if (e.code === 'FREE_TIER_LIMIT') {
-          Alert.alert('Upgrade to PRO', 'The free plan allows one property. Upgrade to add more.', [
+          showAlert('Upgrade to PRO', 'The free plan allows one property. Upgrade to add more.', [
             { text: 'Not now', style: 'cancel' },
             { text: 'See PRO', onPress: () => router.push('/(app)/subscription' as never) },
           ]);
         } else if (e.fieldErrors) {
           setErrors(e.fieldErrors);
         } else {
-          Alert.alert('Could not create', e.message);
+          showAlert('Could not create', e.message);
         }
       }
     } finally {

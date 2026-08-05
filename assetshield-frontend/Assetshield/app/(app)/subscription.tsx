@@ -2,11 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { marketplaceApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { runCheckout, verifyPaymentUntilSettled } from '@/lib/payments/checkout';
-import { Button, Card, ErrorState, Header, Loading, Screen, Text, useToast } from '@/components/ui';
+import { Button, Card, ErrorState, Header, Loading, Screen, Text, useToast, showAlert } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** Owner PRO + agent subscription (shared payment flow). MISSING_DESIGN for owner; agent matches Stitch "Agent Subscription". */
@@ -37,12 +37,12 @@ export default function Subscription() {
       const res = isAgent ? await marketplaceApi.subscribeAgent() : await marketplaceApi.buyPro();
       setPaymentRef(res.reference || null); // keep for the "Confirm payment" fallback
       const outcome = await runCheckout(res); // subscription-init returns a flat PaymentHandle
-      if (outcome === 'failed') Alert.alert('Payment failed', 'Please try again.');
+      if (outcome === 'failed') showAlert('Payment failed', 'Please try again.');
       else if (outcome === 'pending')
-        Alert.alert('Almost there', 'If you completed the payment, tap "Confirm payment" to finish.');
+        showAlert('Almost there', 'If you completed the payment, tap "Confirm payment" to finish.');
       invalidateSub();
     } catch (e: any) {
-      Alert.alert('Could not start payment', e?.message ?? 'Try again.');
+      showAlert('Could not start payment', e?.message ?? 'Try again.');
     } finally {
       setPaying(false);
     }
@@ -55,8 +55,8 @@ export default function Subscription() {
       const outcome = await verifyPaymentUntilSettled(paymentRef);
       invalidateSub();
       if (outcome === 'success') show('Payment confirmed');
-      else if (outcome === 'failed') Alert.alert('Payment failed', 'That payment did not go through.');
-      else Alert.alert('Still confirming', "We couldn't confirm it yet. If you've paid, wait a moment and tap again.");
+      else if (outcome === 'failed') showAlert('Payment failed', 'That payment did not go through.');
+      else showAlert('Still confirming', "We couldn't confirm it yet. If you've paid, wait a moment and tap again.");
     } finally {
       setConfirming(false);
     }

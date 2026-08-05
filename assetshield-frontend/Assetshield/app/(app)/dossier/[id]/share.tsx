@@ -2,9 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { isApiError, marketplaceApi } from '@/lib/api';
-import { Button, Card, EmptyState, ErrorState, Header, Loading, Screen, Text } from '@/components/ui';
+import { Button, Card, EmptyState, ErrorState, Header, Loading, Screen, Text, showAlert } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** CONSENT (beat 4): share a ready dossier with an accepted agent connection. */
@@ -28,7 +28,7 @@ export default function ShareDossier() {
       setShared((s) => ({ ...s, [interestId]: true }));
     } catch (e) {
       if (isApiError(e) && e.code === 'ALREADY_SHARED') setShared((s) => ({ ...s, [interestId]: true }));
-      else Alert.alert('Could not share', isApiError(e) ? e.message : 'Try again.');
+      else showAlert('Could not share', isApiError(e) ? e.message : 'Try again.');
     } finally {
       setBusy(null);
     }

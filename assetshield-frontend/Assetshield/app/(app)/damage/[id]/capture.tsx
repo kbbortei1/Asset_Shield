@@ -2,12 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+
 import { damageApi, DamagePhoto, isApiError, PairingSuggestion } from '@/lib/api';
 import { CapturedImage, getLocationFix, LocationFix, PermissionError, pickImage } from '@/lib/media/capture';
 import { uploadDamagePhoto } from '@/lib/media/uploads';
 import { useOffline } from '@/lib/offline/OfflineProvider';
-import { Button, Card, EmptyState, EvidencePhoto, Header, Input, LocationConfirm, RemoteImage, Screen, Text, useToast } from '@/components/ui';
+import { Button, Card, EmptyState, EvidencePhoto, Header, Input, LocationConfirm, RemoteImage, Screen, Text, useToast, showAlert } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 type Phase = 'capture' | 'pairing';
@@ -42,7 +43,7 @@ export default function CaptureDamage() {
         refreshFix(); // pairing suggestions depend on this fix - let the user see it
       }
     } catch (e) {
-      if (e instanceof PermissionError) Alert.alert('Permission needed', `Allow ${e.kind} access to capture damage.`);
+      if (e instanceof PermissionError) showAlert('Permission needed', `Allow ${e.kind} access to capture damage.`);
     }
   };
 
@@ -84,8 +85,8 @@ export default function CaptureDamage() {
         setPhase('pairing');
       }
     } catch (e) {
-      if (isApiError(e) && e.code === 'HASH_MISMATCH') Alert.alert('Verification failed', 'Please retake and try again.');
-      else Alert.alert('Upload failed', isApiError(e) ? e.message : 'Try again.');
+      if (isApiError(e) && e.code === 'HASH_MISMATCH') showAlert('Verification failed', 'Please retake and try again.');
+      else showAlert('Upload failed', isApiError(e) ? e.message : 'Try again.');
     } finally {
       setLoading(false);
     }
@@ -100,7 +101,7 @@ export default function CaptureDamage() {
       router.back();
     } catch (e) {
       if (isApiError(e) && e.code === 'ALREADY_RESPONDED') router.back();
-      else Alert.alert('Could not pair', isApiError(e) ? e.message : 'Try again.');
+      else showAlert('Could not pair', isApiError(e) ? e.message : 'Try again.');
     } finally {
       setPairingId(null);
     }

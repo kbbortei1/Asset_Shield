@@ -2,9 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { AdminUserItem, BroadcastAudience, isApiError, usersApi } from '@/lib/api';
-import { Button, Card, Header, Input, Loading, Screen, Text, useToast } from '@/components/ui';
+import { Button, Card, Header, Input, Loading, Screen, Text, useToast, showAlert } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 type AudienceOption = { value: BroadcastAudience; label: string; sub: string; icon: keyof typeof Ionicons.glyphMap };
@@ -80,7 +80,7 @@ export default function Broadcast() {
       show(`Sent to ${res.recipientCount} ${res.recipientCount === 1 ? 'person' : 'people'}`);
       router.back();
     } catch (e) {
-      Alert.alert('Could not send', isApiError(e) ? e.message : 'Please try again.');
+      showAlert('Could not send', isApiError(e) ? e.message : 'Please try again.');
     } finally {
       setBusy(false);
     }

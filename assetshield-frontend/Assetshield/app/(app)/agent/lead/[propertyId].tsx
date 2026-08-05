@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
+
 import { isApiError, Lead, marketplaceApi } from '@/lib/api';
-import { Button, Card, Header, Screen, Text, useToast } from '@/components/ui';
+import { Button, Card, Header, Screen, Text, useToast, showAlert } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /** CONSENT (beat 4, agent): lead detail + express interest. Leads are 5 fields only. */
@@ -23,11 +24,11 @@ export default function LeadDetail() {
     },
     onError: (e) => {
       if (isApiError(e)) {
-        if (e.code === 'DUPLICATE_PENDING_INTEREST') Alert.alert('Already expressed', 'You’ve already expressed interest in this lead.');
-        else if (e.code === 'RESOURCE_NOT_FOUND') Alert.alert('No longer available', 'This property is not open to offers.');
-        else if (e.code === 'AGENT_NOT_VERIFIED') Alert.alert('Verification required', 'Your account must be verified first.');
-        else if (e.code === 'SUBSCRIPTION_INACTIVE') Alert.alert('Subscription required', 'Subscribe to express interest.');
-        else Alert.alert('Could not send', e.message);
+        if (e.code === 'DUPLICATE_PENDING_INTEREST') showAlert('Already expressed', 'You’ve already expressed interest in this lead.');
+        else if (e.code === 'RESOURCE_NOT_FOUND') showAlert('No longer available', 'This property is not open to offers.');
+        else if (e.code === 'AGENT_NOT_VERIFIED') showAlert('Verification required', 'Your account must be verified first.');
+        else if (e.code === 'SUBSCRIPTION_INACTIVE') showAlert('Subscription required', 'Subscribe to express interest.');
+        else showAlert('Could not send', e.message);
       }
     },
   });

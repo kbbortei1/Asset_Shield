@@ -2,13 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as Updates from 'expo-updates';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { usersApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { buildFileForm, PermissionError, pickImage } from '@/lib/media/capture';
 import { useOffline } from '@/lib/offline/OfflineProvider';
 import { useTheme } from '@/lib/theme/ThemeProvider';
-import { Button, Card, RemoteImage, Screen, SectionHeader, Text, useActionSheet, useConfirm, useToast } from '@/components/ui';
+import { Button, Card, RemoteImage, Screen, SectionHeader, Text, useActionSheet, useConfirm, useToast, showAlert } from '@/components/ui';
 import { colors, radius, spacing, ThemeName } from '@/theme';
 
 /** Stitch: "Profile & Settings". */
@@ -62,7 +62,7 @@ export default function ProfileTab() {
       img = await pickImage(source);
     } catch (e) {
       if (e instanceof PermissionError) {
-        Alert.alert('Permission needed', `Allow ${e.kind} access to update your photo.`);
+        showAlert('Permission needed', `Allow ${e.kind} access to update your photo.`);
       }
       return;
     }
@@ -73,7 +73,7 @@ export default function ProfileTab() {
       await refreshUser();
       show('Profile picture updated');
     } catch (e: any) {
-      Alert.alert('Could not update', e?.message ?? 'Please try again.');
+      showAlert('Could not update', e?.message ?? 'Please try again.');
     } finally {
       setAvatarBusy(false);
     }
@@ -126,14 +126,14 @@ export default function ProfileTab() {
           continue;
         }
       } catch {
-        Alert.alert('Could not verify', 'Please check your connection and try again.');
+        showAlert('Could not verify', 'Please check your connection and try again.');
         return;
       }
       try {
         await usersApi.requestErasure();
         await logout();
       } catch {
-        Alert.alert('Could not complete', 'Please try again later.');
+        showAlert('Could not complete', 'Please try again later.');
       }
       return;
     }

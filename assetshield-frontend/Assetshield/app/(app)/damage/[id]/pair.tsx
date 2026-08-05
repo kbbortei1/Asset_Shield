@@ -2,21 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { damageApi, isApiError, PairingSuggestion } from '@/lib/api';
-import {
-  Button,
-  Card,
-  EmptyState,
-  ErrorState,
-  EvidencePhoto,
-  Header,
-  ListSkeleton,
-  RemoteImage,
-  Screen,
-  Text,
-  useToast,
-} from '@/components/ui';
+import { Button, Card, EmptyState, ErrorState, EvidencePhoto, Header, ListSkeleton, RemoteImage, Screen, Text, useToast, showAlert } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 /** 0-100 confidence from GPS distance: 0m → 100%, 50m+ → floor. */
@@ -61,7 +49,7 @@ export default function PairPhoto() {
     },
     onError: (e) => {
       if (isApiError(e) && e.code === 'ALREADY_RESPONDED') router.back();
-      else Alert.alert('Could not pair', isApiError(e) ? e.message : 'Try again.');
+      else showAlert('Could not pair', isApiError(e) ? e.message : 'Try again.');
     },
     onSettled: () => setPairingId(null),
   });

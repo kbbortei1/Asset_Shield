@@ -1,9 +1,9 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Platform, Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import { isApiError, ReportCategory, usersApi } from '@/lib/api';
-import { Button, Header, Input, Screen, Text, useToast } from '@/components/ui';
+import { Button, Header, Input, Screen, Text, useToast, showAlert } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 const CATEGORIES: { value: ReportCategory; label: string }[] = [
@@ -23,7 +23,7 @@ export default function ReportProblem() {
 
   const submit = async () => {
     if (message.trim().length < 5) {
-      Alert.alert('Add a little more', 'Please describe the problem so we can help.');
+      showAlert('Add a little more', 'Please describe the problem so we can help.');
       return;
     }
     setBusy(true);
@@ -37,7 +37,7 @@ export default function ReportProblem() {
       show('Thanks, your report was sent');
       router.back();
     } catch (e) {
-      Alert.alert('Could not send', isApiError(e) ? e.message : 'Please try again.');
+      showAlert('Could not send', isApiError(e) ? e.message : 'Please try again.');
     } finally {
       setBusy(false);
     }

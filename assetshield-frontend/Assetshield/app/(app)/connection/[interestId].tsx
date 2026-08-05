@@ -2,20 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { damageApi, isApiError, marketplaceApi } from '@/lib/api';
-import {
-  Button,
-  Card,
-  EmptyState,
-  ErrorState,
-  Header,
-  ListScreen,
-  Loading,
-  Text,
-  formatCedis,
-  useToast,
-} from '@/components/ui';
+import { Button, Card, EmptyState, ErrorState, Header, ListScreen, Loading, Text, formatCedis, useToast, showAlert } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /**
@@ -44,7 +33,7 @@ export default function ShareWithConnection() {
         setShared((s) => ({ ...s, [dossierId]: true }));
         show('Already shared with this agent');
       } else {
-        Alert.alert('Could not share', isApiError(e) ? e.message : 'Try again.');
+        showAlert('Could not share', isApiError(e) ? e.message : 'Try again.');
       }
     } finally {
       setBusy(null);

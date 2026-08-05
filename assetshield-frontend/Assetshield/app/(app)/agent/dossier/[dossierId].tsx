@@ -3,9 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
+
 import { isApiError, marketplaceApi, resolveMediaUrl } from '@/lib/api';
-import { Button, Card, ErrorState, Header, Loading, Screen, Text, formatCedis } from '@/components/ui';
+import { Button, Card, ErrorState, Header, Loading, Screen, Text, formatCedis, showAlert } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 /**
@@ -43,7 +44,7 @@ export default function SharedDossierViewer() {
         enableBarCollapsing: true,
       });
     } catch (e) {
-      Alert.alert(
+      showAlert(
         'Could not open the dossier',
         isApiError(e) ? e.message : 'The owner may have revoked access. Pull to refresh and try again.',
       );

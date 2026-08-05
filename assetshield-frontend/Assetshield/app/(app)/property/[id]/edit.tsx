@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { propertiesApi, usersApi } from '@/lib/api';
-import { Button, Header, Input, Loading, Screen, useConfirm } from '@/components/ui';
+import { Button, Header, Input, Loading, Screen, useConfirm, showAlert } from '@/components/ui';
 import { spacing } from '@/theme';
 
 export default function EditProperty() {
@@ -30,7 +30,7 @@ export default function EditProperty() {
       qc.invalidateQueries({ queryKey: ['properties'] });
       router.back();
     },
-    onError: (e: any) => Alert.alert('Could not save', e?.message ?? 'Try again.'),
+    onError: (e: any) => showAlert('Could not save', e?.message ?? 'Try again.'),
   });
 
   // Destructive + irreversible, so it's password-gated: confirm → re-auth →
@@ -56,7 +56,7 @@ export default function EditProperty() {
           continue;
         }
       } catch {
-        Alert.alert('Could not verify', 'Please check your connection and try again.');
+        showAlert('Could not verify', 'Please check your connection and try again.');
         return;
       }
 
@@ -65,7 +65,7 @@ export default function EditProperty() {
         qc.invalidateQueries({ queryKey: ['properties'] });
         router.replace('/(app)/(tabs)/properties' as never);
       } catch (e: any) {
-        Alert.alert('Could not delete', e?.message ?? 'Try again.');
+        showAlert('Could not delete', e?.message ?? 'Try again.');
       }
       return;
     }

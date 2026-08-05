@@ -5,7 +5,7 @@ import * as Sharing from 'expo-sharing';
 import * as WebBrowser from 'expo-web-browser';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import {
   Asset,
   DamagePhoto,
@@ -17,7 +17,7 @@ import {
   resolveMediaUrl,
 } from '@/lib/api';
 import { runCheckout, verifyPaymentUntilSettled } from '@/lib/payments/checkout';
-import { Button, Card, ErrorState, EvidencePhoto, Header, Hero, Loading, Screen, SectionHeader, Text, useToast } from '@/components/ui';
+import { Button, Card, ErrorState, EvidencePhoto, Header, Hero, Loading, Screen, SectionHeader, Text, useToast, showAlert } from '@/components/ui';
 import type { EvidencePhotoProps } from '@/components/ui/EvidencePhoto';
 import { colors, radius, spacing } from '@/theme';
 
@@ -112,13 +112,13 @@ export default function DossierScreen() {
       const reference = handle.payment?.reference ?? '';
       setPaymentRef(reference || null); // keep it so "Confirm payment" can re-verify
       const result = await runCheckout({ reference, authorizationUrl: handle.payment?.authorizationUrl ?? '' });
-      if (result === 'failed') Alert.alert('Payment failed', 'Please try again.');
+      if (result === 'failed') showAlert('Payment failed', 'Please try again.');
       else if (result === 'pending') {
-        Alert.alert('Almost there', 'If you completed the payment, tap "Confirm payment" to finish.');
+        showAlert('Almost there', 'If you completed the payment, tap "Confirm payment" to finish.');
       }
       qc.invalidateQueries({ queryKey: ['dossier-status', dossierId] });
     } catch (e) {
-      Alert.alert('Could not start payment', isApiError(e) ? e.message : 'Please try again.');
+      showAlert('Could not start payment', isApiError(e) ? e.message : 'Please try again.');
     } finally {
       setPaying(false);
     }
@@ -132,8 +132,8 @@ export default function DossierScreen() {
       const result = await verifyPaymentUntilSettled(paymentRef);
       qc.invalidateQueries({ queryKey: ['dossier-status', dossierId] });
       if (result === 'success') show('Payment confirmed — generating your dossier');
-      else if (result === 'failed') Alert.alert('Payment failed', 'That payment did not go through.');
-      else Alert.alert('Still confirming', "We couldn't confirm it yet. If you've paid, wait a moment and tap again.");
+      else if (result === 'failed') showAlert('Payment failed', 'That payment did not go through.');
+      else showAlert('Still confirming', "We couldn't confirm it yet. If you've paid, wait a moment and tap again.");
     } finally {
       setConfirming(false);
     }
@@ -155,8 +155,8 @@ export default function DossierScreen() {
         await WebBrowser.openBrowserAsync(url);
       }
     } catch (e) {
-      if (isApiError(e) && e.code === 'PAYMENT_REQUIRED') Alert.alert('Payment required', 'Complete payment to download.');
-      else Alert.alert('Could not download', isApiError(e) ? e.message : 'Please try again.');
+      if (isApiError(e) && e.code === 'PAYMENT_REQUIRED') showAlert('Payment required', 'Complete payment to download.');
+      else showAlert('Could not download', isApiError(e) ? e.message : 'Please try again.');
     } finally {
       setDownloading(false);
     }
@@ -182,8 +182,8 @@ export default function DossierScreen() {
         enableBarCollapsing: true,
       });
     } catch (e) {
-      if (isApiError(e) && e.code === 'PAYMENT_REQUIRED') Alert.alert('Payment required', 'Complete payment to view the dossier.');
-      else Alert.alert('Could not open dossier', isApiError(e) ? e.message : 'Please try again.');
+      if (isApiError(e) && e.code === 'PAYMENT_REQUIRED') showAlert('Payment required', 'Complete payment to view the dossier.');
+      else showAlert('Could not open dossier', isApiError(e) ? e.message : 'Please try again.');
     } finally {
       setViewing(false);
     }
@@ -192,13 +192,13 @@ export default function DossierScreen() {
   const rotate = useMutation({
     mutationFn: () => damageApi.rotateShareToken(dossierId),
     onSuccess: () => show('Share link rotated — old links no longer work'),
-    onError: (e) => Alert.alert('Could not rotate', isApiError(e) ? e.message : 'Try again.'),
+    onError: (e) => showAlert('Could not rotate', isApiError(e) ? e.message : 'Try again.'),
   });
 
   const retry = useMutation({
     mutationFn: () => damageApi.retryGeneration(dossierId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['dossier-status', dossierId] }),
-    onError: (e) => Alert.alert('Could not retry', isApiError(e) ? e.message : 'Try again.'),
+    onError: (e) => showAlert('Could not retry', isApiError(e) ? e.message : 'Try again.'),
   });
 
   if (q.isLoading) return <Loading label="Checking dossier…" />;

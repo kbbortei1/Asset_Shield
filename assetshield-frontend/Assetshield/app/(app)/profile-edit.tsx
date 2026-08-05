@@ -1,10 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { View } from 'react-native';
 import { usersApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { Button, Header, Input, Screen } from '@/components/ui';
+import { Button, Header, Input, Screen, showAlert } from '@/components/ui';
 import { spacing } from '@/theme';
 
 /** Edit profile (MISSING_DESIGN, on-brand). */
@@ -22,7 +22,7 @@ export default function ProfileEdit() {
       qc.invalidateQueries({ queryKey: ['users', 'me'] });
       router.back();
     } catch (e: any) {
-      Alert.alert('Could not save', e?.message ?? 'Try again.');
+      showAlert('Could not save', e?.message ?? 'Try again.');
     } finally {
       setLoading(false);
     }

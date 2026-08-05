@@ -2,10 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { AssetPhoto, propertiesApi, usersApi } from '@/lib/api';
 import { buildFileForm, pickImage } from '@/lib/media/capture';
-import { Button, Card, EvidencePhoto, Header, Input, Loading, RemoteImage, Screen, Text, VerifiedBadge, useConfirm, useToast } from '@/components/ui';
+import { Button, Card, EvidencePhoto, Header, Input, Loading, RemoteImage, Screen, Text, VerifiedBadge, useConfirm, useToast, showAlert } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 export default function AssetDetail() {
@@ -50,7 +50,7 @@ export default function AssetDetail() {
       if (q.data?.propertyId) qc.invalidateQueries({ queryKey: ['assets', q.data.propertyId] });
       show('Asset updated');
     },
-    onError: (e: any) => Alert.alert('Could not save', e?.message ?? 'Try again.'),
+    onError: (e: any) => showAlert('Could not save', e?.message ?? 'Try again.'),
   });
 
   const addReceipt = async () => {
@@ -61,7 +61,7 @@ export default function AssetDetail() {
       qc.invalidateQueries({ queryKey: ['asset', assetId] });
       show('Receipt added');
     } catch (e: any) {
-      Alert.alert('Could not upload', e?.message ?? 'Try again.');
+      showAlert('Could not upload', e?.message ?? 'Try again.');
     }
   };
 
@@ -86,7 +86,7 @@ export default function AssetDetail() {
           continue;
         }
       } catch {
-        Alert.alert('Could not verify', 'Please check your connection and try again.');
+        showAlert('Could not verify', 'Please check your connection and try again.');
         return;
       }
       const propertyId = q.data?.propertyId;
@@ -95,7 +95,7 @@ export default function AssetDetail() {
         if (propertyId) qc.invalidateQueries({ queryKey: ['assets', propertyId] });
         router.back();
       } catch (e: any) {
-        Alert.alert('Could not delete', e?.message ?? 'Try again.');
+        showAlert('Could not delete', e?.message ?? 'Try again.');
       }
       return;
     }
