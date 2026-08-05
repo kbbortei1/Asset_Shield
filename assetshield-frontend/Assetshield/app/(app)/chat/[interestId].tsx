@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, TextInput, View } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useKeyboardState } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { InterestMessage, marketplaceApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { EmptyState, ErrorState, Header, Loading, Screen, Text } from '@/components/ui';
@@ -16,6 +17,12 @@ export default function Chat() {
   const myId = user?.id;
   const qc = useQueryClient();
   const [draft, setDraft] = useState('');
+  const insets = useSafeAreaInsets();
+  // Lift the whole column (messages + composer) by the keyboard height so the
+  // composer lands on the keyboard and the list shrinks above it — explicit
+  // math, so it works regardless of the device's soft-input mode.
+  const kbHeight = useKeyboardState((s) => s.height);
+  const lift = Math.max(0, kbHeight - insets.bottom);
 
   const q = useQuery({
     queryKey: ['messages', interestId],
@@ -92,22 +99,20 @@ export default function Chat() {
   if (q.isError) return <ErrorState onRetry={() => q.refetch()} />;
 
   return (
-    <Screen scroll={false} padded={false} contentStyle={{ paddingVertical: 0, gap: 0 }}>
+    // paddingBottom = keyboard lift: the whole column shifts up so the composer
+    // sits on the keyboard and the message list shrinks above it (WhatsApp-style
+    // — recent messages stay visible and history scrolls while typing).
+    <Screen scroll={false} padded={false} contentStyle={{ paddingVertical: 0, gap: 0, paddingBottom: lift }}>
       <View style={{ paddingHorizontal: spacing.screenPadding }}>
         <Header title={name || 'Conversation'} />
       </View>
-      {/* WhatsApp-style: the list + composer form a column that lifts together;
-          when the keyboard opens the list shrinks to sit above the composer,
-          so recent messages stay visible and you can still scroll history. */}
-      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
         {items.length === 0 ? (
-          <View style={{ flex: 1 }}>
-            <EmptyState
-              icon="chatbubbles-outline"
-              title="No messages yet"
-              body="Start the conversation. Ask a question or share details about the property."
-            />
-          </View>
+          <EmptyState
+            icon="chatbubbles-outline"
+            title="No messages yet"
+            body="Start the conversation. Ask a question or share details about the property."
+          />
         ) : (
           <FlatList
             data={items}
@@ -121,10 +126,10 @@ export default function Chat() {
             renderItem={({ item }) => <Bubble message={item} mine={item.senderUserId === myId} />}
           />
         )}
-        <View style={{ paddingHorizontal: spacing.screenPadding, paddingTop: spacing.sm, backgroundColor: colors.background, borderTopWidth: 1, borderTopColor: colors.border }}>
-          {composer}
-        </View>
-      </KeyboardAvoidingView>
+      </View>
+      <View style={{ paddingHorizontal: spacing.screenPadding, paddingTop: spacing.sm, backgroundColor: colors.background, borderTopWidth: 1, borderTopColor: colors.border }}>
+        {composer}
+      </View>
     </Screen>
   );
 }
