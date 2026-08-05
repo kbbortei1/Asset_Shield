@@ -31,6 +31,7 @@ export { OfflineBanner } from './OfflineBanner';
 export { Header } from './Header';
 export type { HeaderProps } from './Header';
 export { NotificationBell } from './NotificationBell';
+export { MessagesButton, HeaderActions } from './MessagesButton';
 export { ToastProvider, useToast } from './Toast';
 export { SectionHeader, Divider } from './Section';
 export { AnimatedItem } from './AnimatedItem';

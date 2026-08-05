@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { View } from 'react-native';
 import { propertiesApi } from '@/lib/api';
 import { PropertyCard } from '@/components/cards/PropertyCard';
-import { Button, Card, EmptyState, ErrorState, ListScreen, ListSkeleton, NotificationBell, Screen, Text } from '@/components/ui';
+import { Button, Card, EmptyState, ErrorState, ListScreen, ListSkeleton, HeaderActions, Screen, Text } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 export default function PropertiesTab() {
@@ -17,7 +17,7 @@ export default function PropertiesTab() {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text variant="headlineLgMobile">Properties</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <NotificationBell />
+          <HeaderActions />
           <Button title="Add" fullWidth={false} variant="secondary" onPress={() => router.push('/(app)/property/new' as never)} />
         </View>
       </View>

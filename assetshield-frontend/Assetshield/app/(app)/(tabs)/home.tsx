@@ -7,7 +7,7 @@ import { Pressable, View } from 'react-native';
 import { Property, marketplaceApi, notificationsApi, propertiesApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { PropertyCard } from '@/components/cards/PropertyCard';
-import { AnimatedItem, Button, Card, EmptyState, ErrorState, Hero, ListScreen, ListSkeleton, Loading, NotificationBell, Screen, Text, formatCedis } from '@/components/ui';
+import { AnimatedItem, Button, Card, EmptyState, ErrorState, Hero, ListScreen, ListSkeleton, Loading, HeaderActions, Screen, Text, formatCedis } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
 
 const EMBLEM = require('@/assets/images/logo-emblem-clean.png');
@@ -61,7 +61,7 @@ function Greeting({ subtitle }: { subtitle: string }) {
     <View style={{ gap: 2 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <BrandBar />
-        <NotificationBell />
+        <HeaderActions />
       </View>
       <Text variant="labelMd" color={colors.textMuted} style={{ marginTop: spacing.md }}>
         Akwaaba

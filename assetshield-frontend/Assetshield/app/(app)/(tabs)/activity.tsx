@@ -14,7 +14,7 @@ import {
   GatedNotice,
   ListScreen,
   ListSkeleton,
-  NotificationBell,
+  HeaderActions,
   Screen,
   SectionHeader,
   StatusBadge,
@@ -34,7 +34,7 @@ function TitleWithBell({ title }: { title: string }) {
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
       <Text variant="headlineLgMobile">{title}</Text>
-      <NotificationBell />
+      <HeaderActions />
     </View>
   );
 }
@@ -231,6 +231,7 @@ function AgentActivity() {
               owner: s.ownerName ?? 'Owner',
               ...(s.disasterType ? { disaster: s.disasterType } : {}),
               ...(s.totalEstimatedLoss != null ? { loss: String(s.totalEstimatedLoss) } : {}),
+              ...(s.agentInterestId ? { interestId: s.agentInterestId } : {}),
             }).toString();
             router.push(`/(app)/agent/dossier/${s.dossierId}?${qs}` as never);
           }}

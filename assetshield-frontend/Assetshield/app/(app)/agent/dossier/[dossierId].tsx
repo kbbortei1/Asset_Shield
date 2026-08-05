@@ -21,6 +21,7 @@ export default function SharedDossierViewer() {
     owner?: string;
     disaster?: string;
     loss?: string;
+    interestId?: string;
   }>();
   const dossierId = params.dossierId!;
 
@@ -58,7 +59,23 @@ export default function SharedDossierViewer() {
   const loss = params.loss ? Number(params.loss) : undefined;
 
   return (
-    <Screen footer={<Button title="Send a quote" onPress={() => router.push(`/(app)/agent/quote/${dossierId}` as never)} />}>
+    <Screen
+      footer={
+        <View style={{ gap: spacing.md }}>
+          <Button title="Send a quote" onPress={() => router.push(`/(app)/agent/quote/${dossierId}` as never)} />
+          {params.interestId ? (
+            <Button
+              title="Chat with owner"
+              variant="secondary"
+              leftIcon={<Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primary} />}
+              onPress={() =>
+                router.push(`/(app)/chat/${params.interestId}?name=${encodeURIComponent(params.owner ?? 'Owner')}` as never)
+              }
+            />
+          ) : null}
+        </View>
+      }
+    >
       <Header title="Shared dossier" />
 
       {/* What the claim is about — the context an insurer needs before quoting. */}

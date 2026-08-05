@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { View } from 'react-native';
 import { AgentInterest, marketplaceApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { Button, Card, EmptyState, ErrorState, GatedNotice, ListScreen, ListSkeleton, NotificationBell, Screen, StatusBadge, Text, useConfirm } from '@/components/ui';
+import { Button, Card, EmptyState, ErrorState, GatedNotice, ListScreen, ListSkeleton, HeaderActions, Screen, StatusBadge, Text, useConfirm } from '@/components/ui';
 import { colors, spacing } from '@/theme';
 
 export default function MarketTab() {
@@ -44,7 +44,7 @@ function OwnerConnections() {
         <View style={{ gap: spacing.sm }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text variant="headlineLgMobile">Connections</Text>
-            <NotificationBell />
+            <HeaderActions />
           </View>
           <Text variant="bodyMd" color={colors.textMuted}>
             Agents interested in your properties. Accept to allow them to request a dossier.
@@ -190,7 +190,7 @@ function AgentLeads() {
         <View style={{ gap: spacing.sm }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text variant="headlineLgMobile">Leads</Text>
-            <NotificationBell />
+            <HeaderActions />
           </View>
           <Text variant="bodyMd" color={colors.textMuted}>
             Owners open to offers. Express interest to start a connection.
