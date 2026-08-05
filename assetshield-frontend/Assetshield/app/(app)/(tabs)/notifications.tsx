@@ -30,7 +30,12 @@ const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 export default function NotificationsTab() {
-  const q = useQuery({ queryKey: ['notifications'], queryFn: () => notificationsApi.list({ size: 50 }) });
+  const q = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => notificationsApi.list({ size: 50 }),
+    refetchInterval: 20_000, // keep the open list live (new message alerts appear)
+    refetchOnWindowFocus: true,
+  });
   const markSeen = useMarkNotificationsSeen();
 
   // Opening this screen clears the bell badge: everything up to now is "seen".

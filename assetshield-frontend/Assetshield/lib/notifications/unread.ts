@@ -26,8 +26,9 @@ export function useUnreadCount(): number {
   const list = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationsApi.list({ size: 50 }),
-    // A quiet background refresh so the badge stays roughly live without a socket.
-    refetchInterval: 60_000,
+    // Background refresh so the bell badge surfaces new alerts (e.g. a chat
+    // message from the other party) within ~half a minute, without a socket.
+    refetchInterval: 25_000,
   });
 
   const since = lastSeen.data ?? 0;
